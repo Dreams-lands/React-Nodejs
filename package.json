@@ -1,0 +1,22 @@
+{
+  "name": "webql-monorepo",
+  "version": "1.0.0",
+  "description": "Dự án Web Quản Lý (WebQL) - Fullstack React 19 + Node.js Express theo mô hình MVC",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "db:init": "cd backend && npm run db:init",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "react",
+    "nodejs",
+    "express",
+    "mvc",
+    "mysql",
+    "vite"
+  ],
+  "author": "",
+  "license": "ISC"
+}
