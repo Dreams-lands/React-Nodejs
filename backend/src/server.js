@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 5000;
 // Khởi động server
 const startServer = async () => {
   try {
-    // 1. Kiểm tra kết nối Cơ sở dữ liệu MySQL
+    // 1. Kiểm tra kết nối Cơ sở dữ liệu PostgreSQL
     const isDbConnected = await testConnection();
     if (isDbConnected) {
       // Tự động kiểm tra/tạo bảng users và dữ liệu mẫu

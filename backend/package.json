@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend API server built with Node.js, Express and MySQL following MVC architecture",
+  "description": "Backend API server built with Node.js, Express and PostgreSQL following MVC architecture",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -13,7 +13,8 @@
     "nodejs",
     "express",
     "mvc",
-    "mysql",
+    "postgresql",
+    "dbeaver",
     "rest-api"
   ],
   "author": "",
@@ -23,6 +24,6 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
-    "mysql2": "^3.24.6"
+    "pg": "^8.23.1"
   }
 }

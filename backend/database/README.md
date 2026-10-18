@@ -1,86 +1,67 @@
-# 🗄️ Quản Lý Cơ Sở Dữ Liệu MySQL - WebQL
+# 🗄️ Quản Lý Cơ Sở Dữ Liệu PostgreSQL & DBeaver - WebQL
 
-Thư mục này là **nơi tập trung toàn bộ thông tin, định nghĩa cấu trúc và dữ liệu mẫu của MySQL** trong dự án WebQL.
+Thư mục này là **nơi tập trung toàn bộ cấu trúc bảng, dữ liệu mẫu và scripts tự động hóa của PostgreSQL** trong dự án WebQL.
 
 ---
 
 ## 📁 Các Thành Phần Trong Thư Mục
 
-| Tên File                                                                             | Vai Trò & Chức Năng                                                                                               |
-| :----------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
-| [`schema.sql`](file:///d:/Project/WebQL/backend/database/schema.sql)                 | Chứa các câu lệnh **DDL** (`CREATE DATABASE`, `CREATE TABLE`, `FOREIGN KEY`, `INDEXES`) định nghĩa cấu trúc bảng. |
-| [`seed.sql`](file:///d:/Project/WebQL/backend/database/seed.sql)                     | Chứa các câu lệnh **DML** (`INSERT INTO`) nạp dữ liệu mẫu ban đầu bằng tiếng Việt.                                |
-| [`init.js`](file:///d:/Project/WebQL/backend/database/init.js)                       | File script tự động kết nối MySQL Server, tạo database, chạy schema và nạp seed data chỉ bằng 1 câu lệnh.         |
-| [`DATA_DICTIONARY.md`](file:///d:/Project/WebQL/backend/database/DATA_DICTIONARY.md) | Từ điển dữ liệu chi tiết (mô tả từng cột, kiểu dữ liệu, sơ đồ quan hệ ERD).                                       |
+| Tên File | Vai Trò & Chức Năng |
+| :--- | :--- |
+| [`schema.sql`](file:///d:/Project/WebQL/backend/database/schema.sql) | Chứa các câu lệnh **DDL** PostgreSQL (`CREATE TABLE`, `SERIAL`, `FOREIGN KEY`, `CHECK`, `TRIGGER`, `INDEXES`) định nghĩa cấu trúc dữ liệu. |
+| [`seed.sql`](file:///d:/Project/WebQL/backend/database/seed.sql) | Chứa các câu lệnh **DML** (`INSERT INTO ... ON CONFLICT`) nạp dữ liệu mẫu ban đầu bằng tiếng Việt. |
+| [`init.js`](file:///d:/Project/WebQL/backend/database/init.js) | Script Node.js tự động kết nối PostgreSQL Server, tạo database `webql_db`, chạy schema và nạp seed data chỉ bằng 1 câu lệnh. |
+| [`DATA_DICTIONARY.md`](file:///d:/Project/WebQL/backend/database/DATA_DICTIONARY.md) | Từ điển dữ liệu chi tiết, các kiểu dữ liệu PostgreSQL, sơ đồ ERD và hướng dẫn kết nối DBeaver. |
 
 ---
 
-## ⚙️ Nơi Cấu Hình Kết Nối MySQL
+## ⚙️ Cấu Hình Thông Tin Kết Nối PostgreSQL
 
-Thông tin đăng nhập MySQL được quản lý tập trung và bảo mật tại:
-
+Thông tin kết nối được lưu trữ tại file:
 - **[`backend/.env`](file:///d:/Project/WebQL/backend/.env)**:
   ```env
   DB_HOST=localhost
-  DB_PORT=3306
-  DB_USER=root
+  DB_PORT=5432
+  DB_USER=postgres
   DB_PASSWORD=123456
   DB_NAME=webql_db
   ```
-- **[`backend/src/config/db.js`](file:///d:/Project/WebQL/backend/src/config/db.js)**: Chịu trách nhiệm thiết lập MySQL connection pool cho toàn bộ ứng dụng Express.
+- **[`backend/src/config/db.js`](file:///d:/Project/WebQL/backend/src/config/db.js)**: Chịu trách nhiệm thiết lập PostgreSQL Connection Pool (`pg.Pool`) cho toàn bộ ứng dụng Express.
 
 ---
 
-## 🚀 3 Cách Khởi Tạo & Nạp Dữ Liệu MySQL
+## 🚀 2 Cách Khởi Tạo & Quản Lý Dữ Liệu
 
-### Cách 1: Sử dụng lệnh tự động (Khuyên Dùng - Nhanh Nhất)
-
+### Cách 1: Sử Dụng Lệnh Tự Động (Khuyên Dùng)
 Từ thư mục gốc của dự án hoặc thư mục `backend`:
-
 ```bash
-# Chạy từ thư mục gốc:
+# Chạy từ thư mục gốc WebQL:
 npm run db:init
 
 # Hoặc chạy trong thư mục backend:
 cd backend
 npm run db:init
 ```
-
 Script sẽ tự động:
-
-1. Kết nối tới MySQL máy chủ qua cổng 3306.
-2. Tự tạo cơ sở dữ liệu `webql_db` nếu chưa có.
-3. Tạo mới toàn bộ bảng: `users`, `categories`, `products`.
-4. Nạp toàn bộ dữ liệu mẫu trong `seed.sql`.
-
----
-
-### Cách 2: Sử Dụng phpMyAdmin (XAMPP / Laragon)
-
-1. Mở trình duyệt vào `http://localhost/phpmyadmin`.
-2. Tạo mới một Database có tên: `webql_db` (chọn Collation: `utf8mb4_unicode_ci`).
-3. Chọn database `webql_db` vừa tạo -> Chọn tab **Import (Nhập)**.
-4. Chọn file [`backend/database/schema.sql`](file:///d:/Project/WebQL/backend/database/schema.sql) và nhấn **Go / Thực hiện**.
-5. Tiếp tục Import file [`backend/database/seed.sql`](file:///d:/Project/WebQL/backend/database/seed.sql) để có dữ liệu mẫu.
+1. Kết nối tới PostgreSQL Server qua cổng **5432**.
+2. Tự tạo database **`webql_db`** (nếu chưa có).
+3. Tạo các bảng: **`users`**, **`categories`**, **`products`**, kèm chỉ mục và triggers.
+4. Nạp dữ liệu mẫu tiếng Việt từ `seed.sql`.
 
 ---
 
-### Cách 3: Sử Dụng DBeaver / MySQL Workbench / Command Line
-
-Mở terminal và chạy lệnh:
-
-```bash
-mysql -u root -p < backend/database/schema.sql
-mysql -u root -p webql_db < backend/database/seed.sql
-```
-
-_(Nhập mật khẩu MySQL khi được hỏi)_.
-
----
-
-## 🛠️ Muốn Thêm Bảng Mới Vào Database?
-
-1. Mở file [`backend/database/schema.sql`](file:///d:/Project/WebQL/backend/database/schema.sql), viết thêm câu lệnh `CREATE TABLE tên_bảng (...)`.
-2. Mở file [`backend/database/seed.sql`](file:///d:/Project/WebQL/backend/database/seed.sql) nếu muốn bổ sung dữ liệu mẫu.
-3. Chạy lại `npm run db:init`.
-4. Tạo thêm file Model tương ứng trong thư mục [`backend/src/models/`](file:///d:/Project/WebQL/backend/src/models/) để tương tác từ Node.js.
+### Cách 2: Quản Lý Trực Quan Bằng DBeaver
+1. Mở **DBeaver**.
+2. Chọn biểu tượng **New Database Connection** -> Chọn **PostgreSQL** -> Nhấn **Next**.
+3. Điền thông tin:
+   * **Host:** `localhost`
+   * **Port:** `5432`
+   * **Database:** `webql_db`
+   * **Username:** `postgres`
+   * **Password:** `123456`
+4. Bấm **Test Connection ...** -> Bấm **Finish**.
+5. Trong DBeaver:
+   * **Mở SQL Editor:** Nhấn `F3` hoặc `Ctrl + ]` để mở trình soạn thảo SQL.
+   * **Chạy file schema:** Mở file [`schema.sql`](file:///d:/Project/WebQL/backend/database/schema.sql) trong DBeaver và nhấn `Alt + X` để thực thi toàn bộ script.
+   * **Xem sơ đồ ERD:** Nhấp đúp vào schema `public` -> chọn tab **ER Diagram**.
+   * **Xem dữ liệu bảng:** Nhấp đúp vào bảng `users` -> chọn tab **Data**.

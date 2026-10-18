@@ -45,9 +45,9 @@ export default function HomePage() {
           </h1>
           <p className="hero-description">
             Cấu trúc phân tầng rõ ràng, tách biệt hoàn toàn giữa{" "}
-            <strong>Model</strong> (Dữ liệu MySQL), <strong>View</strong> (Giao
+            <strong>Model</strong> (Dữ liệu PostgreSQL), <strong>View</strong> (Giao
             diện React), và <strong>Controller</strong> (Bộ điều phối Express
-            API).
+            API). Quản lý trực quan bằng DBeaver.
           </p>
 
           <div className="hero-buttons">
@@ -90,7 +90,7 @@ export default function HomePage() {
                     {Math.round(backendStatus.data?.uptime || 0)} giây
                   </li>
                   <li>
-                    <strong>Kiến trúc:</strong> Express 5 + MySQL2 Pool
+                    <strong>Kiến trúc:</strong> Express 5 + PostgreSQL (pg Pool)
                   </li>
                 </ul>
               </div>
@@ -126,9 +126,9 @@ export default function HomePage() {
               <strong>Thư mục:</strong> <code>backend/src/models/</code>
             </p>
             <p>
-              Trực tiếp tương tác với cơ sở dữ liệu MySQL thông qua{" "}
-              <code>mysql2/promise</code> pool. Thực hiện truy vấn CRUD dữ liệu
-              bảng <code>users</code>.
+              Trực tiếp tương tác với cơ sở dữ liệu PostgreSQL thông qua{" "}
+              <code>pg.Pool</code>. Thực hiện truy vấn CRUD dữ liệu
+              bảng <code>users</code> và quản lý dễ dàng bằng DBeaver.
             </p>
           </div>
 

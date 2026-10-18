@@ -1,67 +1,89 @@
 -- ==============================================================================
--- WebQL Database Schema
--- Hệ quản trị cơ sở dữ liệu: MySQL 8.0+ / MariaDB 10.4+
--- Bộ mã ký tự chuẩn: utf8mb4 / Đối chiếu: utf8mb4_unicode_ci
+-- WebQL Database Schema (PostgreSQL)
+-- Hệ quản trị cơ sở dữ liệu: PostgreSQL 12+ / 14+ / 16+ / 17+
+-- Trình quản lý trực quan: DBeaver / pgAdmin / TablePlus
 -- ==============================================================================
 
--- 1. Tạo Database nếu chưa tồn tại
-CREATE DATABASE IF NOT EXISTS `webql_db` 
-CHARACTER SET utf8mb4 
-COLLATE utf8mb4_unicode_ci;
+-- 1. Xóa các bảng cũ nếu đã tồn tại (theo thứ tự quan hệ phụ thuộc)
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
-USE `webql_db`;
-
--- Tạm thời tắt kiểm tra khóa ngoại khi khởi tạo/reset bảng
-SET FOREIGN_KEY_CHECKS = 0;
-
--- ------------------------------------------------------------------------------
--- 2. Bảng `users` (Quản lý tài khoản người dùng)
--- ------------------------------------------------------------------------------
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Khóa chính tự tăng',
-  `name` VARCHAR(100) NOT NULL COMMENT 'Họ và tên người dùng',
-  `email` VARCHAR(100) NOT NULL UNIQUE COMMENT 'Địa chỉ email (duy nhất)',
-  `role` ENUM('admin', 'editor', 'user') NOT NULL DEFAULT 'user' COMMENT 'Phân quyền vai trò',
-  `status` ENUM('active', 'inactive', 'banned') NOT NULL DEFAULT 'active' COMMENT 'Trạng thái tài khoản',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo',
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời điểm cập nhật cuối',
-  INDEX `idx_users_email` (`email`),
-  INDEX `idx_users_role` (`role`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng quản lý người dùng';
+-- 2. Tạo hàm kích hoạt tự động cập nhật thời gian (trigger update_updated_at_column)
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ------------------------------------------------------------------------------
--- 3. Bảng `categories` (Danh mục hệ thống)
+-- 3. Bảng `users` (Quản lý tài khoản người dùng)
 -- ------------------------------------------------------------------------------
-DROP TABLE IF EXISTS `categories`;
-CREATE TABLE `categories` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL COMMENT 'Tên danh mục',
-  `slug` VARCHAR(120) NOT NULL UNIQUE COMMENT 'Đường dẫn tĩnh chuẩn SEO',
-  `description` VARCHAR(255) NULL COMMENT 'Mô tả ngắn gọn danh mục',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng danh mục';
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'editor', 'user')),
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'banned')),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- Gắn Trigger tự động cập nhật updated_at cho users
+DROP TRIGGER IF EXISTS trigger_users_updated_at ON users;
+CREATE TRIGGER trigger_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE users IS 'Bảng quản lý tài khoản người dùng';
+COMMENT ON COLUMN users.id IS 'Khóa chính tự tăng (SERIAL)';
+COMMENT ON COLUMN users.role IS 'Phân quyền: admin, editor, user';
+COMMENT ON COLUMN users.status IS 'Trạng thái: active, inactive, banned';
 
 -- ------------------------------------------------------------------------------
--- 4. Bảng `products` (Quản lý sản phẩm / hàng hóa / tài nguyên)
+-- 4. Bảng `categories` (Danh mục hệ thống)
 -- ------------------------------------------------------------------------------
-DROP TABLE IF EXISTS `products`;
-CREATE TABLE `products` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `category_id` INT NULL COMMENT 'Khóa ngoại liên kết danh mục',
-  `name` VARCHAR(200) NOT NULL COMMENT 'Tên sản phẩm',
-  `price` DECIMAL(12, 2) NOT NULL DEFAULT 0.00 COMMENT 'Đơn giá',
-  `quantity` INT NOT NULL DEFAULT 0 COMMENT 'Số lượng tồn kho',
-  `status` ENUM('in_stock', 'out_of_stock', 'discontinued') NOT NULL DEFAULT 'in_stock' COMMENT 'Trạng thái hàng',
-  `created_by` INT NULL COMMENT 'Người tạo (khóa ngoại users.id)',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_products_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  INDEX `idx_products_category` (`category_id`),
-  INDEX `idx_products_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng sản phẩm / tài nguyên quản lý';
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  description VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- Bật lại kiểm tra khóa ngoại
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 
+COMMENT ON TABLE categories IS 'Bảng phân loại danh mục sản phẩm/tài nguyên';
+
+-- ------------------------------------------------------------------------------
+-- 5. Bảng `products` (Sản phẩm / Hàng hóa quản lý)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  category_id INT REFERENCES categories(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  name VARCHAR(200) NOT NULL,
+  price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+  quantity INT NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL DEFAULT 'in_stock' CHECK (status IN ('in_stock', 'out_of_stock', 'discontinued')),
+  created_by INT REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+
+-- Gắn Trigger tự động cập nhật updated_at cho products
+DROP TRIGGER IF EXISTS trigger_products_updated_at ON products;
+CREATE TRIGGER trigger_products_updated_at
+BEFORE UPDATE ON products
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE products IS 'Bảng quản lý sản phẩm hàng hóa';

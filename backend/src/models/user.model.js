@@ -1,11 +1,11 @@
 const { pool } = require("../config/db");
 
 /**
- * UserModel (Tầng Model trong MVC)
- * Chịu trách nhiệm trực tiếp tương tác với bảng `users` trong Cơ sở dữ liệu MySQL
+ * UserModel (Tầng Model trong kiến trúc MVC)
+ * Tương tác trực tiếp với bảng `users` trong Cơ sở dữ liệu PostgreSQL
  */
 
-// Bộ nhớ đệm tạm thời (In-memory fallback) phòng khi MySQL chưa kết nối được
+// Bộ nhớ đệm tạm thời (In-memory fallback) phòng khi PostgreSQL chưa bật
 let inMemoryUsers = [
   { id: 1, name: "Nguyễn Văn An", email: "an.nguyen@example.com", role: "admin", status: "active", createdAt: new Date() },
   { id: 2, name: "Trần Thị Bích", email: "bich.tran@example.com", role: "editor", status: "active", createdAt: new Date() },
@@ -20,31 +20,32 @@ class UserModel {
     try {
       const createTableQuery = `
         CREATE TABLE IF NOT EXISTS users (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
           name VARCHAR(100) NOT NULL,
           email VARCHAR(100) NOT NULL UNIQUE,
-          role ENUM('admin', 'editor', 'user') DEFAULT 'user',
-          status ENUM('active', 'inactive', 'banned') DEFAULT 'active',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_users_email (email)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+          role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'editor', 'user')),
+          status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'banned')),
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       `;
       await pool.query(createTableQuery);
 
-      const [rows] = await pool.query("SELECT COUNT(*) as count FROM users");
-      if (rows[0].count === 0) {
+      const countResult = await pool.query("SELECT COUNT(*) as count FROM users");
+      if (parseInt(countResult.rows[0].count, 10) === 0) {
         const seedQuery = `
           INSERT INTO users (name, email, role, status) VALUES 
           ('Nguyễn Văn An', 'an.nguyen@example.com', 'admin', 'active'),
           ('Trần Thị Bích', 'bich.tran@example.com', 'editor', 'active'),
-          ('Lê Hoàng Cường', 'cuong.le@example.com', 'user', 'active');
+          ('Lê Hoàng Cường', 'cuong.le@example.com', 'user', 'active')
+          ON CONFLICT (email) DO NOTHING;
         `;
         await pool.query(seedQuery);
-        console.log("🌱 [Database] Bảng 'users' đã có dữ liệu khởi tạo.");
+        console.log("🌱 [PostgreSQL] Bảng 'users' đã có dữ liệu khởi tạo.");
       }
     } catch (error) {
-      console.warn("⚠️  [Model] Lỗi kiểm tra bảng users:", error.message);
+      console.warn("⚠️  [Model] Lỗi kiểm tra bảng users trong PostgreSQL:", error.message);
     }
   }
 
@@ -53,12 +54,12 @@ class UserModel {
    */
   static async findAll() {
     try {
-      const [rows] = await pool.query(
-        "SELECT id, name, email, role, status, created_at as createdAt, updated_at as updatedAt FROM users ORDER BY id DESC"
+      const { rows } = await pool.query(
+        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users ORDER BY id DESC'
       );
       return rows;
     } catch (error) {
-      console.warn("⚠️  [Model] Dùng dữ liệu in-memory fallback:", error.message);
+      console.warn("⚠️  [Model] Dùng dữ liệu in-memory fallback (do PostgreSQL chưa kết nối):", error.message);
       return inMemoryUsers;
     }
   }
@@ -68,8 +69,8 @@ class UserModel {
    */
   static async findById(id) {
     try {
-      const [rows] = await pool.query(
-        "SELECT id, name, email, role, status, created_at as createdAt, updated_at as updatedAt FROM users WHERE id = ?",
+      const { rows } = await pool.query(
+        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users WHERE id = $1',
         [id]
       );
       return rows[0] || null;
@@ -83,8 +84,8 @@ class UserModel {
    */
   static async findByEmail(email) {
     try {
-      const [rows] = await pool.query(
-        "SELECT id, name, email, role, status FROM users WHERE email = ?",
+      const { rows } = await pool.query(
+        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users WHERE LOWER(email) = LOWER($1)',
         [email]
       );
       return rows[0] || null;
@@ -94,15 +95,17 @@ class UserModel {
   }
 
   /**
-   * Thêm người dùng mới
+   * Thêm người dùng mới (Dùng RETURNING của PostgreSQL để lấy ngay bản ghi vừa tạo)
    */
   static async create({ name, email, role = "user", status = "active" }) {
     try {
-      const [result] = await pool.query(
-        "INSERT INTO users (name, email, role, status) VALUES (?, ?, ?, ?)",
+      const { rows } = await pool.query(
+        `INSERT INTO users (name, email, role, status)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt"`,
         [name, email, role, status]
       );
-      return this.findById(result.insertId);
+      return rows[0];
     } catch (error) {
       const newUser = {
         id: inMemoryUsers.length > 0 ? Math.max(...inMemoryUsers.map((u) => u.id)) + 1 : 1,
@@ -111,6 +114,7 @@ class UserModel {
         role,
         status,
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
       inMemoryUsers.unshift(newUser);
       return newUser;
@@ -118,15 +122,21 @@ class UserModel {
   }
 
   /**
-   * Cập nhật thông tin người dùng
+   * Cập nhật thông tin người dùng (Dùng RETURNING của PostgreSQL)
    */
   static async update(id, { name, email, role, status }) {
     try {
-      await pool.query(
-        "UPDATE users SET name = COALESCE(?, name), email = COALESCE(?, email), role = COALESCE(?, role), status = COALESCE(?, status) WHERE id = ?",
+      const { rows } = await pool.query(
+        `UPDATE users
+         SET name = COALESCE($1, name),
+             email = COALESCE($2, email),
+             role = COALESCE($3, role),
+             status = COALESCE($4, status)
+         WHERE id = $5
+         RETURNING id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt"`,
         [name, email, role, status, id]
       );
-      return this.findById(id);
+      return rows[0] || null;
     } catch (error) {
       const index = inMemoryUsers.findIndex((u) => u.id === Number(id));
       if (index !== -1) {
@@ -136,6 +146,7 @@ class UserModel {
           email: email || inMemoryUsers[index].email,
           role: role || inMemoryUsers[index].role,
           status: status || inMemoryUsers[index].status,
+          updatedAt: new Date(),
         };
         return inMemoryUsers[index];
       }
@@ -148,8 +159,8 @@ class UserModel {
    */
   static async delete(id) {
     try {
-      const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
-      return result.affectedRows > 0;
+      const result = await pool.query("DELETE FROM users WHERE id = $1", [id]);
+      return result.rowCount > 0;
     } catch (error) {
       const initialLen = inMemoryUsers.length;
       inMemoryUsers = inMemoryUsers.filter((u) => u.id !== Number(id));

@@ -14,7 +14,8 @@
     "nodejs",
     "express",
     "mvc",
-    "mysql",
+    "postgresql",
+    "dbeaver",
     "vite"
   ],
   "author": "",
