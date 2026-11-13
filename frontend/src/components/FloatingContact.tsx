@@ -13,7 +13,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
   const [messages, setMessages] = useState([
     {
       from: 'bot',
-      text: 'Xin chào bố mẹ thú cưng! 🐾 Bác sĩ thú y & tư vấn viên PetHub đang trực tuyến 24/7. Bạn cần tư vấn bé nào ạ?',
+      text: 'Xin chào! Chuyên viên PetHub sẵn sàng tư vấn dinh dưỡng, phụ kiện và dịch vụ Spa cho thú cưng của bạn.',
     },
   ]);
 
@@ -28,7 +28,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
         ...prev,
         {
           from: 'bot',
-          text: `Cảm ơn bạn! Chuyên viên PetHub đã nhận tin nhắn "${userMsg}" và sẽ phản hồi ngay trong 30 giây nhé 💙`,
+          text: `Cảm ơn bạn. Tư vấn viên PetHub đã tiếp nhận nội dung "${userMsg}" và sẽ phản hồi ngay trong giây lát.`,
         },
       ]);
     }, 650);
@@ -36,9 +36,8 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
 
   return (
     <>
-      {/* Fixed Floating Stack on Right Side of All Customer Pages */}
-      <div className="fixed right-6 bottom-8 z-50 flex flex-col items-end gap-3.5 select-none">
-        {/* 1. ZALO BUTTON (Matches reference image: #0068FF solid circle with bold white "Zalo") */}
+      <div className="fixed right-5 bottom-6 z-40 flex flex-col items-end gap-3 select-none">
+        {/* 1. ZALO */}
         <div
           className="relative flex items-center"
           onMouseEnter={() => setHoveredId('zalo')}
@@ -47,36 +46,29 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
           <AnimatePresence>
             {hoveredId === 'zalo' && (
               <motion.div
-                initial={{ opacity: 0, x: 14, scale: 0.9 }}
+                initial={{ opacity: 0, x: 10, scale: 0.94 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 10, scale: 0.92 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                className="mr-3 px-3.5 py-2 rounded-xl bg-[#17324d]/95 text-white text-xs font-bold shadow-lg whitespace-nowrap backdrop-blur-md border border-white/15"
+                exit={{ opacity: 0, x: 8, scale: 0.94 }}
+                transition={{ duration: 0.18 }}
+                className="mr-3 px-3 py-1.5 rounded-lg bg-[#17324d] text-white text-xs font-semibold shadow-md whitespace-nowrap"
               >
-                Chat Zalo tư vấn ngay
-                <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Tư vấn qua Zalo
               </motion.div>
             )}
           </AnimatePresence>
 
           <motion.button
             onClick={() => setActiveChat(activeChat === 'zalo' ? null : 'zalo')}
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            whileHover={{ scale: 1.14, rotate: [-3, 3, -2, 0] }}
-            whileTap={{ scale: 0.92 }}
-            className="relative w-14 h-14 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,104,255,0.42)] cursor-pointer border-2 border-white/25"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="w-12 h-12 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(0,104,255,0.3)] cursor-pointer border-2 border-white"
             aria-label="Liên hệ Zalo"
           >
-            {/* Subtle pulse ring */}
-            <span className="absolute inset-0 rounded-full bg-[#0068FF] opacity-30 animate-ping" style={{ animationDuration: '2.6s' }} />
-            <span className="relative font-extrabold text-[15px] tracking-tight leading-none">
-              Zalo
-            </span>
+            <span className="font-extrabold text-[13px] tracking-tight leading-none">Zalo</span>
           </motion.button>
         </div>
 
-        {/* 2. MESSENGER BUTTON (Matches reference image: White circle + gradient bubble + lightning bolt) */}
+        {/* 2. MESSENGER */}
         <div
           className="relative flex items-center"
           onMouseEnter={() => setHoveredId('messenger')}
@@ -85,27 +77,25 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
           <AnimatePresence>
             {hoveredId === 'messenger' && (
               <motion.div
-                initial={{ opacity: 0, x: 14, scale: 0.9 }}
+                initial={{ opacity: 0, x: 10, scale: 0.94 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 10, scale: 0.92 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                className="mr-3 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0088FF] via-[#A033FF] to-[#FF5280] text-white text-xs font-bold shadow-lg whitespace-nowrap"
+                exit={{ opacity: 0, x: 8, scale: 0.94 }}
+                transition={{ duration: 0.18 }}
+                className="mr-3 px-3 py-1.5 rounded-lg bg-[#17324d] text-white text-xs font-semibold shadow-md whitespace-nowrap"
               >
-                Facebook Messenger 24/7
+                Facebook Messenger
               </motion.div>
             )}
           </AnimatePresence>
 
           <motion.button
             onClick={() => setActiveChat(activeChat === 'messenger' ? null : 'messenger')}
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 3.2, delay: 0.4, repeat: Infinity, ease: 'easeInOut' }}
-            whileHover={{ scale: 1.14, rotate: [3, -3, 2, 0] }}
-            whileTap={{ scale: 0.92 }}
-            className="relative w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_8px_24px_rgba(23,50,77,0.16)] border border-[#dfe6f0] cursor-pointer"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_6px_20px_rgba(23,50,77,0.14)] border border-[#dfe6f0] cursor-pointer"
             aria-label="Liên hệ Messenger"
           >
-            <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
+            <svg width="26" height="26" viewBox="0 0 36 36" fill="none" aria-hidden="true">
               <defs>
                 <linearGradient id="msgrGrad" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#0099FF" />
@@ -126,7 +116,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
           </motion.button>
         </div>
 
-        {/* 3. HOTLINE 1900 6868 BUTTON (Matches user choice A2: Orange #ff641f phone button) */}
+        {/* 3. HOTLINE */}
         <div
           className="relative flex items-center"
           onMouseEnter={() => setHoveredId('hotline')}
@@ -135,46 +125,43 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
           <AnimatePresence>
             {hoveredId === 'hotline' && (
               <motion.div
-                initial={{ opacity: 0, x: 14, scale: 0.9 }}
+                initial={{ opacity: 0, x: 10, scale: 0.94 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 10, scale: 0.92 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                className="mr-3 px-3.5 py-2 rounded-xl bg-[#ff641f] text-white text-xs font-bold shadow-lg whitespace-nowrap"
+                exit={{ opacity: 0, x: 8, scale: 0.94 }}
+                transition={{ duration: 0.18 }}
+                className="mr-3 px-3 py-1.5 rounded-lg bg-[#ff641f] text-white text-xs font-semibold shadow-md whitespace-nowrap"
               >
-                Đường dây nóng: 1900 6868
+                Tổng đài: 1900 6868
               </motion.div>
             )}
           </AnimatePresence>
 
           <motion.button
             onClick={() =>
-              onQuickToast?.('📞 Đang kết nối tổng đài chăm sóc thú cưng 1900 6868 (Miễn phí cước)...')
+              onQuickToast?.('Tổng đài tư vấn PetHub: 1900 6868 (8:00 – 21:00 mỗi ngày).')
             }
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 2.8, delay: 0.8, repeat: Infinity, ease: 'easeInOut' }}
-            whileHover={{ scale: 1.14, rotate: [-6, 6, -6, 6, 0] }}
-            whileTap={{ scale: 0.92 }}
-            className="relative w-14 h-14 rounded-full bg-[#ff641f] text-white flex items-center justify-center shadow-[0_8px_24px_rgba(255,100,31,0.42)] cursor-pointer border-2 border-white/25"
-            aria-label="Gọi Hotline 1900 6868"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="w-12 h-12 rounded-full bg-[#ff641f] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(255,100,31,0.3)] cursor-pointer border-2 border-white"
+            aria-label="Gọi tổng đài 1900 6868"
           >
-            <span className="absolute inset-0 rounded-full bg-[#ff641f] opacity-25 animate-ping" style={{ animationDuration: '2.2s' }} />
-            <Phone className="w-6 h-6 fill-white text-white relative" />
+            <Phone className="w-5 h-5" />
           </motion.button>
         </div>
       </div>
 
-      {/* Interactive Quick Chat Popup when clicking Zalo or Messenger */}
+      {/* Quick Chat Popup */}
       <AnimatePresence>
         {activeChat && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.9 }}
+            initial={{ opacity: 0, y: 18, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 360, damping: 26 }}
-            className="fixed right-24 bottom-8 z-50 w-[340px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_20px_50px_rgba(23,50,77,0.22)] overflow-hidden"
+            exit={{ opacity: 0, y: 18, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed right-4 sm:right-20 bottom-20 sm:bottom-6 z-50 w-[calc(100vw-2rem)] max-w-[330px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_20px_48px_rgba(23,50,77,0.18)] overflow-hidden"
           >
             <div
-              className={`px-4 py-3.5 text-white flex items-center justify-between ${
+              className={`px-4 py-3 text-white flex items-center justify-between ${
                 activeChat === 'zalo'
                   ? 'bg-[#0068FF]'
                   : 'bg-gradient-to-r from-[#0088FF] via-[#A033FF] to-[#FF5280]'
@@ -186,37 +173,36 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
                 </div>
                 <div>
                   <div className="text-xs font-bold flex items-center gap-1.5">
-                    PetHub Việt Nam Official
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>PetHub Hỗ Trợ</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                   </div>
                   <div className="text-[10px] text-white/85 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block" />
-                    Thường trả lời ngay lập tức
+                    <span>Trực tuyến 24/7</span>
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setActiveChat(null)}
                 className="p-1 rounded-lg hover:bg-white/20 transition cursor-pointer"
+                aria-label="Đóng hộp chat"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 h-56 overflow-y-auto space-y-2.5 bg-[#f8faff]">
+            <div className="p-3.5 h-52 overflow-y-auto space-y-2.5 bg-[#f8faff]">
               {messages.map((m, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
                   className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
                     m.from === 'bot'
-                      ? 'bg-white text-[#17324d] border border-[#dfe6f0] shadow-xs'
+                      ? 'bg-white text-[#17324d] border border-[#dfe6f0]'
                       : 'bg-[#0874e8] text-white ml-auto'
                   }`}
                 >
                   {m.text}
-                </motion.div>
+                </div>
               ))}
             </div>
 
@@ -228,12 +214,13 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Nhập câu hỏi cho PetHub..."
+                placeholder="Nhập câu hỏi tư vấn..."
                 className="flex-1 text-xs px-3 py-2 rounded-lg bg-[#f3f7ff] text-[#17324d] focus:outline-none focus:ring-2 focus:ring-[#0874e8]"
               />
               <button
                 type="submit"
                 className="p-2 rounded-lg bg-[#0874e8] text-white hover:bg-[#1464f4] transition cursor-pointer"
+                aria-label="Gửi tin nhắn"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

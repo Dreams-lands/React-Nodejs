@@ -1,22 +1,26 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ArrowRight } from 'lucide-react';
-import type { PetCardItem } from '../data/mockData';
+import { Heart, ArrowRight, Star, ShoppingBag } from 'lucide-react';
+import type { ProductItem } from '../data/mockData';
 
 interface TiltCardProps {
-  item: PetCardItem;
+  item: ProductItem;
   index: number;
   isLiked: boolean;
+  isLoggedIn: boolean;
   onToggleLike: (id: string) => void;
-  onCardAction: (item: PetCardItem) => void;
+  onViewProduct: (item: ProductItem) => void;
+  onAddToCart: (item: ProductItem) => void;
 }
 
 export const TiltCard: React.FC<TiltCardProps> = ({
   item,
   index,
   isLiked,
+  isLoggedIn,
   onToggleLike,
-  onCardAction,
+  onViewProduct,
+  onAddToCart,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, hovered: false });
@@ -26,8 +30,8 @@ export const TiltCard: React.FC<TiltCardProps> = ({
     const rect = cardRef.current.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
-    const rotateY = (px - 0.5) * 12; // -6deg to +6deg
-    const rotateX = (0.5 - py) * 12; // -6deg to +6deg
+    const rotateY = (px - 0.5) * 8;
+    const rotateX = (0.5 - py) * 8;
     setTilt({
       rotateX,
       rotateY,
@@ -42,109 +46,133 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   };
 
   return (
-    <motion.div
+    <motion.article
       ref={cardRef}
-      initial={{ opacity: 0, y: 26, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.45,
-        delay: index * 0.06,
-        type: 'spring',
-        stiffness: 260,
-        damping: 22,
+        duration: 0.35,
+        delay: Math.min(index * 0.05, 0.25),
+        ease: [0.22, 1, 0.36, 1],
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{
-        transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) translateZ(${
-          tilt.hovered ? '8px' : '0px'
+        transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) translateY(${
+          tilt.hovered ? '-2px' : '0px'
         })`,
         transition: tilt.hovered
-          ? 'transform 0.08s ease-out, box-shadow 0.25s ease'
-          : 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease',
+          ? 'transform 0.1s ease-out, box-shadow 0.25s ease'
+          : 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease',
       }}
-      className="group relative bg-white rounded-[6px] border border-[#dfe6f0] overflow-hidden shadow-[0_2px_10px_rgba(23,50,77,0.04)] hover:shadow-[0_20px_42px_rgba(8,116,232,0.16)] hover:border-[#2161ed]/50 flex flex-col"
+      className="group relative bg-white rounded-2xl border border-[#dfe6f0] overflow-hidden shadow-[0_2px_10px_rgba(23,50,77,0.03)] hover:shadow-[0_16px_36px_rgba(8,116,232,0.1)] hover:border-[#0874e8]/40 flex flex-col"
     >
-      {/* Dynamic Mouse-Tracking Spotlight Glare Overlay */}
+      {/* Subtle Mouse-Tracking Glare */}
       <div
         className="pointer-events-none absolute inset-0 z-20 transition-opacity duration-300"
         style={{
           opacity: tilt.hovered ? 1 : 0,
-          background: `radial-gradient(360px circle at ${tilt.glareX}% ${tilt.glareY}%, rgba(255, 255, 255, 0.32), rgba(8, 116, 232, 0.05) 45%, transparent 80%)`,
+          background: `radial-gradient(320px circle at ${tilt.glareX}% ${tilt.glareY}%, rgba(255, 255, 255, 0.26), rgba(8, 116, 232, 0.03) 45%, transparent 80%)`,
         }}
       />
 
-      {/* Image Container (Matches Figma 332x216 ratio & pastel backdrop) */}
+      {/* Image Container */}
       <div
-        className="relative h-[216px] w-full overflow-hidden"
+        onClick={() => onViewProduct(item)}
+        className="relative h-[220px] w-full overflow-hidden cursor-pointer"
         style={{ backgroundColor: item.bgTone }}
       >
         <img
           src={item.image}
           alt={item.name}
-          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
         />
 
-        {/* Top-left Status Badge (Exact Figma style: white background, #35609a 10px Bold uppercase) */}
-        <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-[3px] bg-white/95 backdrop-blur-xs shadow-xs">
-          <span className="text-[10px] font-bold tracking-wider uppercase text-[#35609a] block leading-none">
-            {item.badge}
-          </span>
-        </div>
+        {item.badge && (
+          <div className="absolute top-3.5 left-3.5 z-10 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-[#dfe6f0]/80 shadow-xs">
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[#17324d] block leading-none">
+              {item.badge}
+            </span>
+          </div>
+        )}
 
-        {/* Top-right Save/Like Button with Spring Pop */}
         <motion.button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggleLike(item.id);
           }}
-          whileHover={{ scale: 1.18 }}
-          whileTap={{ scale: 0.82 }}
-          className="absolute top-3 right-3 z-30 w-[30px] h-[30px] rounded-[4px] bg-white/95 shadow-xs flex items-center justify-center cursor-pointer transition-colors hover:bg-white"
-          aria-label="Yêu thích"
+          whileHover={{ scale: 1.12 }}
+          whileTap={{ scale: 0.88 }}
+          className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-white/95 border border-[#dfe6f0]/80 shadow-xs flex items-center justify-center cursor-pointer transition-colors hover:bg-white"
+          aria-label={isLiked ? 'Bỏ khỏi yêu thích' : 'Lưu sản phẩm yêu thích'}
         >
           <Heart
             className={`w-4 h-4 transition-colors duration-200 ${
-              isLiked ? 'fill-[#ff4757] text-[#ff4757]' : 'text-[#2161ed]'
+              isLiked ? 'fill-[#ff641f] text-[#ff641f]' : 'text-[#587085]'
             }`}
           />
         </motion.button>
       </div>
 
-      {/* Card Body (Exact Figma spacing & typography) */}
-      <div className="p-4 flex flex-col flex-1 justify-between bg-white relative z-30">
-        <div>
-          <div className="flex items-baseline justify-between gap-2 mb-1">
-            <h3 className="text-[21px] font-bold text-[#2161ed] group-hover:text-[#0874e8] transition-colors leading-tight">
-              {item.name}
-            </h3>
-            <span className="text-[18px] font-bold text-[#2161ed] shrink-0">
-              {item.price}
+      {/* Card Body */}
+      <div className="p-5 flex flex-col flex-1 justify-between bg-white relative z-30">
+        <div onClick={() => onViewProduct(item)} className="cursor-pointer">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#0874e8]">
+              {item.brand}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#587085] tabular-nums">
+              <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
+              <span>{item.rating.toFixed(1)}</span>
+              <span className="text-[#94a3b8]">({item.reviewCount})</span>
             </span>
           </div>
 
-          <p className="text-[14px] font-semibold text-[#35609a] mb-1">
-            {item.breed}
-          </p>
-          <p className="text-[12px] text-[#6d7d94] mb-4 line-clamp-1">
-            {item.meta}
+          <h3 className="text-[16px] font-bold text-[#17324d] group-hover:text-[#0874e8] transition-colors leading-snug line-clamp-2 mb-1.5">
+            {item.name}
+          </h3>
+
+          <p className="text-[12px] text-[#587085] line-clamp-1 mb-4">
+            {item.packSize}
           </p>
         </div>
 
-        {/* Outlined Figma Button with TikTok Shimmer Fill Effect on Hover */}
-        <motion.button
-          type="button"
-          onClick={() => onCardAction(item)}
-          whileTap={{ scale: 0.97 }}
-          className="relative overflow-hidden w-full h-[42px] rounded-[4px] border border-[#35609a]/60 group-hover:border-[#2161ed] bg-white group-hover:bg-[#2161ed] text-[#2161ed] group-hover:text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer"
-        >
-          {/* Diagonal Light Sweep on Hover */}
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-          <span className="relative z-10">{item.ctaLabel}</span>
-          <ArrowRight className="w-4 h-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1.5" />
-        </motion.button>
+        <div className="pt-3.5 border-t border-[#dfe6f0] flex items-center justify-between gap-3">
+          <div className="tabular-nums">
+            <div className="text-[18px] font-extrabold text-[#17324d] leading-none">
+              {item.price}
+            </div>
+            {item.originalPrice && (
+              <div className="text-[11px] text-[#94a3b8] line-through mt-1">
+                {item.originalPrice}
+              </div>
+            )}
+          </div>
+
+          {isLoggedIn ? (
+            <motion.button
+              type="button"
+              onClick={() => onAddToCart(item)}
+              whileTap={{ scale: 0.96 }}
+              className="h-9 px-3.5 rounded-lg bg-[#0874e8] hover:bg-[#1464f4] text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Thêm vào giỏ</span>
+            </motion.button>
+          ) : (
+            <motion.button
+              type="button"
+              onClick={() => onViewProduct(item)}
+              whileTap={{ scale: 0.96 }}
+              className="h-9 px-3.5 rounded-lg border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] hover:text-[#0874e8] font-semibold text-[12px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            >
+              <span>Xem chi tiết</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          )}
+        </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 };

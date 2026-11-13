@@ -4,35 +4,41 @@ import {
   Search,
   User,
   ShoppingCart,
-  Menu,
-  ChevronDown,
   Headphones,
   Mail,
   ShieldCheck,
   PawPrint,
-  ShoppingBag,
-  Sparkles,
+  LogOut,
+  LogIn,
 } from 'lucide-react';
-import type { PageId } from '../data/mockData';
+import type { PageId, ProductCategory } from '../data/mockData';
 
 interface FullHeaderProps {
   currentPage: PageId;
+  activeCatalogCategory: 'all' | ProductCategory;
   onNavigate: (page: PageId) => void;
+  onSelectCategory: (cat: 'all' | ProductCategory) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  isLoggedIn: boolean;
+  userName: string;
+  onLogout: () => void;
   cartCount: number;
   cartTotal: string;
-  showFlashSale?: boolean;
 }
 
 export const PetHubHeader: React.FC<FullHeaderProps> = ({
   currentPage,
+  activeCatalogCategory,
   onNavigate,
+  onSelectCategory,
   searchQuery,
   onSearchChange,
+  isLoggedIn,
+  userName,
+  onLogout,
   cartCount,
   cartTotal,
-  showFlashSale,
 }) => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,203 +46,273 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-white border-b border-[#dfe6f0]">
-      {/* 1. Top Orange Announcement Bar (#ff641f, height 32px) */}
-      <div className="w-full h-8 bg-[#ff641f] text-white px-6 lg:px-16 flex items-center justify-between text-xs">
-        <p className="font-normal truncate">
-          Một chút tình yêu, được chuyển giao. Miễn phí vận chuyển cho đơn hàng từ 499.000₫
+    <header className="w-full bg-white sticky top-0 z-40 border-b border-[#dfe6f0]">
+      {/* 1. Top Announcement Bar */}
+      <div className="w-full h-8 bg-[#ff641f] text-white px-5 sm:px-8 lg:px-12 flex items-center justify-between text-[11px]">
+        <p className="font-medium truncate">
+          Miễn phí giao hàng toàn quốc cho đơn từ 499.000₫
         </p>
-        <div className="hidden md:flex items-center gap-3 text-[11px] font-semibold shrink-0">
-          <button onClick={() => onNavigate('search')} className="hover:underline cursor-pointer">
-            Cửa hàng của chúng tôi
-          </button>
-          <span className="opacity-50">|</span>
+        <div className="hidden md:flex items-center gap-4 font-semibold shrink-0">
           <button
-            onClick={() => onNavigate('checkout-success')}
+            onClick={() => onSelectCategory('all')}
             className="hover:underline cursor-pointer"
           >
-            Theo dõi đơn hàng của bạn
+            Sản phẩm
           </button>
-          <span className="opacity-50">|</span>
-          <span>VN/VN</span>
+          <span className="opacity-45">|</span>
+          <button
+            onClick={() => onNavigate('service')}
+            className="hover:underline cursor-pointer"
+          >
+            Dịch vụ Spa
+          </button>
+          {isLoggedIn && (
+            <>
+              <span className="opacity-45">|</span>
+              <button
+                onClick={() => onNavigate('cart')}
+                className="hover:underline cursor-pointer"
+              >
+                Giỏ hàng của tôi
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* 2. Main Header (height 98px) */}
-      <div className="max-w-[1440px] mx-auto h-[98px] px-6 lg:px-16 flex items-center justify-between gap-6 lg:gap-9">
-        {/* Brand Logo */}
-        <motion.button
-          onClick={() => onNavigate('home')}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-3 text-left cursor-pointer shrink-0 group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-[#fff2e9] flex items-center justify-center text-[#ff641f] group-hover:rotate-12 transition-transform duration-300">
-            <PawPrint className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-[31px] font-normal text-[#0874e8] leading-none tracking-tight">
-              pethub.
-            </div>
-            <div className="text-[9px] font-bold text-[#587085] tracking-wider uppercase mt-1">
-              VẬT NUÔI VUI VẺ. CHÚC BẠN VUI VẺ.
-            </div>
-          </div>
-        </motion.button>
-
-        {/* Live Search Box */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="flex-1 max-w-[680px] h-[46px] rounded-[4px] border-2 border-[#0874e8] bg-white flex items-center overflow-hidden focus-within:shadow-[0_0_0_4px_rgba(8,116,232,0.15)] transition-shadow"
-        >
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              onSearchChange(e.target.value);
-              if (currentPage !== 'search') onNavigate('search');
-            }}
-            placeholder="Tìm kiếm thức ăn, đồ chơi, nhãn hiệu và mọi thứ mà thú cưng của bạn yêu thích…"
-            className="flex-1 px-4 text-[13px] text-[#17324d] placeholder-[#587085] focus:outline-none"
-          />
+      {/* 2. Main Header */}
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-8 lg:px-12">
+        <div className="h-16 md:h-20 flex items-center justify-between gap-3 md:gap-6">
+          {/* Brand Logo */}
           <motion.button
-            type="submit"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.94 }}
-            className="w-[44px] h-[38px] mr-1 rounded-[3px] bg-[#0874e8] hover:bg-[#1464f4] text-white flex items-center justify-center cursor-pointer transition-colors"
-            aria-label="Tìm kiếm"
+            onClick={() => onNavigate('home')}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-2.5 text-left cursor-pointer shrink-0 group"
           >
-            <Search className="w-4 h-4" />
-          </motion.button>
-        </form>
-
-        {/* Account & Cart */}
-        <div className="flex items-center gap-6 shrink-0">
-          <motion.button
-            onClick={() => onNavigate('login')}
-            whileHover={{ y: -2 }}
-            className="flex items-center gap-2.5 text-left cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-full bg-[#eff5ff] flex items-center justify-center text-[#0874e8] group-hover:bg-[#0874e8] group-hover:text-white transition-colors">
-              <User className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center text-[#0874e8] group-hover:bg-[#0874e8] group-hover:text-white transition-colors">
+              <PawPrint className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[10px] text-[#587085]">Xin chào bố mẹ thú cưng</div>
-              <div className="text-[13px] font-bold text-[#17324d] group-hover:text-[#0874e8] transition-colors">
-                Tài khoản của tôi
+              <div className="text-[22px] sm:text-[26px] font-extrabold text-[#0874e8] leading-none tracking-tight">
+                pethub.
+              </div>
+              <div className="text-[9px] font-semibold text-[#587085] tracking-[0.12em] uppercase mt-1 hidden sm:block">
+                ĐỒ DÙNG &amp; CHĂM SÓC THÚ CƯNG
               </div>
             </div>
           </motion.button>
 
-          <motion.button
-            onClick={() => onNavigate('cart')}
-            whileHover={{ y: -2 }}
-            className="flex items-center gap-2.5 text-left cursor-pointer group"
+          {/* Desktop Search Box */}
+          <form
+            onSubmit={handleSearchSubmit}
+            className="hidden md:flex flex-1 min-w-0 max-w-[520px] h-11 rounded-xl border border-[#dfe6f0] bg-[#f8faff] items-center overflow-hidden focus-within:bg-white focus-within:border-[#0874e8] focus-within:shadow-[0_0_0_3px_rgba(8,116,232,0.12)] transition-all"
           >
-            <div className="relative w-9 h-9 rounded-full bg-[#eff5ff] flex items-center justify-center text-[#0874e8] group-hover:bg-[#0874e8] group-hover:text-white transition-colors">
-              <ShoppingCart className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#ff641f] text-white text-[10px] font-bold flex items-center justify-center">
-                {cartCount}
-              </span>
-            </div>
-            <div>
-              <div className="text-[10px] text-[#587085]">Giỏ hàng ({cartCount})</div>
-              <div className="text-[13px] font-bold text-[#17324d]">{cartTotal}</div>
-            </div>
-          </motion.button>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+                if (currentPage !== 'search') onNavigate('search');
+              }}
+              placeholder="Tìm thức ăn, nệm ngủ, balo, sữa tắm hoặc spa..."
+              className="flex-1 min-w-0 px-4 bg-transparent text-[13px] text-[#17324d] placeholder-[#647083] focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="w-10 h-9 mr-1 rounded-lg bg-[#0874e8] hover:bg-[#1464f4] text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              aria-label="Tìm kiếm"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </form>
+
+          {/* Account & Auth-gated Cart */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {isLoggedIn ? (
+              <>
+                <div className="flex items-center gap-2 pr-1">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#eff5ff] flex items-center justify-center text-[#0874e8]">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className="text-[10px] text-[#587085]">Hội viên PetHub</div>
+                    <div className="text-[13px] font-bold text-[#17324d]">{userName}</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onNavigate('cart')}
+                  className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#eff5ff] hover:bg-[#0874e8] text-[#17324d] hover:text-white transition-colors cursor-pointer group"
+                >
+                  <div className="relative flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4 text-[#0874e8] group-hover:text-white transition-colors" />
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-[#ff641f] text-white text-[10px] font-bold leading-none tabular-nums">
+                      {cartCount}
+                    </span>
+                  </div>
+                  <div className="hidden md:block text-left">
+                    <div className="text-[12px] font-bold tabular-nums">{cartTotal}</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={onLogout}
+                  className="h-9 px-2.5 sm:px-3 rounded-lg border border-[#dfe6f0] hover:border-[#ff641f] text-[#587085] hover:text-[#ff641f] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Đăng xuất"
+                  aria-label="Đăng xuất"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Đăng xuất</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => onNavigate('login')}
+                  className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] hover:text-[#0874e8] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Đăng nhập</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('register')}
+                  className="hidden sm:flex h-10 px-4 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white text-[13px] font-semibold items-center justify-center cursor-pointer transition-colors"
+                >
+                  Đăng ký
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Mobile Search Box */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="md:hidden pb-3"
+        >
+          <div className="h-10 rounded-xl border border-[#dfe6f0] bg-[#f8faff] flex items-center overflow-hidden focus-within:bg-white focus-within:border-[#0874e8]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+                if (currentPage !== 'search') onNavigate('search');
+              }}
+              placeholder="Tìm thức ăn, nệm ngủ, balo, spa..."
+              className="flex-1 min-w-0 px-3.5 bg-transparent text-[13px] text-[#17324d] placeholder-[#647083] focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="w-9 h-8 mr-1 rounded-lg bg-[#0874e8] text-white flex items-center justify-center cursor-pointer shrink-0"
+              aria-label="Tìm kiếm"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* 3. Mega-Menu Navigation Bar (#0874e8, height 50px) */}
-      <div className="w-full h-[50px] bg-[#0874e8] text-white">
-        <div className="max-w-[1440px] mx-auto h-full px-6 lg:px-16 flex items-center justify-between">
-          <div className="flex items-center gap-7 text-[14px]">
+      {/* 3. Clean Navigation Bar */}
+      <nav className="w-full h-11 bg-[#0874e8] text-white" aria-label="Điều hướng chính">
+        <div className="max-w-[1320px] mx-auto h-full px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0 flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] overflow-x-auto no-scrollbar">
             <button
               onClick={() => onNavigate('home')}
-              className={`flex items-center gap-1.5 font-bold cursor-pointer py-1.5 px-3 rounded-md transition ${
-                currentPage === 'home' ? 'bg-white/20' : 'hover:bg-white/10'
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'home' ? 'bg-white/20' : 'hover:bg-white/10 text-white/90'
               }`}
             >
-              <span>Trang chủ</span>
+              Trang chủ
             </button>
 
             <button
-              onClick={() => onNavigate('search')}
-              className={`flex items-center gap-2 font-bold cursor-pointer py-1.5 px-2.5 rounded-md transition ${
-                currentPage === 'search' ? 'bg-white/20' : 'hover:bg-white/10'
+              onClick={() => onSelectCategory('all')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'search' && activeCatalogCategory === 'all'
+                  ? 'bg-white/20'
+                  : 'hover:bg-white/10 text-white/90'
               }`}
             >
-              <Menu className="w-4 h-4" />
-              <span>Mua sắm tất cả</span>
+              Sản phẩm
             </button>
 
             <button
-              onClick={() => onNavigate('dogs')}
-              className={`flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 rounded-md transition ${
-                currentPage === 'dogs' ? 'bg-white/20 font-bold' : 'hover:bg-white/10 font-normal'
+              onClick={() => onSelectCategory('food')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'search' && activeCatalogCategory === 'food'
+                  ? 'bg-white/20 font-semibold'
+                  : 'hover:bg-white/10 text-white/90'
               }`}
             >
-              <span>Chó cưng</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              Dinh dưỡng
             </button>
 
             <button
-              onClick={() => onNavigate('cats')}
-              className={`flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 rounded-md transition ${
-                currentPage === 'cats' ? 'bg-white/20 font-bold' : 'hover:bg-white/10 font-normal'
+              onClick={() => onSelectCategory('bed')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'search' && activeCatalogCategory === 'bed'
+                  ? 'bg-white/20 font-semibold'
+                  : 'hover:bg-white/10 text-white/90'
               }`}
             >
-              <span>Mèo cưng</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              Nệm ngủ
+            </button>
+
+            <button
+              onClick={() => onSelectCategory('backpack')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'search' && activeCatalogCategory === 'backpack'
+                  ? 'bg-white/20 font-semibold'
+                  : 'hover:bg-white/10 text-white/90'
+              }`}
+            >
+              Balo &amp; Phụ kiện
             </button>
 
             <button
               onClick={() => onNavigate('service')}
-              className={`flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 rounded-md transition ${
-                currentPage === 'service' ? 'bg-white/20 font-bold' : 'hover:bg-white/10 font-normal'
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
+                currentPage === 'service'
+                  ? 'bg-white/20 font-semibold'
+                  : 'hover:bg-white/10 text-white/90'
               }`}
             >
-              <span>Dịch vụ Spa & Hotel</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              Spa &amp; Khách sạn
             </button>
-
-            {showFlashSale && (
-              <button
-                onClick={() => onNavigate('search')}
-                className="hidden md:flex items-center gap-1.5 text-[#ffb547] font-bold cursor-pointer hover:opacity-90"
-              >
-                <span>Giảm giá chớp nhoáng</span>
-                <Sparkles className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-[13px] font-semibold">
-            <Headphones className="w-4 h-4" />
-            <span>Đường dây chăm sóc: 1900 6868</span>
+          <div className="hidden lg:flex items-center gap-2 text-[12px] font-semibold text-white/95 shrink-0">
+            <Headphones className="w-3.5 h-3.5" />
+            <span>Hotline: 1900 6868</span>
           </div>
         </div>
-      </div>
+      </nav>
     </header>
   );
 };
 
-export const PetHubFooter: React.FC<{ onNavigate: (p: PageId) => void }> = ({ onNavigate }) => {
+export const PetHubFooter: React.FC<{
+  onNavigate: (p: PageId) => void;
+  onSelectCategory: (cat: 'all' | ProductCategory) => void;
+  isLoggedIn: boolean;
+  onQuickToast?: (msg: string) => void;
+}> = ({ onNavigate, onSelectCategory, isLoggedIn, onQuickToast }) => {
   return (
     <footer className="w-full bg-white mt-12">
-      {/* Newsletter Banner (#0874e8) */}
-      <div className="w-full bg-[#0874e8] py-7 px-6 lg:px-16">
-        <div className="max-w-[1312px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+      {/* Newsletter Banner */}
+      <div className="w-full bg-[#0874e8] py-8 px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1320px] mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex items-center gap-4 text-white">
             <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-[20px] lg:text-[23px] font-extrabold leading-snug">
-                Những điều tốt đẹp cho bạn. Những điều tuyệt vời cho thú cưng của bạn.
+              <h3 className="text-[18px] lg:text-[20px] font-bold leading-snug">
+                Nhận đặc quyền hội viên &amp; cẩm nang chăm sóc thú cưng.
               </h3>
-              <p className="text-[13px] text-white/85">
-                Tham gia gói để nhận các ưu đãi độc quyền, mẹo chăm sóc thú cưng và thêm một chút niềm vui.
+              <p className="text-[13px] text-white/85 mt-0.5">
+                Cập nhật bộ sưu tập mới và ưu đãi dành riêng cho thành viên PetHub.
               </p>
             </div>
           </div>
@@ -244,152 +320,138 @@ export const PetHubFooter: React.FC<{ onNavigate: (p: PageId) => void }> = ({ on
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onNavigate('register');
+              if (isLoggedIn) {
+                onQuickToast?.('Đã đăng ký nhận bản tin hội viên PetHub.');
+              } else {
+                onNavigate('register');
+              }
             }}
-            className="w-full lg:w-[440px] h-[46px] bg-white rounded-[4px] p-1 flex items-center shrink-0"
+            className="w-full lg:w-[420px] h-11 bg-white rounded-xl p-1 flex items-center shrink-0"
           >
             <input
               type="email"
-              placeholder="Địa chỉ email của bạn"
-              className="flex-1 px-3 text-[12px] text-[#17324d] placeholder-[#587085] focus:outline-none"
+              placeholder="Nhập địa chỉ email của bạn"
+              className="flex-1 px-3.5 text-[12px] text-[#17324d] placeholder-[#647083] focus:outline-none"
             />
-            <motion.button
+            <button
               type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.96 }}
-              className="h-full px-4 rounded-[3px] bg-[#ff6b24] hover:bg-[#ff641f] text-white text-[12px] font-bold cursor-pointer transition"
+              className="h-full px-4 rounded-lg bg-[#ff641f] hover:bg-[#ee5e17] text-white text-[12px] font-bold cursor-pointer transition-colors"
             >
-              Tham gia nhóm →
-            </motion.button>
+              Đăng ký ngay
+            </button>
           </form>
         </div>
       </div>
 
       {/* Main 4-Column Footer */}
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-16 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 border-b border-[#dfe6f0]">
+      <div className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 border-b border-[#dfe6f0]">
         <div>
-          <div className="flex items-center gap-2.5 mb-3">
-            <PawPrint className="w-6 h-6 text-[#ff641f]" />
-            <span className="text-[29px] text-[#0874e8] leading-none">pethub.</span>
+          <div className="flex items-center gap-2 mb-3">
+            <PawPrint className="w-5 h-5 text-[#ff641f]" />
+            <span className="text-[24px] font-extrabold text-[#0874e8] leading-none">pethub.</span>
           </div>
           <p className="text-[13px] text-[#587085] leading-relaxed mb-4">
-            Cuộc sống hàng ngày tốt đẹp hơn cho thú cưng ở Việt Nam. Những thứ cần thiết cao cấp.
-            Chăm sóc chuyên nghiệp. Tất cả trong một trung tâm.
+            Hệ thống đồ dùng thiết yếu, dinh dưỡng tuyển chọn và dịch vụ chăm sóc thú cưng chuẩn y khoa.
           </p>
-          <p className="text-[12px] text-[#17324d] leading-relaxed whitespace-pre-line mb-4">
-            {'1900 6868 • hello@pethub.vn\n128 Nguyễn Trãi, Quận 1, TP.HCM\nMở cửa hàng ngày, 8:00–21:00'}
+          <p className="text-[12px] text-[#17324d] leading-relaxed whitespace-pre-line">
+            {'1900 6868 • hello@pethub.vn\n128 Nguyễn Trãi, Quận 1, TP.HCM\nMở cửa: 8:00 – 21:00 mỗi ngày'}
           </p>
-          <div className="flex items-center gap-2">
-            {['Facebook', 'Instagram', 'Zalo'].map((soc) => (
-              <span
-                key={soc}
-                className="px-2.5 py-1 rounded border border-[#dfe6f0] text-[10px] font-bold text-[#2161ed] hover:bg-[#eff5ff] cursor-pointer transition"
-              >
-                {soc}
-              </span>
-            ))}
-          </div>
         </div>
 
         <div>
-          <h4 className="text-[14px] font-extrabold text-[#17324d] mb-4">
-            Khám phá trung tâm thú cưng
+          <h4 className="text-[13px] font-bold text-[#17324d] uppercase tracking-wider mb-4">
+            Danh mục cửa hàng
           </h4>
-          <ul className="space-y-2.5 text-[12px] text-[#587085]">
+          <ul className="space-y-2.5 text-[13px] text-[#587085]">
             <li>
-              <button onClick={() => onNavigate('dogs')} className="hover:text-[#0874e8] cursor-pointer">
-                Về chúng tôi
+              <button onClick={() => onSelectCategory('food')} className="hover:text-[#0874e8] cursor-pointer">
+                Thức ăn dinh dưỡng
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate('search')} className="hover:text-[#0874e8] cursor-pointer">
-                Cửa hàng của chúng tôi
+              <button onClick={() => onSelectCategory('bed')} className="hover:text-[#0874e8] cursor-pointer">
+                Nệm &amp; Không gian nghỉ
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate('search')} className="hover:text-[#0874e8] cursor-pointer">
-                Spa & Chăm sóc thú cưng
+              <button onClick={() => onSelectCategory('backpack')} className="hover:text-[#0874e8] cursor-pointer">
+                Túi &amp; Balo di chuyển
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate('cats')} className="hover:text-[#0874e8] cursor-pointer">
-                Khách sạn thú cưng
+              <button onClick={() => onSelectCategory('hygiene')} className="hover:text-[#0874e8] cursor-pointer">
+                Sữa tắm &amp; Vệ sinh
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate('profile')} className="hover:text-[#0874e8] cursor-pointer">
-                Tạp chí chăm sóc thú cưng
+              <button onClick={() => onNavigate('service')} className="hover:text-[#0874e8] cursor-pointer">
+                Spa &amp; Khách sạn 5 sao
               </button>
             </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-[14px] font-extrabold text-[#17324d] mb-4">Hỗ trợ khách hàng</h4>
-          <ul className="space-y-2.5 text-[12px] text-[#587085]">
+          <h4 className="text-[13px] font-bold text-[#17324d] uppercase tracking-wider mb-4">
+            Hỗ trợ hội viên
+          </h4>
+          <ul className="space-y-2.5 text-[13px] text-[#587085]">
             <li>
               <button onClick={() => onNavigate('login')} className="hover:text-[#0874e8] cursor-pointer">
-                Tài khoản & Đăng nhập
+                Đăng nhập tài khoản
               </button>
             </li>
             <li>
               <button onClick={() => onNavigate('register')} className="hover:text-[#0874e8] cursor-pointer">
-                Đăng ký hội viên PetHub
+                Đăng ký hội viên mới
               </button>
             </li>
+            {isLoggedIn && (
+              <li>
+                <button onClick={() => onNavigate('cart')} className="hover:text-[#0874e8] cursor-pointer">
+                  Giỏ hàng &amp; Thanh toán
+                </button>
+              </li>
+            )}
             <li>
-              <button
-                onClick={() => onNavigate('checkout-success')}
-                className="hover:text-[#0874e8] cursor-pointer"
-              >
-                Thông tin giao hàng
-              </button>
+              <span className="text-[#587085]">Chính sách đổi trả 7 ngày</span>
             </li>
             <li>
-              <button
-                onClick={() => onNavigate('checkout-fail')}
-                className="hover:text-[#0874e8] cursor-pointer"
-              >
-                Trả lại và hoàn tiền
-              </button>
-            </li>
-            <li>
-              <span className="hover:text-[#0874e8] cursor-pointer">Chính sách bảo mật</span>
+              <span className="text-[#587085]">Bảo mật thông tin khách hàng</span>
             </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-[14px] font-extrabold text-[#17324d] mb-4">
-            Thanh toán dễ dàng, an toàn
+          <h4 className="text-[13px] font-bold text-[#17324d] uppercase tracking-wider mb-4">
+            Thanh toán an toàn
           </h4>
           <div className="flex items-center gap-2 mb-3">
-            <span className="px-3 py-1.5 rounded border border-[#dfe6f0] text-[13px] font-extrabold text-[#0874e8]">
-              VnPay
+            <span className="px-3 py-1.5 rounded-lg border border-[#dfe6f0] text-[12px] font-bold text-[#0874e8]">
+              VNPay
             </span>
-            <span className="px-3 py-1.5 rounded border border-[#dfe6f0] text-[13px] font-extrabold text-[#b7247d]">
+            <span className="px-3 py-1.5 rounded-lg border border-[#dfe6f0] text-[12px] font-bold text-[#b7247d]">
               MoMo
             </span>
-            <span className="px-3 py-1.5 rounded border border-[#dfe6f0] text-[13px] font-extrabold text-[#17324d]">
+            <span className="px-3 py-1.5 rounded-lg border border-[#dfe6f0] text-[12px] font-bold text-[#17324d]">
               COD
             </span>
           </div>
-          <p className="text-[11px] text-[#587085] leading-relaxed mb-4">
-            Thanh toán trực tuyến hoặc bằng tiền mặt khi giao hàng. Tất cả giá đều được tính bằng
-            đồng Việt Nam (₫).
+          <p className="text-[12px] text-[#587085] leading-relaxed mb-4">
+            Thanh toán trực tuyến bảo mật hoặc nhận hàng thanh toán. Giá niêm yết đã bao gồm VAT.
           </p>
-          <div className="flex items-center gap-2.5 text-[11px] text-[#17324d]">
-            <ShieldCheck className="w-5 h-5 text-[#0874e8] shrink-0" />
-            <span>Sản phẩm đích thực. Thú cưng hạnh phúc, được đảm bảo.</span>
+          <div className="flex items-center gap-2 text-[12px] font-medium text-[#17324d]">
+            <ShieldCheck className="w-4 h-4 text-[#0874e8] shrink-0" />
+            <span>100% chính hãng · Kiểm định minh bạch</span>
           </div>
         </div>
       </div>
 
       {/* Bottom Copyright */}
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-16 py-5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#587085] gap-2">
-        <span>© 2026 Pet Hub Việt Nam. Mọi quyền được bảo lưu.</span>
-        <span className="text-[#35609a]">
-          Dành cho những người làm cho cuộc sống của bạn tươi sáng hơn. ♡
+      <div className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-center justify-between text-[12px] text-[#587085] gap-2">
+        <span>© 2026 PetHub Việt Nam. Mọi quyền được bảo lưu.</span>
+        <span className="text-[#17324d] font-medium">
+          Chăm sóc chuẩn mực cho người bạn bốn chân.
         </span>
       </div>
     </footer>
@@ -397,77 +459,64 @@ export const PetHubFooter: React.FC<{ onNavigate: (p: PageId) => void }> = ({ on
 };
 
 /* ============================================================================
- * COMPACT HEADER & FOOTER ("NHÀ THÚ CƯNG")
- * Used on: Đăng nhập, Đăng ký, Thanh toán thành công, Thanh toán thất bại
+ * COMPACT HEADER & FOOTER (Auth & Checkout Pages)
  * ============================================================================ */
 export const CompactHeader: React.FC<{
   onNavigate: (p: PageId) => void;
-  onSearchSubmit?: (q: string) => void;
-}> = ({ onNavigate }) => {
+  isLoggedIn: boolean;
+}> = ({ onNavigate, isLoggedIn }) => {
   return (
     <header className="w-full bg-white border-b border-[#dfe6f0]">
-      {/* Top bar (#1464f4, height 32px) */}
-      <div className="w-full h-8 bg-[#1464f4] text-white flex items-center justify-center text-[12px] font-medium">
-        Yêu thương đúng cách. Chăm sóc mỗi ngày.
+      <div className="w-full h-8 bg-[#0874e8] text-white flex items-center justify-center text-[11px] font-medium">
+        Chăm sóc đúng cách. An tâm mỗi ngày.
       </div>
 
-      {/* Main Nav (height 96px, padding 80px) */}
-      <div className="max-w-[1440px] mx-auto h-24 px-6 lg:px-20 flex items-center justify-between gap-8">
-        <motion.button
-          onClick={() => onNavigate('dogs')}
-          whileHover={{ scale: 1.02 }}
-          className="flex items-center gap-3 text-left cursor-pointer shrink-0"
+      <div className="max-w-[1320px] mx-auto h-20 px-5 sm:px-8 lg:px-12 flex items-center justify-between gap-6">
+        <button
+          onClick={() => onNavigate('home')}
+          className="flex items-center gap-2.5 text-left cursor-pointer shrink-0 group"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#fff2e9] flex items-center justify-center text-[#ff641f]">
-            <PawPrint className="w-6 h-6" />
+          <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center text-[#0874e8] group-hover:bg-[#0874e8] group-hover:text-white transition-colors">
+            <PawPrint className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[20px] font-extrabold text-[#1464f4] tracking-tight leading-none">
-              NHÀ THÚ CƯNG
+            <div className="text-[24px] font-extrabold text-[#0874e8] tracking-tight leading-none">
+              pethub.
             </div>
-            <div className="text-[10px] font-semibold text-[#647083] tracking-widest uppercase mt-1">
-              TRỌN VẸN YÊU THƯƠNG
+            <div className="text-[9px] font-semibold text-[#587085] tracking-[0.12em] uppercase mt-1">
+              ĐỒ DÙNG &amp; DỊCH VỤ THÚ CƯNG
             </div>
           </div>
-        </motion.button>
+        </button>
 
-        <nav className="hidden md:flex items-center gap-7 text-[14px] font-medium text-[#17324d]">
-          <button
-            onClick={() => onNavigate('dogs')}
-            className="hover:text-[#1464f4] transition cursor-pointer"
-          >
-            Thú cưng
+        <nav className="hidden md:flex items-center gap-7 text-[13px] font-semibold text-[#17324d]">
+          <button onClick={() => onNavigate('home')} className="hover:text-[#0874e8] transition cursor-pointer">
+            Trang chủ
           </button>
-          <button
-            onClick={() => onNavigate('search')}
-            className="hover:text-[#1464f4] transition cursor-pointer"
-          >
-            Thức ăn
+          <button onClick={() => onNavigate('search')} className="hover:text-[#0874e8] transition cursor-pointer">
+            Sản phẩm
           </button>
-          <button
-            onClick={() => onNavigate('search')}
-            className="hover:text-[#1464f4] transition cursor-pointer"
-          >
-            Phụ kiện
+          <button onClick={() => onNavigate('service')} className="hover:text-[#0874e8] transition cursor-pointer">
+            Dịch vụ Spa
           </button>
         </nav>
 
-        <div
-          onClick={() => onNavigate('search')}
-          className="flex-1 max-w-[583px] h-[42px] rounded-lg bg-[#f3f7ff] px-3.5 flex items-center gap-3 text-[#647083] text-[13px] cursor-pointer hover:ring-2 hover:ring-[#1464f4]/30 transition"
-        >
-          <Search className="w-4 h-4 text-[#1464f4]" />
-          <span>Tìm điều bé yêu cần...</span>
-        </div>
-
-        <motion.button
-          onClick={() => onNavigate('cart')}
-          whileHover={{ scale: 1.04 }}
-          className="flex items-center gap-2.5 text-[#1464f4] font-bold text-[14px] cursor-pointer shrink-0"
-        >
-          <ShoppingBag className="w-5 h-5" />
-          <span>Giỏ hàng</span>
-        </motion.button>
+        {isLoggedIn ? (
+          <button
+            onClick={() => onNavigate('cart')}
+            className="flex items-center gap-2 text-[#0874e8] font-bold text-[13px] cursor-pointer shrink-0 hover:underline"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Giỏ hàng</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onNavigate('home')}
+            className="text-[13px] font-semibold text-[#587085] hover:text-[#0874e8] cursor-pointer shrink-0"
+          >
+            ← Quay lại cửa hàng
+          </button>
+        )}
       </div>
     </header>
   );
@@ -475,26 +524,26 @@ export const CompactHeader: React.FC<{
 
 export const CompactFooter: React.FC<{ onNavigate: (p: PageId) => void }> = ({ onNavigate }) => {
   return (
-    <footer className="w-full bg-white">
-      <div className="w-full h-[84px] bg-[#f3f7ff] flex items-center justify-center gap-3 px-4 text-[13px]">
-        <Headphones className="w-5 h-5 text-[#1464f4]" />
-        <span className="text-[#647083]">Bạn cần hỗ trợ về đơn hàng?</span>
-        <span className="font-bold text-[#1464f4]">1900 8899</span>
+    <footer className="w-full bg-white border-t border-[#dfe6f0]">
+      <div className="w-full py-5 bg-[#f8faff] flex flex-wrap items-center justify-center gap-3 px-4 text-[12px]">
+        <Headphones className="w-4 h-4 text-[#0874e8]" />
+        <span className="text-[#587085]">Cần hỗ trợ nhanh?</span>
+        <span className="font-bold text-[#0874e8]">1900 6868</span>
         <span className="text-[#dfe6f0]">|</span>
-        <span className="text-[#647083]">8:00 – 21:00 mỗi ngày</span>
+        <span className="text-[#587085]">8:00 – 21:00 mỗi ngày</span>
       </div>
 
-      <div className="max-w-[1440px] mx-auto h-[72px] px-6 lg:px-20 flex flex-col sm:flex-row items-center justify-between text-[12px] text-[#7c8798] gap-2">
-        <span>© 2026 Nhà Thú Cưng. Trọn vẹn yêu thương.</span>
-        <div className="flex items-center gap-7">
-          <button onClick={() => onNavigate('dogs')} className="hover:text-[#1464f4] cursor-pointer">
-            Chính sách bảo mật
+      <div className="max-w-[1320px] mx-auto py-5 px-5 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between text-[12px] text-[#587085] gap-2">
+        <span>© 2026 PetHub Việt Nam.</span>
+        <div className="flex items-center gap-6">
+          <button onClick={() => onNavigate('home')} className="hover:text-[#0874e8] cursor-pointer">
+            Trang chủ
           </button>
-          <button onClick={() => onNavigate('search')} className="hover:text-[#1464f4] cursor-pointer">
-            Điều khoản mua hàng
+          <button onClick={() => onNavigate('search')} className="hover:text-[#0874e8] cursor-pointer">
+            Sản phẩm
           </button>
-          <button onClick={() => onNavigate('login')} className="hover:text-[#1464f4] cursor-pointer">
-            Liên hệ
+          <button onClick={() => onNavigate('service')} className="hover:text-[#0874e8] cursor-pointer">
+            Dịch vụ
           </button>
         </div>
       </div>

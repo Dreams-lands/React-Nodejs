@@ -1,35 +1,57 @@
 export type PageId =
   | 'home'
-  | 'dogs'
-  | 'cats'
-  | 'product'
   | 'search'
-  | 'profile'
-  | 'cart'
+  | 'product'
   | 'service'
+  | 'cart'
   | 'login'
   | 'register'
   | 'checkout-success'
   | 'checkout-fail';
 
-export interface PetCardItem {
+export type ProductCategory = 'food' | 'bed' | 'backpack' | 'hygiene' | 'spa';
+
+export interface ProductReview {
   id: string;
+  author: string;
+  petTag: string;
+  rating: number;
+  date: string;
+  verified: boolean;
+  comment: string;
+}
+
+export interface ProductItem {
+  id: string;
+  brand: string;
   name: string;
-  price: string;
+  shortDesc: string;
+  description: string;
+  packSize: string;
+  sizes: string[];
+  rating: number;
+  reviewCount: number;
   priceNum: number;
-  breed: string;
-  meta: string;
+  price: string;
+  originalPrice?: string;
+  discountBadge?: string;
   badge: string;
-  category: 'dog' | 'cat' | 'food' | 'accessory' | 'spa';
-  ctaLabel: string;
+  category: ProductCategory;
   image: string;
+  gallery: string[];
   bgTone: string;
-  gender?: 'Đực' | 'Cái';
-  ageGroup?: string;
+  stockCount: number;
+  highlights: string[];
+  isFeatured?: boolean;
+  isFlashSale?: boolean;
+  soldCount?: number;
+  totalStock?: number;
+  reviews: ProductReview[];
 }
 
 export interface CartItem {
   id: string;
+  productId: string;
   name: string;
   desc: string;
   price: number;
@@ -49,327 +71,541 @@ export interface SpaPackage {
   isPopular?: boolean;
 }
 
-export const DOGS_LIST: PetCardItem[] = [
+export const STOREFRONT_SUPPLIES = [
   {
-    id: 'dog-1',
-    name: 'Bơ (Buddy)',
-    price: '$1,250',
-    priceNum: 1250,
-    breed: 'Chó Golden Retriever',
-    meta: '12 tuần · Đực · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1633722715463-d30f4f325e24?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#CBE0EC',
-    gender: 'Đực',
-    ageGroup: '8–12 tuần',
-  },
-  {
-    id: 'dog-2',
-    name: 'Daisy',
-    price: '$950',
-    priceNum: 950,
-    breed: 'Chó săn Beagle thuần chủng',
-    meta: '10 tuần · Cái · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F4DFC8',
-    gender: 'Cái',
-    ageGroup: '8–12 tuần',
-  },
-  {
-    id: 'dog-3',
-    name: 'Milo Corgi',
-    price: '$1,400',
-    priceNum: 1400,
-    breed: 'Corgi chân ngắn (Pembroke)',
-    meta: '14 tuần · Đực · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#D4E4EC',
-    gender: 'Đực',
-    ageGroup: '13–16 weeks',
-  },
-  {
-    id: 'dog-4',
-    name: 'Luna',
-    price: '$1,100',
-    priceNum: 1100,
-    breed: 'Chó Labrador màu kem',
-    meta: '11 tuần · Cái · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#E8D8C8',
-    gender: 'Cái',
-    ageGroup: '8–12 tuần',
-  },
-  {
-    id: 'dog-5',
-    name: 'Gấu (Teddy)',
-    price: '$1,650',
-    priceNum: 1650,
-    breed: 'Poodle Toy lông xoăn nâu đỏ',
-    meta: '13 tuần · Đực · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1594149929911-78975a43d4f5?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#C8DCE6',
-    gender: 'Đực',
-    ageGroup: '13–16 weeks',
-  },
-  {
-    id: 'dog-6',
-    name: 'Rosie',
-    price: '$1,500',
-    priceNum: 1500,
-    breed: 'Spaniel Hoàng Gia (Cavalier)',
-    meta: '12 tuần · Cái · Đã tiêm phòng & sổ thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F2DCC6',
-    gender: 'Cái',
-    ageGroup: '8–12 tuần',
-  },
-];
-
-export const CATS_LIST: PetCardItem[] = [
-  {
-    id: 'cat-1',
-    name: 'Bé Milo',
-    price: '$1,250',
-    priceNum: 1250,
-    breed: 'Mèo Anh lông ngắn (Golden)',
-    meta: '12 tuần · Đực · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#EFE8DC',
-    gender: 'Đực',
-    ageGroup: '8–12 tuần',
-  },
-  {
-    id: 'cat-2',
-    name: 'Bé Luna',
-    price: '$1,450',
-    priceNum: 1450,
-    breed: 'Mèo Ragdoll mắt xanh biển',
-    meta: '14 tuần · Cái · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#D8E6F0',
-    gender: 'Cái',
-    ageGroup: '13–16 weeks',
-  },
-  {
-    id: 'cat-3',
-    name: 'Oliver',
-    price: '$1,650',
-    priceNum: 1650,
-    breed: 'Mèo Maine Coon khổng lồ',
-    meta: '16 tuần · Đực · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#D4E2EC',
-    gender: 'Đực',
-    ageGroup: '13–16 weeks',
-  },
-  {
-    id: 'cat-4',
-    name: 'Cleo',
-    price: '$1,350',
-    priceNum: 1350,
-    breed: 'Mèo Ba Tư lông xù quý phái',
-    meta: '13 tuần · Cái · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#DCE8F2',
-    gender: 'Cái',
-    ageGroup: '13–16 weeks',
-  },
-  {
-    id: 'cat-5',
-    name: 'Simba',
-    price: '$1,800',
-    priceNum: 1800,
-    breed: 'Mèo Bengal vằn báo hoa mai',
-    meta: '12 tuần · Đực · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F2DFCC',
-    gender: 'Đực',
-    ageGroup: '8–12 tuần',
-  },
-  {
-    id: 'cat-6',
-    name: 'Bơ Sữa',
-    price: '$1,150',
-    priceNum: 1150,
-    breed: 'Scottish Tai Cụp (Fold)',
-    meta: '15 tuần · Cái · Đầy đủ 2 mũi tiêm',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'cat',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F4E1CE',
-    gender: 'Cái',
-    ageGroup: '13–16 weeks',
-  },
-];
-
-export const SEARCH_ITEMS: PetCardItem[] = [
-  {
-    id: 'srch-1',
-    name: 'Royal Canin Puppy',
-    price: '485.000₫',
-    priceNum: 485,
-    breed: 'Hạt dinh dưỡng chuyên sâu túi 2kg',
-    meta: 'Nhập khẩu Pháp · Tốt cho tiêu hóa & lông da mượt',
-    badge: 'BÁN CHẠY NHẤT',
-    category: 'food',
-    ctaLabel: 'Thêm vào giỏ',
+    id: 'sup-food',
+    filterCategory: 'food' as const,
+    title: 'Dinh dưỡng chọn lọc',
+    desc: 'Hạt khô, pate và thực phẩm bổ sung nhập khẩu chính ngạch.',
+    meta: '120+ sản phẩm đạt chuẩn AAFCO',
     image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#D4E4EC',
   },
   {
-    id: 'srch-2',
-    name: 'Daisy',
-    price: '$950',
-    priceNum: 2300,
-    breed: 'Chó săn Beagle thuần chủng',
-    meta: '10 tuần · Cái · Đã tiêm chủng & khám thú y',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F4DFC8',
+    id: 'sup-bed',
+    filterCategory: 'bed' as const,
+    title: 'Nệm & Không gian nghỉ',
+    desc: 'Chất liệu tự nhiên, êm ái, thoáng khí và dễ vệ sinh.',
+    meta: 'Thiết kế tối giản cho ngôi nhà hiện đại',
+    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=700&q=85',
   },
   {
-    id: 'srch-3',
-    name: 'Milo Corgi',
-    price: '$1,400',
-    priceNum: 3400,
-    breed: 'Pembroke Welsh Corgi',
-    meta: '14 tuần · Đực · Bảo hành sức khỏe 12 tháng',
-    badge: 'SẴN SÀNG ĐÓN VỀ',
-    category: 'dog',
-    ctaLabel: 'Xem chi tiết',
-    image: 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#CBE0EC',
-  },
-  {
-    id: 'srch-4',
-    name: 'Pate Whiskas Vị Cá Ngừ',
-    price: '320.000₫',
-    priceNum: 320,
-    breed: 'Combo 24 gói x 85g thạch mềm',
-    meta: 'Giàu Omega-3 & Taurine · Dành cho mèo mọi lứa tuổi',
-    badge: 'ƯU ĐÃI -15%',
-    category: 'food',
-    ctaLabel: 'Thêm vào giỏ',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#E8D8C8',
-  },
-  {
-    id: 'srch-5',
-    name: 'Nệm Mây Bông Êm',
-    price: '550.000₫',
-    priceNum: 550,
-    breed: 'Ổ đệm bông kháng khuẩn chống trượt',
-    meta: 'Size M/L · Vỏ tháo rời giặt máy · Êm ái ấm áp',
-    badge: 'MỚI VỀ KHO',
-    category: 'accessory',
-    ctaLabel: 'Thêm vào giỏ',
-    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#C8DCE6',
-  },
-  {
-    id: 'srch-6',
-    name: 'Spa Toàn Diện PetHub',
-    price: '390.000₫',
-    priceNum: 390,
-    breed: 'Gói tắm thảo mộc & cắt tỉa tạo kiểu',
-    meta: '60 phút · Vệ sinh tai, cắt dũa móng & massage thư giãn',
-    badge: 'ĐẶT LỊCH NGAY',
-    category: 'spa',
-    ctaLabel: 'Đặt lịch hẹn',
-    image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
-    bgTone: '#F2DCC6',
+    id: 'sup-carrier',
+    filterCategory: 'backpack' as const,
+    title: 'Túi & Balo di chuyển',
+    desc: 'Gọn nhẹ, chống sốc và thông gió tối ưu trên mọi hành trình.',
+    meta: 'Phù hợp dạo phố và di chuyển đường dài',
+    image: 'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?auto=format&fit=crop&w=700&q=85',
   },
 ];
 
-export const INITIAL_CART: CartItem[] = [
+export const CATALOG_PRODUCTS: ProductItem[] = [
   {
-    id: 'c-1',
-    name: 'Bé Mèo Anh lông ngắn (Milo)',
-    desc: '12 tuần tuổi · Giống đực · Đầy đủ 2 mũi tiêm & sổ thú y điện tử',
-    price: 31250000,
-    priceStr: '31.250.000₫',
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=300&q=85',
-    category: 'Thú cưng thuần chủng',
+    id: 'prod-rc-mini',
+    brand: 'ROYAL CANIN',
+    name: 'Hạt dinh dưỡng cho chó giống nhỏ Mini Adult',
+    shortDesc: 'Công thức cân bằng năng lượng, hỗ trợ tiêu hóa và duy trì bộ lông óng mượt.',
+    description:
+      'Sản phẩm được thiết kế chuyên biệt cho chó trưởng thành giống nhỏ (dưới 10kg), bổ sung L-Carnitine hỗ trợ chuyển hóa chất béo cùng EPA/DHA nuôi dưỡng da và lông khỏe mạnh mỗi ngày.',
+    packSize: 'Chó trưởng thành • 2 kg',
+    sizes: ['2 kg', '4 kg', '8 kg'],
+    rating: 4.9,
+    reviewCount: 128,
+    priceNum: 389000,
+    price: '389.000₫',
+    originalPrice: '489.000₫',
+    discountBadge: '−20%',
+    badge: 'ƯU ĐÃI −20%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=900&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 22,
+    highlights: [
+      'Hạt nhỏ dễ nhai, giảm tích tụ cao răng',
+      'Bổ sung Omega-3 & Omega-6 giúp lông mềm mượt',
+      'Nhập khẩu chính hãng từ Pháp, tem phụ đầy đủ',
+    ],
+    isFeatured: false,
+    isFlashSale: true,
+    soldCount: 68,
+    totalStock: 90,
+    reviews: [
+      {
+        id: 'rev-1',
+        author: 'Minh Thư',
+        petTag: 'Nuôi Poodle 3 tuổi',
+        rating: 5,
+        date: '18/10/2026',
+        verified: true,
+        comment: 'Bé nhà mình kén ăn nhưng rất hợp hạt này. Phân đẹp, ít mùi và lông mượt hơn hẳn sau 3 tuần.',
+      },
+      {
+        id: 'rev-2',
+        author: 'Quốc Bảo',
+        petTag: 'Nuôi Phốc Sóc',
+        rating: 5,
+        date: '12/10/2026',
+        verified: true,
+        comment: 'Đóng gói kỹ, hạn sử dụng xa. Giao hàng trong nội thành chỉ khoảng 2 tiếng là nhận được.',
+      },
+      {
+        id: 'rev-3',
+        author: 'Lan Anh',
+        petTag: 'Nuôi Bichon',
+        rating: 4,
+        date: '05/10/2026',
+        verified: true,
+        comment: 'Hạt thơm dịu không bị gắt mùi dầu, kích thước hạt vừa miệng chó nhỏ.',
+      },
+    ],
   },
   {
-    id: 'c-2',
-    name: 'Thức ăn hạt Royal Canin Puppy (2kg)',
-    desc: 'Nhập khẩu Pháp · Dinh dưỡng phát triển hệ xương và lông óng ả',
-    price: 485000,
-    priceStr: '485.000₫',
-    quantity: 2,
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=300&q=85',
-    category: 'Thức ăn dinh dưỡng',
+    id: 'prod-rc-kitten',
+    brand: 'ROYAL CANIN',
+    name: 'Hạt dinh dưỡng cho mèo con Kitten',
+    shortDesc: 'Tăng cường đề kháng tự nhiên và hỗ trợ phát triển hệ tiêu hóa non nớt.',
+    description:
+      'Công thức giàu protein dễ tiêu hóa (L.I.P) kết hợp Prebiotics và phức hợp chống oxy hóa vitamin E & C, giúp mèo con từ 4–12 tháng tuổi phát triển khung xương vững chắc.',
+    packSize: 'Mèo con 4–12 tháng • 2 kg',
+    sizes: ['400 g', '2 kg', '4 kg'],
+    rating: 4.9,
+    reviewCount: 86,
+    priceNum: 465000,
+    price: '465.000₫',
+    badge: 'BÁN CHẠY',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=800&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=800&q=85',
+      'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 34,
+    highlights: [
+      'Hỗ trợ hệ miễn dịch trong giai đoạn tăng trưởng',
+      'Giàu chất xơ hòa tan giúp tiêu hóa ổn định',
+      'Hạt tam giác nhỏ phù hợp hàm răng mèo con',
+    ],
+    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-k1',
+        author: 'Hoàng Nam',
+        petTag: 'Nuôi mèo Anh lông ngắn',
+        rating: 5,
+        date: '20/10/2026',
+        verified: true,
+        comment: 'Mèo nhà mình ăn từ lúc 4 tháng tới giờ trộm vía mập mạp, không bị tiêu chảy khi đổi hạt.',
+      },
+      {
+        id: 'rev-k2',
+        author: 'Thảo Vy',
+        petTag: 'Nuôi Ragdoll 6 tháng',
+        rating: 5,
+        date: '14/10/2026',
+        verified: true,
+        comment: 'Hàng chính hãng có mã QR kiểm tra đầy đủ, túi zip bảo quản rất tiện.',
+      },
+    ],
   },
   {
-    id: 'c-3',
-    name: 'Pate Whiskas Vị Cá Ngừ (Combo 24 gói)',
-    desc: 'Giàu Omega-3 & Taurine bổ mắt cho mèo',
-    price: 320000,
-    priceStr: '320.000₫',
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=300&q=85',
-    category: 'Pate & Thức ăn ướt',
+    id: 'prod-nutri-dog',
+    brand: 'NUTRISOURCE',
+    name: 'Hạt cao cấp vị thịt gà tươi & gạo lứt',
+    shortDesc: 'Bổ sung lợi khuẩn Good 4 Life cho đường ruột khỏe và khả năng hấp thu tối đa.',
+    description:
+      'Nguồn đạm chính từ thịt gà tươi kết hợp ngũ cốc nguyên hạt và lợi khuẩn tự nhiên, không chất bảo quản nhân tạo, phù hợp cho chó nhạy cảm với tiêu hóa.',
+    packSize: 'Mọi giống chó • 2,5 kg',
+    sizes: ['2,5 kg', '6 kg', '12 kg'],
+    rating: 4.9,
+    reviewCount: 64,
+    priceNum: 425000,
+    price: '425.000₫',
+    originalPrice: '475.000₫',
+    discountBadge: '−11%',
+    badge: 'ƯU ĐÃI −11%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=800&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=800&q=85',
+      'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=800&q=85',
+    ],
+    bgTone: '#f3f7ff',
+    stockCount: 18,
+    highlights: [
+      'Sản xuất tại Mỹ theo chuẩn dinh dưỡng AAFCO',
+      'Không chứa phụ phẩm công nghiệp hay phẩm màu',
+      'Giảm rụng lông và tăng độ bóng mượt tự nhiên',
+    ],
+    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-n1',
+        author: 'Đức Minh',
+        petTag: 'Nuôi Corgi 2 tuổi',
+        rating: 5,
+        date: '19/10/2026',
+        verified: true,
+        comment: 'Dòng này ít muối hơn nhiều loại phổ thông nên bé uống nước vừa phải, không bị chảy nước mắt.',
+      },
+    ],
+  },
+  {
+    id: 'prod-cloud-bed',
+    brand: 'PETHUB HOME',
+    name: 'Nệm tròn lông cừu Cloud Comfort',
+    shortDesc: 'Vỏ cotton pha lông cừu mềm mại, ruột bông 3D giữ form êm ái quanh năm.',
+    description:
+      'Thiết kế vành ôm 360 độ tạo cảm giác an toàn cho chó mèo khi cuộn tròn nghỉ ngơi. Vỏ ngoài trang bị khóa kéo ẩn, dễ dàng tháo rời giặt máy mà không bị xù lông.',
+    packSize: 'Size M • 60 × 50 cm',
+    sizes: ['Size S (50cm)', 'Size M (60cm)', 'Size L (75cm)'],
+    rating: 4.9,
+    reviewCount: 52,
+    priceNum: 590000,
+    price: '590.000₫',
+    badge: 'THIẾT KẾ MỚI',
+    category: 'bed',
+    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=800&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=800&q=85',
+      'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 15,
+    highlights: [
+      'Đế hạt cao su chống trượt bám sàn gỗ',
+      'Vỏ tháo rời giặt máy không biến dạng',
+      'Tông màu trung tính hài hòa nội thất hiện đại',
+    ],
+    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-b1',
+        author: 'Hải Yến',
+        petTag: 'Nuôi 2 bé mèo',
+        rating: 5,
+        date: '21/10/2026',
+        verified: true,
+        comment: 'Nệm rất dày dặn, đường may chắc chắn. Hai bé nhà mình nằm suốt từ ngày mang về.',
+      },
+      {
+        id: 'rev-b2',
+        author: 'Tuấn Kiệt',
+        petTag: 'Nuôi Shiba',
+        rating: 5,
+        date: '09/10/2026',
+        verified: true,
+        comment: 'Giặt máy 2 lần rồi vẫn giữ độ phồng tốt, mặt đáy bám sàn không bị xê dịch.',
+      },
+    ],
+  },
+  {
+    id: 'prod-travel-bag',
+    brand: 'PET TRAVEL',
+    name: 'Balo vận chuyển thoáng khí chống sốc',
+    shortDesc: 'Khung cứng giữ dáng, lưới thoáng 3 mặt giúp thú cưng thoải mái khi ra ngoài.',
+    description:
+      'Chất liệu vải Oxford chống thấm nhẹ kết hợp khung nâng đỡ chắc chắn giúp balo không bị xẹp khi đeo. Trang bị dây cài an toàn bên trong và đệm lưng trợ lực êm ái.',
+    packSize: 'Thú cưng dưới 8 kg',
+    sizes: ['Tiêu chuẩn (< 6kg)', 'Mở rộng (< 8kg)'],
+    rating: 4.8,
+    reviewCount: 41,
+    priceNum: 520000,
+    price: '520.000₫',
+    originalPrice: '580.000₫',
+    discountBadge: '−10%',
+    badge: 'ƯU ĐÃI −10%',
+    category: 'backpack',
+    image: 'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?auto=format&fit=crop&w=800&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?auto=format&fit=crop&w=800&q=85',
+    ],
+    bgTone: '#f3f7ff',
+    stockCount: 12,
+    highlights: [
+      '3 mặt lưới thoáng khí, tránh hầm bí mùa nóng',
+      'Trọng lượng siêu nhẹ chỉ 1,1 kg',
+      'Đệm đáy tháo rời vệ sinh nhanh chóng',
+    ],
+    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-t1',
+        author: 'Phương Linh',
+        petTag: 'Nuôi mèo 5kg',
+        rating: 5,
+        date: '16/10/2026',
+        verified: true,
+        comment: 'Đeo đi tiêm phòng rất nhẹ vai, lưới thoáng nên bé không bị hoảng hay nóng.',
+      },
+    ],
+  },
+  {
+    id: 'prod-meo-tuna',
+    brand: 'ME-O',
+    name: 'Hạt dinh dưỡng cho mèo trưởng thành vị cá biển',
+    shortDesc: 'Giàu Taurine bảo vệ thị lực và Vitamin C tăng cường hệ miễn dịch mỗi ngày.',
+    description:
+      'Công thức cân bằng khoáng chất giúp giảm nguy cơ sỏi tiết niệu ở mèo trưởng thành, kết hợp hương vị cá biển tự nhiên kích thích vị giác.',
+    packSize: 'Mèo trưởng thành • 1,2 kg',
+    sizes: ['1,2 kg', '3 kg'],
+    rating: 4.8,
+    reviewCount: 96,
+    priceNum: 99000,
+    price: '99.000₫',
+    originalPrice: '129.000₫',
+    discountBadge: '−23%',
+    badge: 'ƯU ĐÃI −23%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 16,
+    highlights: [
+      'Bổ sung Taurine & Omega-3 tốt cho mắt và tim mạch',
+      'Kiểm soát hàm lượng natri an toàn cho thận',
+    ],
+    isFlashSale: true,
+    soldCount: 84,
+    totalStock: 100,
+    reviews: [
+      {
+        id: 'rev-m1',
+        author: 'Gia Huy',
+        petTag: 'Nuôi mèo mướp',
+        rating: 5,
+        date: '15/10/2026',
+        verified: true,
+        comment: 'Giá hợp lý, giao nhanh, bé ăn hết sạch mỗi bữa.',
+      },
+    ],
+  },
+  {
+    id: 'prod-pedigree-beef',
+    brand: 'PEDIGREE',
+    name: 'Hạt dinh dưỡng cho chó lớn vị bò & rau củ',
+    shortDesc: 'Cung cấp chất xơ, Canxi và đạm cân đối cho chó trưởng thành vận động nhiều.',
+    description:
+      'Kết hợp 5 nhóm dưỡng chất thiết yếu giúp cơ bắp săn chắc, xương khớp linh hoạt và hỗ trợ hệ tiêu hóa khỏe mạnh mỗi ngày.',
+    packSize: 'Chó trưởng thành • 3 kg',
+    sizes: ['1,5 kg', '3 kg', '8 kg'],
+    rating: 4.8,
+    reviewCount: 75,
+    priceNum: 335000,
+    price: '335.000₫',
+    originalPrice: '419.000₫',
+    discountBadge: '−20%',
+    badge: 'ƯU ĐÃI −20%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 28,
+    highlights: [
+      'Giàu Canxi và Photpho giúp xương răng chắc khỏe',
+      'Hương vị bò hầm rau củ dễ ăn',
+    ],
+    isFlashSale: true,
+    soldCount: 52,
+    totalStock: 80,
+    reviews: [
+      {
+        id: 'rev-p1',
+        author: 'Hoài An',
+        petTag: 'Nuôi Golden 4 tuổi',
+        rating: 5,
+        date: '11/10/2026',
+        verified: true,
+        comment: 'Túi 3kg rất kinh tế, hạt giòn và thơm.',
+      },
+    ],
+  },
+  {
+    id: 'prod-dentastix',
+    brand: 'DENTASTIX',
+    name: 'Thanh gặm sạch răng cho chó giống nhỏ',
+    shortDesc: 'Thiết kế chữ X độc đáo hỗ trợ giảm tới 80% mảng bám và cao răng.',
+    description:
+      'Kết cấu dẻo dai vừa phải kết hợp kẽm Sulphate và STPP giúp làm sạch kẽ răng tự nhiên trong quá trình nhai, giữ hơi thở thơm tho.',
+    packSize: 'Combo 7 thanh • 110 g',
+    sizes: ['Gói 7 thanh (110g)', 'Hộp 28 thanh'],
+    rating: 5.0,
+    reviewCount: 142,
+    priceNum: 85000,
+    price: '85.000₫',
+    originalPrice: '115.000₫',
+    discountBadge: '−26%',
+    badge: 'ƯU ĐÃI −26%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=600&q=85',
+    ],
+    bgTone: '#fff5f0',
+    stockCount: 8,
+    highlights: [
+      'Ít chất béo, không thêm đường',
+      'Hỗ trợ vệ sinh răng miệng hằng ngày',
+    ],
+    isFlashSale: true,
+    soldCount: 92,
+    totalStock: 100,
+    reviews: [
+      {
+        id: 'rev-d1',
+        author: 'Ngọc Trâm',
+        petTag: 'Nuôi Corgi 1 tuổi',
+        rating: 5,
+        date: '22/10/2026',
+        verified: true,
+        comment: 'Mỗi tối cho 1 thanh là bé rất thích, đỡ hẳn mùi hôi miệng.',
+      },
+    ],
+  },
+  {
+    id: 'prod-whiskas-pate',
+    brand: 'WHISKAS',
+    name: 'Pate mềm vị cá ngừ đại dương (Combo 24 gói)',
+    shortDesc: 'Cấp ẩm tự nhiên, giàu Omega-3 & Taurine cho mèo mọi lứa tuổi.',
+    description:
+      'Miếng thịt cá ngừ mềm mịn trong thạch thơm ngon giúp bổ sung nước hằng ngày, đặc biệt hữu ích với những bé mèo ít uống nước.',
+    packSize: '24 gói × 85 g',
+    sizes: ['Hộp 12 gói', 'Thùng 24 gói'],
+    rating: 4.9,
+    reviewCount: 74,
+    priceNum: 320000,
+    price: '320.000₫',
+    originalPrice: '375.000₫',
+    discountBadge: '−15%',
+    badge: 'ƯU ĐÃI −15%',
+    category: 'food',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=700&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=700&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 25,
+    highlights: [
+      'Tăng cường bổ sung nước giúp bảo vệ hệ tiết niệu',
+      'Không phẩm màu, dễ trộn cùng hạt khô',
+    ],
+    reviews: [
+      {
+        id: 'rev-w1',
+        author: 'Khánh Vy',
+        petTag: 'Nuôi mèo ta',
+        rating: 5,
+        date: '14/10/2026',
+        verified: true,
+        comment: 'Mỗi gói chia 2 bữa rất vừa, date mới tinh.',
+      },
+    ],
+  },
+  {
+    id: 'prod-yu-shampoo',
+    brand: 'YU CARE',
+    name: 'Sữa tắm thảo mộc dịu nhẹ dưỡng lông (400ml)',
+    shortDesc: 'Chiết xuất hoa anh đào & lô hội, cân bằng pH tự nhiên cho da nhạy cảm.',
+    description:
+      'Công thức dịu nhẹ không chứa xà phòng công nghiệp, làm sạch bụi bẩn và khử mùi hôi hiệu quả mà vẫn giữ lớp dầu tự nhiên bảo vệ da chó mèo.',
+    packSize: 'Chó & Mèo • 400 ml',
+    sizes: ['400 ml', '1000 ml'],
+    rating: 4.9,
+    reviewCount: 59,
+    priceNum: 265000,
+    price: '265.000₫',
+    badge: 'CHĂM SÓC DA LÔNG',
+    category: 'hygiene',
+    image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
+    ],
+    bgTone: '#f3f7ff',
+    stockCount: 19,
+    highlights: [
+      'Độ pH trung tính an toàn cho da nhạy cảm',
+      'Lưu hương thảo mộc nhẹ nhàng suốt 5 ngày',
+    ],
+    reviews: [
+      {
+        id: 'rev-y1',
+        author: 'Thanh Tùng',
+        petTag: 'Nuôi Poodle trắng',
+        rating: 5,
+        date: '17/10/2026',
+        verified: true,
+        comment: 'Tắm xong lông tơi và rất mềm, mùi thơm tự nhiên không bị nồng.',
+      },
+    ],
+  },
+  {
+    id: 'prod-rattan-bed',
+    brand: 'PETHUB HOME',
+    name: 'Ổ nệm mây kháng khuẩn đế chống trượt',
+    shortDesc: 'Khung thoáng khí kết hợp đệm bông kháng khuẩn, phù hợp khí hậu nhiệt đới.',
+    description:
+      'Đệm lót tháo rời dễ giặt giũ, phần thành nệm nâng đỡ cổ êm ái giúp thú cưng có giấc ngủ sâu và hạn chế hầm nóng.',
+    packSize: 'Size M/L • Thoáng khí',
+    sizes: ['Size M', 'Size L'],
+    rating: 4.8,
+    reviewCount: 38,
+    priceNum: 550000,
+    price: '550.000₫',
+    badge: 'MỚI VỀ',
+    category: 'bed',
+    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 14,
+    highlights: [
+      'Vải sợi tự nhiên thoáng mát, hạn chế bám lông',
+      'Dễ dàng tháo rời vệ sinh hằng tuần',
+    ],
+    reviews: [
+      {
+        id: 'rev-r1',
+        author: 'Bích Ngọc',
+        petTag: 'Nuôi mèo Anh',
+        rating: 5,
+        date: '10/10/2026',
+        verified: true,
+        comment: 'Mẫu đẹp tối giản, để phòng khách nhìn rất gọn.',
+      },
+    ],
   },
 ];
 
 export const SPA_PACKAGES: SpaPackage[] = [
   {
     id: 'pkg-1',
-    name: 'Tắm thảo mộc & Massage thư giãn',
-    desc: 'Tắm sạch sâu 2 lần bằng dầu gội thảo dược hữu cơ, sấy ấm êm dịu, vắt tuyến hôi & xịt dưỡng mượt lông.',
+    name: 'Tắm thảo mộc & Thư giãn',
+    desc: 'Tắm sạch sâu 2 lần bằng sữa tắm hữu cơ, sấy ấm ion âm êm dịu, vệ sinh tuyến hôi và xịt dưỡng mượt lông.',
     price: 180000,
     priceStr: '180.000₫',
     duration: '45 phút',
   },
   {
     id: 'pkg-2',
-    name: 'Cắt tỉa tạo kiểu chuẩn Hàn Quốc',
-    desc: 'Tỉa tròn khuôn mặt teddy bear, tạo form bồng bềnh, cắt tỉa vệ sinh bàn chân và vệ sinh hậu môn gọn gàng.',
+    name: 'Cắt tỉa tạo kiểu chuẩn Hàn',
+    desc: 'Tỉa gọn khuôn mặt, tạo phom lông bồng bềnh tự nhiên, vệ sinh vùng bàn chân và bụng gọn gàng.',
     price: 280000,
     priceStr: '280.000₫',
     duration: '60 phút',
   },
   {
     id: 'pkg-3',
-    name: 'Spa Toàn Diện (All-In-One cao cấp)',
-    desc: 'Gồm tắm thảo mộc + massage + sấy tạo kiểu + cắt tỉa nghệ thuật + cắt dũa móng + vệ sinh nhổ lông tai + tặng bánh thưởng.',
+    name: 'Spa Toàn diện 7 Bước',
+    desc: 'Trọn gói tắm thảo mộc, massage thư giãn, sấy tạo phom, cắt tỉa nghệ thuật, cắt dũa móng và vệ sinh tai chuyên sâu.',
     price: 390000,
     priceStr: '390.000₫',
     duration: '90 phút',
@@ -377,178 +613,10 @@ export const SPA_PACKAGES: SpaPackage[] = [
   },
   {
     id: 'pkg-4',
-    name: 'Khách sạn thú cưng 5 sao (Boarding)',
-    desc: 'Phòng máy lạnh lọc không khí riêng, camera livestream 24/7 cho bố mẹ xem bé, 3 bữa ăn dinh dưỡng & dắt đi dạo hàng ngày.',
+    name: 'Khách sạn thú cưng 5 sao',
+    desc: 'Phòng riêng điều hòa lọc khí, camera theo dõi 24/7, 3 bữa dinh dưỡng theo chế độ và dạo chơi hằng ngày.',
     price: 150000,
     priceStr: '150.000₫ / ngày',
     duration: '24 giờ',
-  },
-];
-
-export const MILO_GALLERY = [
-  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=1000&q=85',
-  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1000&q=85',
-  'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1000&q=85',
-  'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=1000&q=85',
-];
-
-export interface StorefrontProduct {
-  id: string;
-  brand: string;
-  name: string;
-  packSize: string;
-  rating: string;
-  reviewCount: number;
-  price: string;
-  originalPrice?: string;
-  discountBadge?: string;
-  image: string;
-  category: 'food' | 'bed' | 'backpack' | 'toy';
-}
-
-export interface FlashSaleItem {
-  id: string;
-  brand: string;
-  name: string;
-  packSize: string;
-  rating: string;
-  price: string;
-  originalPrice: string;
-  discount: string;
-  soldCount: number;
-  totalStock: number;
-  image: string;
-}
-
-export const STOREFRONT_SUPPLIES = [
-  {
-    id: 'sup-food',
-    title: 'Thức ăn dinh dưỡng',
-    desc: 'Dinh dưỡng cân bằng. Bụng bé luôn khỏe vui.',
-    meta: 'Hơn 120 món ngon và hạt nhập khẩu',
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=600&q=85',
-    tag: 'Thức ăn',
-  },
-  {
-    id: 'sup-bed',
-    title: 'Nệm & Giường êm',
-    desc: 'Góc ngủ trưa yêu thích mới của hoàng thượng.',
-    meta: 'Êm ái cho mọi giấc mơ ngọt ngào',
-    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=600&q=85',
-    tag: 'Giường',
-  },
-  {
-    id: 'sup-carrier',
-    title: 'Balo & Túi vận chuyển',
-    desc: 'Cùng người bạn thân thiết vi vu mọi cung đường.',
-    meta: 'Balo phi hành gia thoáng khí cao cấp',
-    image: 'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?auto=format&fit=crop&w=600&q=85',
-    tag: 'Ba lô',
-  },
-];
-
-export const STOREFRONT_FAVORITES: StorefrontProduct[] = [
-  {
-    id: 'fav-1',
-    brand: 'ROYAL CANIN',
-    name: 'Thức ăn hạt cho mèo con Kitten · Phát triển toàn diện',
-    packSize: 'Mèo con 4–12 tháng • 2 kg',
-    rating: '★★★★★ 4.9',
-    reviewCount: 86,
-    price: '465.000₫',
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=500&q=85',
-    category: 'food',
-  },
-  {
-    id: 'fav-2',
-    brand: 'NUTRISOURCE',
-    name: 'Thức ăn hạt cao cấp cho cún vị thịt gà tươi & gạo lứt',
-    packSize: 'Mọi giống chó • 2,5 kg',
-    rating: '★★★★★ 4.9',
-    reviewCount: 64,
-    price: '425.000₫',
-    originalPrice: '475.000₫',
-    discountBadge: '−11%',
-    image: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=500&q=85',
-    category: 'food',
-  },
-  {
-    id: 'fav-3',
-    brand: 'PETHUB HOME',
-    name: 'Nệm tròn lông cừu Cloud Comfort êm ái chống lạnh',
-    packSize: 'Vỏ tháo giặt được • 60 × 50 cm',
-    rating: '★★★★★ 4.9',
-    reviewCount: 52,
-    price: '590.000₫',
-    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=500&q=85',
-    category: 'bed',
-  },
-  {
-    id: 'fav-4',
-    brand: 'PET TRAVEL',
-    name: 'Balo phi hành gia trong suốt chống sốc cao cấp',
-    packSize: 'Chó/Mèo dưới 8kg • Siêu nhẹ',
-    rating: '★★★★★ 4.8',
-    reviewCount: 41,
-    price: '520.000₫',
-    originalPrice: '580.000₫',
-    discountBadge: '−10%',
-    image: 'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?auto=format&fit=crop&w=500&q=85',
-    category: 'backpack',
-  },
-];
-
-export const FLASH_SALE_ITEMS: FlashSaleItem[] = [
-  {
-    id: 'fs-1',
-    brand: 'ROYAL CANIN',
-    name: 'Thức ăn khô cho chó trưởng thành giống nhỏ Mini Adult',
-    packSize: 'Giống nhỏ • 2 kg',
-    rating: '4.9 (128)',
-    price: '389.000₫',
-    originalPrice: '489.000₫',
-    discount: '−20%',
-    soldCount: 68,
-    totalStock: 90,
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=400&q=85',
-  },
-  {
-    id: 'fs-2',
-    brand: 'ME-O',
-    name: 'Thức ăn hạt cho mèo trưởng thành vị cá biển tươi',
-    packSize: 'Mèo trưởng thành • 1,2 kg',
-    rating: '4.8 (96)',
-    price: '99.000₫',
-    originalPrice: '129.000₫',
-    discount: '−23%',
-    soldCount: 84,
-    totalStock: 100,
-    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=85',
-  },
-  {
-    id: 'fs-3',
-    brand: 'PEDIGREE',
-    name: 'Thức ăn hạt cho chó lớn vị bò và rau củ dinh dưỡng',
-    packSize: 'Chó trưởng thành • 3 kg',
-    rating: '4.8 (75)',
-    price: '335.000₫',
-    originalPrice: '419.000₫',
-    discount: '−20%',
-    soldCount: 52,
-    totalStock: 80,
-    image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=400&q=85',
-  },
-  {
-    id: 'fs-4',
-    brand: 'DENTASTIX',
-    name: 'Xương gặm sạch răng Pedigree Dentastix cho chó nhỏ',
-    packSize: 'Combo 7 thanh • 110g',
-    rating: '5.0 (142)',
-    price: '85.000₫',
-    originalPrice: '115.000₫',
-    discount: '−26%',
-    soldCount: 92,
-    totalStock: 100,
-    image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=400&q=85',
   },
 ];
