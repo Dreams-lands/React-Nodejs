@@ -66,14 +66,24 @@ const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   spa: 'Dịch vụ Spa',
 };
 
-const HERO_BANNERS = [
+const HERO_BANNERS: Array<{
+  id: string;
+  titleTop: string;
+  titleAccent: string;
+  desc: string;
+  ctaLabel: string;
+  ctaCategory?: 'hygiene' | 'food';
+  ctaPage?: PageId;
+  image: string;
+  imageAlt: string;
+}> = [
   {
     id: 'vet-care',
     titleTop: 'CHĂM SÓC Y KHOA',
     titleAccent: 'Dịu lành & An tâm.',
     desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dịu nhẹ cho chó mèo.',
     ctaLabel: 'Xem thuốc & chăm sóc',
-    ctaCategory: 'hygiene' as const,
+    ctaCategory: 'hygiene',
     image: '/images/hero-vet-banner.jpg',
     imageAlt: 'Bộ sản phẩm thuốc trị nấm và chăm sóc da lông cho thú cưng',
   },
@@ -83,9 +93,19 @@ const HERO_BANNERS = [
     titleAccent: 'Bé khỏe mỗi ngày.',
     desc: 'Pate tươi nguyên miếng, hạt khô cân bằng dưỡng chất nhập khẩu chính ngạch.',
     ctaLabel: 'Khám phá dinh dưỡng & pate',
-    ctaCategory: 'food' as const,
+    ctaCategory: 'food',
     image: '/images/hero-pate-banner.jpg',
     imageAlt: 'Pate tươi và hạt dinh dưỡng cao cấp cho chó mèo',
+  },
+  {
+    id: 'spa-hotel',
+    titleTop: 'DỊCH VỤ SPA 5 SAO',
+    titleAccent: 'Thư giãn & Tỏa sáng.',
+    desc: 'Quy trình tắm thảo mộc 7 bước chuẩn y khoa, cắt tỉa tạo kiểu và khách sạn giám sát 24/7.',
+    ctaLabel: 'Khám phá dịch vụ Spa',
+    ctaPage: 'service',
+    image: '/images/hero-spa-banner.jpg',
+    imageAlt: 'Dịch vụ Spa tắm gội và tạo kiểu chuẩn y khoa cho thú cưng',
   },
 ];
 
@@ -413,10 +433,10 @@ export function App() {
                             className="w-full h-full object-cover object-right"
                           />
                         </AnimatePresence>
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#eff5ff] via-[#eff5ff]/92 via-42% to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#eff5ff] via-[#eff5ff]/95 via-48% to-transparent" />
                       </div>
 
-                      <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-9 sm:py-12 lg:py-14 md:min-h-[400px] lg:min-h-[430px] flex flex-col justify-center">
+                      <div className="relative z-10 px-6 sm:px-16 lg:px-20 py-9 sm:py-12 lg:py-14 md:min-h-[400px] lg:min-h-[430px] flex flex-col justify-center">
                         <div className="max-w-[520px] space-y-5">
                           <h1 className="text-[25px] sm:text-[38px] lg:text-[44px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
                             {activeBanner.titleTop}
@@ -430,17 +450,15 @@ export function App() {
 
                           <div className="flex flex-wrap items-center gap-3 pt-1">
                             <button
-                              onClick={() => handleSelectCategory(activeBanner.ctaCategory)}
+                              onClick={() =>
+                                activeBanner.ctaPage
+                                  ? navigateTo(activeBanner.ctaPage)
+                                  : activeBanner.ctaCategory && handleSelectCategory(activeBanner.ctaCategory)
+                              }
                               className="h-11 sm:h-12 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[13px] sm:text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(8,116,232,0.22)] cursor-pointer transition-colors"
                             >
                               <span>{activeBanner.ctaLabel}</span>
                               <ArrowRight className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => navigateTo('service')}
-                              className="h-11 sm:h-12 px-5 rounded-xl bg-white border border-[#dfe6f0] text-[#17324d] font-bold text-[13px] sm:text-[14px] hover:border-[#0874e8] hover:text-[#0874e8] transition-colors cursor-pointer"
-                            >
-                              Dịch vụ Spa
                             </button>
                           </div>
                         </div>
