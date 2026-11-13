@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ChevronLeft,
   ChevronRight,
   Minus,
   Plus,
@@ -65,9 +66,53 @@ const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   spa: 'Dịch vụ Spa',
 };
 
+const HERO_BANNERS: Array<{
+  id: string;
+  titleTop: string;
+  titleAccent: string;
+  desc: string;
+  ctaLabel: string;
+  ctaCategory?: 'hygiene' | 'food';
+  ctaPage?: PageId;
+  image: string;
+  imageAlt: string;
+}> = [
+  {
+    id: 'vet-care',
+    titleTop: 'CHĂM SÓC Y KHOA',
+    titleAccent: 'Dịu lành & An tâm.',
+    desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dịu nhẹ cho chó mèo.',
+    ctaLabel: 'Xem thuốc & chăm sóc',
+    ctaCategory: 'hygiene',
+    image: '/images/hero-vet-banner.jpg',
+    imageAlt: 'Bộ sản phẩm thuốc trị nấm và chăm sóc da lông cho thú cưng',
+  },
+  {
+    id: 'gourmet-food',
+    titleTop: 'DINH DƯỠNG TỐI ƯU',
+    titleAccent: 'Bé khỏe mỗi ngày.',
+    desc: 'Pate tươi nguyên miếng, hạt khô cân bằng dưỡng chất nhập khẩu chính ngạch.',
+    ctaLabel: 'Khám phá dinh dưỡng & pate',
+    ctaCategory: 'food',
+    image: '/images/hero-pate-banner.jpg',
+    imageAlt: 'Pate tươi và hạt dinh dưỡng cao cấp cho chó mèo',
+  },
+  {
+    id: 'spa-hotel',
+    titleTop: 'DỊCH VỤ SPA 5 SAO',
+    titleAccent: 'Thư giãn & Tỏa sáng.',
+    desc: 'Quy trình tắm thảo mộc 7 bước chuẩn y khoa, cắt tỉa tạo kiểu và khách sạn giám sát 24/7.',
+    ctaLabel: 'Khám phá dịch vụ Spa',
+    ctaPage: 'service',
+    image: '/images/hero-spa-banner.jpg',
+    imageAlt: 'Dịch vụ Spa tắm gội và tạo kiểu chuẩn y khoa cho thú cưng',
+  },
+];
+
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [returnPage, setReturnPage] = useState<PageId>('home');
+  const [heroSlide, setHeroSlide] = useState(0);
 
   // Auth State (Guest mode strictly view-only; purchase/cart/booking require login)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -333,7 +378,7 @@ export function App() {
     currentPage === 'checkout-fail';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[#17324d] overflow-x-clip selection:bg-[#0874e8] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-white text-[#17324d] overflow-x-clip selection:bg-[#0667d0] selection:text-white">
       {/* Header */}
       {isCompactLayout ? (
         <CompactHeader onNavigate={navigateTo} isLoggedIn={isLoggedIn} />
@@ -368,39 +413,102 @@ export function App() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-full pb-12"
             >
-              {/* Full-background Hero Banner */}
-              <section className="relative w-full overflow-hidden bg-[#eff5ff] border-b border-[#dfe6f0]">
-                <img
-                  src="/images/hero-spa-banner.jpg"
-                  alt="Chăm sóc thú cưng chuẩn y khoa và dịch vụ Spa 5 sao tại PetHub"
-                  className="absolute inset-0 w-full h-full object-cover object-[76%_center] sm:object-right"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/95 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
+              {/* Full-background Hero Banner Slider (3 Slides) */}
+              {(() => {
+                const activeBanner = HERO_BANNERS[heroSlide];
+                return (
+                  <section className="relative w-full overflow-hidden bg-[#eff5ff] border-b border-[#dfe6f0]">
+                    <AnimatePresence mode="wait">
+                      <motion.img
+                        key={activeBanner.id}
+                        src={activeBanner.image}
+                        alt={activeBanner.imageAlt}
+                        initial={{ opacity: 0.35 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0.35 }}
+                        transition={{ duration: 0.35 }}
+                        className="absolute inset-0 w-full h-full object-cover object-[76%_center] sm:object-right"
+                      />
+                    </AnimatePresence>
+                    <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/96 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
 
-                <div className="relative z-10 max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-12 sm:py-16 lg:py-20 min-h-[360px] sm:min-h-[430px] lg:min-h-[470px] flex flex-col justify-center">
-                  <div className="max-w-[540px] space-y-5">
-                    <h1 className="text-[28px] sm:text-[40px] lg:text-[46px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
-                      Chăm sóc chuẩn y khoa.
-                      <br />
-                      <span className="text-[#0667d0]">An tâm mỗi ngày.</span>
-                    </h1>
+                    <div className="relative z-10 max-w-[1320px] mx-auto px-6 sm:px-16 lg:px-20 pt-12 pb-16 sm:py-16 lg:py-20 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-center">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={activeBanner.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.25 }}
+                          className="max-w-[540px] space-y-5"
+                        >
+                          <h1 className="text-[28px] sm:text-[40px] lg:text-[46px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
+                            {activeBanner.titleTop}
+                            <br />
+                            <span className="text-[#0667d0]">{activeBanner.titleAccent}</span>
+                          </h1>
 
-                    <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
-                      Dinh dưỡng tuyển chọn, thuốc đặc trị chính hãng và dịch vụ Spa 5 sao cho thú cưng.
-                    </p>
+                          <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
+                            {activeBanner.desc}
+                          </p>
 
-                    <div className="pt-1">
-                      <button
-                        onClick={() => handleSelectCategory('all')}
-                        className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
-                      >
-                        <span>Khám phá sản phẩm</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                activeBanner.ctaPage
+                                  ? navigateTo(activeBanner.ctaPage)
+                                  : handleSelectCategory(activeBanner.ctaCategory ?? 'all')
+                              }
+                              className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
+                            >
+                              <span>{activeBanner.ctaLabel}</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
-                  </div>
-                </div>
-              </section>
+
+                    {/* Slide Arrows */}
+                    <button
+                      type="button"
+                      aria-label="Banner trước"
+                      onClick={() =>
+                        setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
+                      }
+                      className="hidden sm:flex absolute left-3 lg:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Banner tiếp theo"
+                      onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
+                      className="hidden sm:flex absolute right-3 lg:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Slide Dots */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                      {HERO_BANNERS.map((b, idx) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          aria-label={`Chuyển đến banner ${idx + 1}`}
+                          onClick={() => setHeroSlide(idx)}
+                          className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                            heroSlide === idx
+                              ? 'w-7 bg-[#0667d0]'
+                              : 'w-2.5 bg-[#17324d]/40 hover:bg-[#17324d]/65'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })()}
 
               {/* 4 Commitments Bar */}
               <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-6 pb-2">
