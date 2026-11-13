@@ -58,7 +58,7 @@ interface OrderSnapshot {
 }
 
 const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
-  all: 'Tất cả sản phẩm',
+  all: 'Sản phẩm',
   food: 'Dinh dưỡng & Pate',
   bed: 'Nệm & Không gian',
   backpack: 'Balo & Phụ kiện',
@@ -121,6 +121,7 @@ export function App() {
   // Catalog & Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | ProductCategory>('all');
+  const [petSpeciesFilter, setPetSpeciesFilter] = useState<'all' | 'dog' | 'cat'>('all');
   const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
 
   // Product Detail & Reviews State
@@ -188,6 +189,7 @@ export function App() {
 
   const handleSelectCategory = (cat: 'all' | ProductCategory) => {
     setSelectedCategoryFilter(cat);
+    setPetSpeciesFilter('all');
     navigateTo('search');
   };
 
@@ -316,6 +318,13 @@ export function App() {
     return CATALOG_PRODUCTS.filter((item) => {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
+      const isSpeciesFilterableCategory =
+        selectedCategoryFilter === 'food' || selectedCategoryFilter === 'hygiene';
+      const matchesSpecies =
+        !isSpeciesFilterableCategory ||
+        petSpeciesFilter === 'all' ||
+        item.petType === petSpeciesFilter ||
+        item.petType === 'both';
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
         !q ||
@@ -323,9 +332,9 @@ export function App() {
         item.brand.toLowerCase().includes(q) ||
         item.shortDesc.toLowerCase().includes(q) ||
         item.packSize.toLowerCase().includes(q);
-      return matchesCat && matchesQ;
+      return matchesCat && matchesSpecies && matchesQ;
     });
-  }, [searchQuery, selectedCategoryFilter]);
+  }, [searchQuery, selectedCategoryFilter, petSpeciesFilter]);
 
   const featuredProducts = useMemo(() => {
     if (homeCategoryTab === 'all') {
@@ -964,39 +973,18 @@ export function App() {
 
               {/* Filter Header — flat editorial header without nested bordered cards */}
               <div className="pb-8 mb-8 border-b border-[#dfe6f0]">
-                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-                  <div className="space-y-2">
-                    <h1 className="text-[30px] lg:text-[36px] font-extrabold text-[#17324d] tracking-[-0.02em]">
-                      {searchQuery
-                        ? `Kết quả cho "${searchQuery}"`
-                        : 'Cửa hàng đồ dùng thú cưng'}
-                    </h1>
-                    <p className="text-[14px] text-[#52657a] max-w-[58ch] leading-relaxed">
-                      Hiển thị {filteredSearchList.length} sản phẩm chính hãng. Bấm vào từng sản phẩm để xem thông tin và đánh giá thực tế.
-                    </p>
-                  </div>
-
-                  {!isLoggedIn && (
-                    <div className="flex items-center gap-2.5 text-[13px] text-[#17324d] shrink-0">
-                      <Lock className="w-4 h-4 text-[#0667d0] shrink-0" />
-                      <span>
-                        Bạn đang xem ở chế độ khách.{' '}
-                        <button
-                          onClick={() => requireLoginFor('search', 'Đăng nhập để mở khóa giỏ hàng và đặt mua.')}
-                          className="font-bold text-[#0667d0] hover:underline cursor-pointer"
-                        >
-                          Đăng nhập để mua hàng
-                        </button>
-                      </span>
-                    </div>
-                  )}
+                <div>
+                  <h1 className="text-[30px] lg:text-[36px] font-extrabold text-[#17324d] tracking-[-0.02em]">
+                    {searchQuery
+                      ? `Kết quả cho "${searchQuery}"`
+                      : 'Cửa hàng đồ dùng thú cưng'}
+                  </h1>
                 </div>
 
                 {/* Category Filter Pills */}
                 <div className="flex flex-wrap gap-2 mt-6">
                   {(
                     [
-                      { id: 'all', label: 'Tất cả sản phẩm' },
                       { id: 'food', label: 'Dinh dưỡng & Pate' },
                       { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế' },
                       { id: 'bed', label: 'Nệm & Không gian' },
@@ -1005,7 +993,10 @@ export function App() {
                   ).map((pill) => (
                     <button
                       key={pill.id}
-                      onClick={() => setSelectedCategoryFilter(pill.id)}
+                      onClick={() => {
+                        setSelectedCategoryFilter(pill.id);
+                        setPetSpeciesFilter('all');
+                      }}
                       className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
                         selectedCategoryFilter === pill.id
                           ? 'bg-[#0667d0] text-white'
@@ -1016,6 +1007,40 @@ export function App() {
                     </button>
                   ))}
                 </div>
+
+                {/* Compact Pet Species Filter (Chó / Mèo) for Dinh dưỡng & Thuốc */}
+                {(selectedCategoryFilter === 'food' || selectedCategoryFilter === 'hygiene') && (
+                  <div className="flex flex-wrap items-center gap-2 mt-3.5 pt-3.5 border-t border-[#dfe6f0]">
+                    <span className="text-[13px] font-semibold text-[#52657a] mr-1">
+                      Dành cho:
+                    </span>
+                    {(
+                      [
+                        { id: 'dog', label: 'Chó' },
+                        { id: 'cat', label: 'Mèo' },
+                      ] as const
+                    ).map((pet) => {
+                      const active = petSpeciesFilter === pet.id;
+                      return (
+                        <button
+                          key={pet.id}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() =>
+                            setPetSpeciesFilter((prev) => (prev === pet.id ? 'all' : pet.id))
+                          }
+                          className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold cursor-pointer transition-colors ${
+                            active
+                              ? 'bg-[#17324d] text-white border border-[#17324d]'
+                              : 'bg-white text-[#52657a] border border-[#dfe6f0] hover:border-[#0667d0] hover:text-[#17324d]'
+                          }`}
+                        >
+                          {pet.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Product Grid */}
@@ -1031,10 +1056,11 @@ export function App() {
                     onClick={() => {
                       setSearchQuery('');
                       setSelectedCategoryFilter('all');
+                      setPetSpeciesFilter('all');
                     }}
                     className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
                   >
-                    Xem tất cả sản phẩm
+                    Đặt lại bộ lọc
                   </button>
                 </div>
               ) : (
@@ -1267,15 +1293,10 @@ export function App() {
                     </div>
                   ) : (
                     <div className="pt-4 border-t border-[#dfe6f0] space-y-3">
-                      <div className="flex items-start gap-2.5">
-                        <Lock className="w-4 h-4 text-[#0667d0] shrink-0 mt-0.5" />
-                        <div>
-                          <div className="text-[14px] font-bold text-[#17324d]">
-                            Đăng nhập để đặt mua sản phẩm
-                          </div>
-                          <p className="text-[13px] text-[#52657a] mt-0.5 leading-relaxed">
-                            Khách tham quan có thể xem chi tiết và đọc đánh giá. Vui lòng đăng nhập thành viên để mua hàng.
-                          </p>
+                      <div className="flex items-center gap-2.5">
+                        <Lock className="w-4 h-4 text-[#0667d0] shrink-0" />
+                        <div className="text-[14px] font-bold text-[#17324d]">
+                          Đăng nhập để đặt mua sản phẩm
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2.5">

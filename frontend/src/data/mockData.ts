@@ -37,6 +37,7 @@ export interface ProductItem {
   discountBadge?: string;
   badge: string;
   category: ProductCategory;
+  petType?: 'dog' | 'cat' | 'both';
   image: string;
   gallery: string[];
   bgTone: string;
@@ -124,6 +125,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−20%',
     badge: 'ƯU ĐÃI −20%',
     category: 'food',
+    petType: 'dog',
     image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
@@ -186,6 +188,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '465.000₫',
     badge: 'BÁN CHẠY',
     category: 'food',
+    petType: 'cat',
     image: 'https://images.unsplash.com/photo-1734655154254-69d1d67f6a4e?auto=format&fit=crop&w=800&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1734655154254-69d1d67f6a4e?auto=format&fit=crop&w=800&q=85',
@@ -237,6 +240,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−11%',
     badge: 'ƯU ĐÃI −11%',
     category: 'food',
+    petType: 'dog',
     image: 'https://images.unsplash.com/photo-1764249453891-84799ed79e9e?auto=format&fit=crop&w=800&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1764249453891-84799ed79e9e?auto=format&fit=crop&w=800&q=85',
@@ -279,6 +283,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'CHUẨN THÚ Y',
     category: 'hygiene',
+    petType: 'both',
     image: '/images/prod-antifungal-spray.jpg',
     gallery: [
       '/images/prod-antifungal-spray.jpg',
@@ -330,6 +335,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'ĐẶC TRỊ NẤM',
     category: 'hygiene',
+    petType: 'both',
     image: '/images/prod-antifungal-cream.jpg',
     gallery: [
       '/images/prod-antifungal-cream.jpg',
@@ -369,6 +375,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '165.000₫',
     badge: 'PHÒNG KÝ SINH',
     category: 'hygiene',
+    petType: 'both',
     image: '/images/prod-flea-drops.jpg',
     gallery: [
       '/images/prod-flea-drops.jpg',
@@ -409,6 +416,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−16%',
     badge: 'PATE TƯƠI',
     category: 'food',
+    petType: 'both',
     image: '/images/prod-chicken-pate.jpg',
     gallery: [
       '/images/prod-chicken-pate.jpg',
@@ -543,6 +551,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−23%',
     badge: 'ƯU ĐÃI −23%',
     category: 'food',
+    petType: 'cat',
     image: 'https://images.unsplash.com/photo-1633761971690-ee5f3aca8415?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1633761971690-ee5f3aca8415?auto=format&fit=crop&w=700&q=85',
@@ -586,6 +595,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−20%',
     badge: 'ƯU ĐÃI −20%',
     category: 'food',
+    petType: 'dog',
     image: 'https://images.unsplash.com/photo-1714068691210-073dc52c6c1d?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1714068691210-073dc52c6c1d?auto=format&fit=crop&w=700&q=85',
@@ -629,6 +639,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−26%',
     badge: 'ƯU ĐÃI −26%',
     category: 'food',
+    petType: 'dog',
     image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=700&q=85',
@@ -672,6 +683,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−15%',
     badge: 'ƯU ĐÃI −15%',
     category: 'food',
+    petType: 'cat',
     image: '/images/prod-tuna-pate.jpg',
     gallery: [
       '/images/prod-tuna-pate.jpg',
@@ -710,6 +722,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '265.000₫',
     badge: 'CHĂM SÓC DA LÔNG',
     category: 'hygiene',
+    petType: 'both',
     image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
