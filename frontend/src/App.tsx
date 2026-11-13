@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ChevronLeft,
   ChevronRight,
   Minus,
   Plus,
@@ -58,16 +59,40 @@ interface OrderSnapshot {
 
 const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   all: 'Tất cả sản phẩm',
-  food: 'Thức ăn dinh dưỡng',
+  food: 'Dinh dưỡng & Pate',
   bed: 'Nệm & Không gian',
   backpack: 'Balo & Phụ kiện',
-  hygiene: 'Sữa tắm & Vệ sinh',
+  hygiene: 'Thuốc & Chăm sóc y tế',
   spa: 'Dịch vụ Spa',
 };
+
+const HERO_BANNERS = [
+  {
+    id: 'vet-care',
+    titleTop: 'CHĂM SÓC Y KHOA',
+    titleAccent: 'Dịu lành & An tâm.',
+    desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dịu nhẹ cho chó mèo.',
+    ctaLabel: 'Xem thuốc & chăm sóc',
+    ctaCategory: 'hygiene' as const,
+    image: '/images/hero-vet-banner.jpg',
+    imageAlt: 'Bộ sản phẩm thuốc trị nấm và chăm sóc da lông cho thú cưng',
+  },
+  {
+    id: 'gourmet-food',
+    titleTop: 'DINH DƯỠNG TỐI ƯU',
+    titleAccent: 'Bé khỏe mỗi ngày.',
+    desc: 'Pate tươi nguyên miếng, hạt khô cân bằng dưỡng chất nhập khẩu chính ngạch.',
+    ctaLabel: 'Khám phá dinh dưỡng & pate',
+    ctaCategory: 'food' as const,
+    image: '/images/hero-pate-banner.jpg',
+    imageAlt: 'Pate tươi và hạt dinh dưỡng cao cấp cho chó mèo',
+  },
+];
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [returnPage, setReturnPage] = useState<PageId>('home');
+  const [heroSlide, setHeroSlide] = useState(0);
 
   // Auth State (Guest mode strictly view-only; purchase/cart/booking require login)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -76,7 +101,7 @@ export function App() {
   // Catalog & Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | ProductCategory>('all');
-  const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'bed' | 'backpack'>('all');
+  const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
 
   // Product Detail & Reviews State
   const [selectedProductId, setSelectedProductId] = useState<string>(CATALOG_PRODUCTS[0].id);
@@ -283,9 +308,10 @@ export function App() {
   }, [searchQuery, selectedCategoryFilter]);
 
   const featuredProducts = useMemo(() => {
-    const base = CATALOG_PRODUCTS.filter((p) => p.isFeatured);
-    if (homeCategoryTab === 'all') return base;
-    return base.filter((p) => p.category === homeCategoryTab);
+    if (homeCategoryTab === 'all') {
+      return CATALOG_PRODUCTS.filter((p) => p.isFeatured).slice(0, 4);
+    }
+    return CATALOG_PRODUCTS.filter((p) => p.category === homeCategoryTab).slice(0, 4);
   }, [homeCategoryTab]);
 
   const flashSaleProducts = useMemo(() => {
@@ -367,102 +393,151 @@ export function App() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-full pb-12"
             >
-              {/* Hero Section */}
-              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-8 pb-10">
-                <div className="relative rounded-3xl bg-[#eff5ff] border border-[#dfe6f0] p-8 sm:p-10 lg:p-14 overflow-hidden">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
-                    <div className="lg:col-span-7 space-y-6">
-                      <h1 className="text-[36px] sm:text-[46px] lg:text-[54px] font-extrabold text-[#17324d] leading-[1.1] tracking-[-0.03em]">
-                        Chuẩn mực mới
-                        <br />
-                        <span className="text-[#0874e8]">cho thú cưng.</span>
-                      </h1>
-
-                      <p className="text-[16px] text-[#587085] max-w-[480px] leading-relaxed">
-                        Dinh dưỡng tuyển chọn, phụ kiện tinh giản và dịch vụ chăm sóc chuẩn y khoa.
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-3.5 pt-1">
-                        <button
-                          onClick={() => handleSelectCategory('all')}
-                          className="h-12 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[14px] flex items-center gap-2 shadow-[0_8px_20px_rgba(8,116,232,0.22)] cursor-pointer transition-colors"
-                        >
-                          <span>Khám phá sản phẩm</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => navigateTo('service')}
-                          className="h-12 px-6 rounded-xl bg-white border border-[#dfe6f0] text-[#17324d] font-bold text-[14px] hover:border-[#0874e8] hover:text-[#0874e8] transition-colors cursor-pointer"
-                        >
-                          Dịch vụ Spa &amp; Khách sạn
-                        </button>
+              {/* Hero Banner Showcase (petshome.vn inspired) */}
+              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-7 pb-8">
+                {(() => {
+                  const activeBanner = HERO_BANNERS[heroSlide];
+                  return (
+                    <div className="relative rounded-3xl bg-[#eff5ff] border border-[#dfe6f0] overflow-hidden shadow-[0_18px_46px_rgba(23,50,77,0.06)]">
+                      {/* Desktop full-bleed product photography with soft left scrim */}
+                      <div className="hidden md:block absolute inset-0">
+                        <AnimatePresence mode="wait">
+                          <motion.img
+                            key={activeBanner.id}
+                            src={activeBanner.image}
+                            alt={activeBanner.imageAlt}
+                            initial={{ opacity: 0.4 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0.4 }}
+                            transition={{ duration: 0.35 }}
+                            className="w-full h-full object-cover object-right"
+                          />
+                        </AnimatePresence>
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#eff5ff] via-[#eff5ff]/92 via-42% to-transparent" />
                       </div>
-                    </div>
 
-                    {/* Hero Visual */}
-                    <div className="lg:col-span-5 relative flex items-center justify-center">
-                      <div className="relative w-full max-w-[440px] aspect-4/3 rounded-2xl overflow-hidden shadow-[0_20px_44px_rgba(23,50,77,0.12)] border border-white">
-                        <img
-                          src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=900&q=85"
-                          alt="Sản phẩm và chăm sóc thú cưng PetHub"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-3.5 left-3.5 px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-xs border border-[#dfe6f0] shadow-xs">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#0874e8]">
-                            Bộ sưu tập 2026
-                          </div>
-                          <div className="text-[12px] font-bold text-[#17324d]">
-                            100% Chính hãng · Kiểm định thú y
+                      <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-9 sm:py-12 lg:py-14 md:min-h-[400px] lg:min-h-[430px] flex flex-col justify-center">
+                        <div className="max-w-[520px] space-y-5">
+                          <h1 className="text-[25px] sm:text-[38px] lg:text-[44px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
+                            {activeBanner.titleTop}
+                            <br />
+                            <span className="text-[#0874e8]">{activeBanner.titleAccent}</span>
+                          </h1>
+
+                          <p className="text-[14px] sm:text-[15px] text-[#425a70] max-w-[440px] leading-relaxed font-medium">
+                            {activeBanner.desc}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <button
+                              onClick={() => handleSelectCategory(activeBanner.ctaCategory)}
+                              className="h-11 sm:h-12 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[13px] sm:text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(8,116,232,0.22)] cursor-pointer transition-colors"
+                            >
+                              <span>{activeBanner.ctaLabel}</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => navigateTo('service')}
+                              className="h-11 sm:h-12 px-5 rounded-xl bg-white border border-[#dfe6f0] text-[#17324d] font-bold text-[13px] sm:text-[14px] hover:border-[#0874e8] hover:text-[#0874e8] transition-colors cursor-pointer"
+                            >
+                              Dịch vụ Spa
+                            </button>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* 4 Commitments Bar */}
-                  <div className="mt-12 pt-8 border-t border-[#dfe6f0] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                      {
-                        icon: ShieldCheck,
-                        color: 'text-[#0874e8]',
-                        title: 'Chính hãng 100%',
-                        sub: 'Kiểm định nguồn gốc rõ ràng',
-                      },
-                      {
-                        icon: Truck,
-                        color: 'text-[#ff641f]',
-                        title: 'Giao nhanh 2 giờ',
-                        sub: 'Miễn phí đơn từ 499.000₫',
-                      },
-                      {
-                        icon: Headphones,
-                        color: 'text-[#0874e8]',
-                        title: 'Tư vấn thú y',
-                        sub: 'Đồng hành chuyên môn mỗi ngày',
-                      },
-                      {
-                        icon: RotateCcw,
-                        color: 'text-[#17324d]',
-                        title: 'Đổi trả 7 ngày',
-                        sub: 'Thủ tục nhanh gọn, minh bạch',
-                      },
-                    ].map((pillar) => {
-                      const IconComp = pillar.icon;
-                      return (
-                        <div key={pillar.title} className="flex items-center gap-3.5">
-                          <div
-                            className={`w-10 h-10 rounded-xl bg-white border border-[#dfe6f0] flex items-center justify-center shrink-0 ${pillar.color}`}
-                          >
-                            <IconComp className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="text-[13px] font-bold text-[#17324d]">{pillar.title}</div>
-                            <div className="text-[12px] text-[#587085]">{pillar.sub}</div>
-                          </div>
+                      {/* Mobile studio visual cleanly framed on the product showcase side */}
+                      <div className="md:hidden px-4 pb-8">
+                        <div className="h-[210px] w-full rounded-2xl overflow-hidden border border-[#dfe6f0] bg-white">
+                          <img
+                            src={activeBanner.image}
+                            alt={activeBanner.imageAlt}
+                            className="w-[162%] max-w-none -ml-[62%] h-full object-cover object-center"
+                          />
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+
+                      {/* Left / Right Slide Arrows */}
+                      <button
+                        type="button"
+                        aria-label="Banner trước"
+                        onClick={() =>
+                          setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
+                        }
+                        className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/85 hover:bg-white border border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Banner tiếp theo"
+                        onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
+                        className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/85 hover:bg-white border border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+
+                      {/* Slide Dots */}
+                      <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                        {HERO_BANNERS.map((b, idx) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            aria-label={`Chuyển đến banner ${idx + 1}`}
+                            onClick={() => setHeroSlide(idx)}
+                            className={`h-2 rounded-full transition-all cursor-pointer ${
+                              heroSlide === idx ? 'w-7 bg-[#0874e8]' : 'w-2 bg-[#17324d]/25 hover:bg-[#17324d]/45'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 4 Commitments Bar */}
+                <div className="mt-5 rounded-2xl bg-white border border-[#dfe6f0] px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {[
+                    {
+                      icon: ShieldCheck,
+                      color: 'text-[#0874e8]',
+                      title: 'Chính hãng 100%',
+                      sub: 'Kiểm định nguồn gốc rõ ràng',
+                    },
+                    {
+                      icon: Truck,
+                      color: 'text-[#ff641f]',
+                      title: 'Giao nhanh 2 giờ',
+                      sub: 'Miễn phí đơn từ 499.000₫',
+                    },
+                    {
+                      icon: Headphones,
+                      color: 'text-[#0874e8]',
+                      title: 'Tư vấn thú y',
+                      sub: 'Đồng hành chuyên môn mỗi ngày',
+                    },
+                    {
+                      icon: RotateCcw,
+                      color: 'text-[#17324d]',
+                      title: 'Đổi trả 7 ngày',
+                      sub: 'Thủ tục nhanh gọn, minh bạch',
+                    },
+                  ].map((pillar) => {
+                    const IconComp = pillar.icon;
+                    return (
+                      <div key={pillar.title} className="flex items-center gap-3.5">
+                        <div
+                          className={`w-10 h-10 rounded-xl bg-[#f8faff] border border-[#dfe6f0] flex items-center justify-center shrink-0 ${pillar.color}`}
+                        >
+                          <IconComp className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-[13px] font-bold text-[#17324d]">{pillar.title}</div>
+                          <div className="text-[12px] text-[#587085]">{pillar.sub}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -502,7 +577,7 @@ export function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {STOREFRONT_SUPPLIES.map((sup) => (
                     <motion.div
                       key={sup.id}
@@ -552,7 +627,8 @@ export function App() {
                   <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar">
                     {[
                       { id: 'all', label: 'Tất cả' },
-                      { id: 'food', label: 'Thức ăn' },
+                      { id: 'food', label: 'Dinh dưỡng & Pate' },
+                      { id: 'hygiene', label: 'Thuốc & Y tế' },
                       { id: 'bed', label: 'Nệm ngủ' },
                       { id: 'backpack', label: 'Balo' },
                     ].map((tab) => (
@@ -901,10 +977,10 @@ export function App() {
                   {(
                     [
                       { id: 'all', label: 'Tất cả sản phẩm' },
-                      { id: 'food', label: 'Thức ăn dinh dưỡng' },
+                      { id: 'food', label: 'Dinh dưỡng & Pate' },
+                      { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế' },
                       { id: 'bed', label: 'Nệm & Không gian' },
                       { id: 'backpack', label: 'Balo & Phụ kiện' },
-                      { id: 'hygiene', label: 'Sữa tắm & Vệ sinh' },
                     ] as const
                   ).map((pill) => (
                     <button

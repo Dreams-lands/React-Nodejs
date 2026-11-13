@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -10,6 +10,8 @@ import {
   PawPrint,
   LogOut,
   LogIn,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
 
@@ -40,47 +42,50 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   cartCount,
   cartTotal,
 }) => {
+  const [productMenuOpen, setProductMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setProductMenuOpen(false);
+      }
+    };
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProductMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, []);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onNavigate('search');
   };
 
+  const handleContactClick = () => {
+    setProductMenuOpen(false);
+    const el = document.getElementById('contact-footer');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const productSubcategories: { id: 'all' | ProductCategory; label: string; desc: string }[] = [
+    { id: 'all', label: 'Tất cả sản phẩm', desc: 'Toàn bộ đồ dùng & chăm sóc chính hãng' },
+    { id: 'food', label: 'Dinh dưỡng & Pate', desc: 'Hạt khô, pate tươi, thanh thưởng sạch răng' },
+    { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế', desc: 'Thuốc trị nấm da, nhỏ gáy ve rận, sữa tắm' },
+    { id: 'bed', label: 'Nệm ngủ & Không gian', desc: 'Nệm lông cừu, ổ mây thoáng khí' },
+    { id: 'backpack', label: 'Balo & Phụ kiện', desc: 'Balo vận chuyển chống sốc, túi di chuyển' },
+  ];
+
   return (
     <header className="w-full bg-white sticky top-0 z-40 border-b border-[#dfe6f0]">
-      {/* 1. Top Announcement Bar */}
-      <div className="w-full h-8 bg-[#ff641f] text-white px-5 sm:px-8 lg:px-12 flex items-center justify-between text-[11px]">
-        <p className="font-medium truncate">
-          Miễn phí giao hàng toàn quốc cho đơn từ 499.000₫
-        </p>
-        <div className="hidden md:flex items-center gap-4 font-semibold shrink-0">
-          <button
-            onClick={() => onSelectCategory('all')}
-            className="hover:underline cursor-pointer"
-          >
-            Sản phẩm
-          </button>
-          <span className="opacity-45">|</span>
-          <button
-            onClick={() => onNavigate('service')}
-            className="hover:underline cursor-pointer"
-          >
-            Dịch vụ Spa
-          </button>
-          {isLoggedIn && (
-            <>
-              <span className="opacity-45">|</span>
-              <button
-                onClick={() => onNavigate('cart')}
-                className="hover:underline cursor-pointer"
-              >
-                Giỏ hàng của tôi
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 2. Main Header */}
+      {/* 1. Main Header */}
       <div className="max-w-[1320px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="h-16 md:h-20 flex items-center justify-between gap-3 md:gap-6">
           {/* Brand Logo */}
@@ -213,78 +218,109 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
         </form>
       </div>
 
-      {/* 3. Clean Navigation Bar */}
-      <nav className="w-full h-11 bg-[#0874e8] text-white" aria-label="Điều hướng chính">
+      {/* 2. Clean 4-Item Navigation Bar with Product Dropdown */}
+      <nav className="w-full h-11 bg-[#0874e8] text-white relative z-30" aria-label="Điều hướng chính">
         <div className="max-w-[1320px] mx-auto h-full px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0 flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1 sm:gap-2 text-[13px]">
             <button
-              onClick={() => onNavigate('home')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'home' ? 'bg-white/20' : 'hover:bg-white/10 text-white/90'
+              onClick={() => {
+                setProductMenuOpen(false);
+                onNavigate('home');
+              }}
+              className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+                currentPage === 'home' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/95'
               }`}
             >
               Trang chủ
             </button>
 
+            <div
+              ref={menuRef}
+              className="relative"
+              onMouseEnter={() => setProductMenuOpen(true)}
+              onMouseLeave={() => setProductMenuOpen(false)}
+            >
+              <button
+                type="button"
+                aria-expanded={productMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setProductMenuOpen((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 transition ${
+                  currentPage === 'search' || currentPage === 'product'
+                    ? 'bg-white/20 text-white'
+                    : 'hover:bg-white/10 text-white/95'
+                }`}
+              >
+                <span>Sản phẩm</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    productMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {productMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute left-0 top-full pt-1.5 w-[290px] sm:w-[320px] z-50"
+                >
+                  <div className="rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_18px_40px_rgba(23,50,77,0.14)] p-2 text-[#17324d]">
+                    {productSubcategories.map((sub) => {
+                      const isActive =
+                        currentPage === 'search' && activeCatalogCategory === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          role="menuitem"
+                          onClick={() => {
+                            onSelectCategory(sub.id);
+                            setProductMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                            isActive
+                              ? 'bg-[#eff5ff] text-[#0874e8]'
+                              : 'hover:bg-[#f8faff] text-[#17324d]'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-[13px] font-bold leading-snug">{sub.label}</div>
+                            <div className="text-[11px] text-[#587085] mt-0.5 leading-snug">
+                              {sub.desc}
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[#94a3b8] shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={() => onSelectCategory('all')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'search' && activeCatalogCategory === 'all'
-                  ? 'bg-white/20'
-                  : 'hover:bg-white/10 text-white/90'
+              onClick={() => {
+                setProductMenuOpen(false);
+                onNavigate('service');
+              }}
+              className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+                currentPage === 'service' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/95'
               }`}
             >
-              Sản phẩm
+              Spa
             </button>
 
             <button
-              onClick={() => onSelectCategory('food')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'search' && activeCatalogCategory === 'food'
-                  ? 'bg-white/20 font-semibold'
-                  : 'hover:bg-white/10 text-white/90'
-              }`}
+              type="button"
+              onClick={handleContactClick}
+              className="px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap hover:bg-white/10 text-white/95 transition"
             >
-              Dinh dưỡng
-            </button>
-
-            <button
-              onClick={() => onSelectCategory('bed')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'search' && activeCatalogCategory === 'bed'
-                  ? 'bg-white/20 font-semibold'
-                  : 'hover:bg-white/10 text-white/90'
-              }`}
-            >
-              Nệm ngủ
-            </button>
-
-            <button
-              onClick={() => onSelectCategory('backpack')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'search' && activeCatalogCategory === 'backpack'
-                  ? 'bg-white/20 font-semibold'
-                  : 'hover:bg-white/10 text-white/90'
-              }`}
-            >
-              Balo &amp; Phụ kiện
-            </button>
-
-            <button
-              onClick={() => onNavigate('service')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-medium cursor-pointer whitespace-nowrap shrink-0 transition ${
-                currentPage === 'service'
-                  ? 'bg-white/20 font-semibold'
-                  : 'hover:bg-white/10 text-white/90'
-              }`}
-            >
-              Spa &amp; Khách sạn
+              Liên hệ
             </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 text-[12px] font-semibold text-white/95 shrink-0">
             <Headphones className="w-3.5 h-3.5" />
-            <span>Hotline: 1900 6868</span>
+            <span>Miễn phí giao đơn từ 499.000₫ · Hotline: 1900 6868</span>
           </div>
         </div>
       </nav>
@@ -299,7 +335,7 @@ export const PetHubFooter: React.FC<{
   onQuickToast?: (msg: string) => void;
 }> = ({ onNavigate, onSelectCategory, isLoggedIn, onQuickToast }) => {
   return (
-    <footer className="w-full bg-white mt-12">
+    <footer id="contact-footer" className="w-full bg-white mt-12">
       {/* Newsletter Banner */}
       <div className="w-full bg-[#0874e8] py-8 px-5 sm:px-8 lg:px-12">
         <div className="max-w-[1320px] mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -365,7 +401,12 @@ export const PetHubFooter: React.FC<{
           <ul className="space-y-2.5 text-[13px] text-[#587085]">
             <li>
               <button onClick={() => onSelectCategory('food')} className="hover:text-[#0874e8] cursor-pointer">
-                Thức ăn dinh dưỡng
+                Dinh dưỡng &amp; Pate
+              </button>
+            </li>
+            <li>
+              <button onClick={() => onSelectCategory('hygiene')} className="hover:text-[#0874e8] cursor-pointer">
+                Thuốc &amp; Chăm sóc y tế
               </button>
             </li>
             <li>
@@ -376,11 +417,6 @@ export const PetHubFooter: React.FC<{
             <li>
               <button onClick={() => onSelectCategory('backpack')} className="hover:text-[#0874e8] cursor-pointer">
                 Túi &amp; Balo di chuyển
-              </button>
-            </li>
-            <li>
-              <button onClick={() => onSelectCategory('hygiene')} className="hover:text-[#0874e8] cursor-pointer">
-                Sữa tắm &amp; Vệ sinh
               </button>
             </li>
             <li>
@@ -497,7 +533,14 @@ export const CompactHeader: React.FC<{
             Sản phẩm
           </button>
           <button onClick={() => onNavigate('service')} className="hover:text-[#0874e8] transition cursor-pointer">
-            Dịch vụ Spa
+            Spa
+          </button>
+          <button
+            type="button"
+            onClick={() => document.getElementById('contact-footer')?.scrollIntoView({ behavior: 'smooth' })}
+            className="hover:text-[#0874e8] transition cursor-pointer"
+          >
+            Liên hệ
           </button>
         </nav>
 
@@ -524,7 +567,7 @@ export const CompactHeader: React.FC<{
 
 export const CompactFooter: React.FC<{ onNavigate: (p: PageId) => void }> = ({ onNavigate }) => {
   return (
-    <footer className="w-full bg-white border-t border-[#dfe6f0]">
+    <footer id="contact-footer" className="w-full bg-white border-t border-[#dfe6f0]">
       <div className="w-full py-5 bg-[#f8faff] flex flex-wrap items-center justify-center gap-3 px-4 text-[12px]">
         <Headphones className="w-4 h-4 text-[#0874e8]" />
         <span className="text-[#587085]">Cần hỗ trợ nhanh?</span>
