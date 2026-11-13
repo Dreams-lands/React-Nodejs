@@ -235,7 +235,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
 
             <div
               ref={menuRef}
-              className="relative"
+              className="sm:relative"
               onMouseEnter={() => setProductMenuOpen(true)}
               onMouseLeave={() => setProductMenuOpen(false)}
             >
@@ -261,7 +261,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               {productMenuOpen && (
                 <div
                   role="menu"
-                  className="absolute left-0 top-full pt-1.5 w-[290px] sm:w-[320px] z-50"
+                  className="absolute left-4 right-4 sm:left-0 sm:right-auto top-full pt-1.5 sm:w-[320px] z-50"
                 >
                   <div className="rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_18px_40px_rgba(23,50,77,0.14)] p-2 text-[#17324d]">
                     {productSubcategories.map((sub) => {
