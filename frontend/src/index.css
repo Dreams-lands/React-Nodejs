@@ -2,11 +2,11 @@
 
 @layer base {
   :root {
-    --ph-blue: #0874e8;
-    --ph-blue-deep: #1464f4;
-    --ph-orange: #ff641f;
+    --ph-blue: #0667d0;
+    --ph-blue-deep: #0558b5;
+    --ph-orange: #c2410c;
     --ph-ink: #17324d;
-    --ph-muted: #587085;
+    --ph-muted: #52657a;
     --ph-surface: #eff5ff;
     --ph-surface-soft: #f8faff;
     --ph-border: #dfe6f0;
@@ -28,12 +28,12 @@
   }
 
   ::selection {
-    background-color: #0874e8;
+    background-color: #0667d0;
     color: #ffffff;
   }
 
   :focus-visible {
-    outline: 2px solid #0874e8;
+    outline: 2px solid #0667d0;
     outline-offset: 2px;
   }
 }

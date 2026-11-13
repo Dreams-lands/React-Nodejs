@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
   ChevronRight,
   Minus,
   Plus,
@@ -66,53 +65,9 @@ const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   spa: 'Dịch vụ Spa',
 };
 
-const HERO_BANNERS: Array<{
-  id: string;
-  titleTop: string;
-  titleAccent: string;
-  desc: string;
-  ctaLabel: string;
-  ctaCategory?: 'hygiene' | 'food';
-  ctaPage?: PageId;
-  image: string;
-  imageAlt: string;
-}> = [
-  {
-    id: 'vet-care',
-    titleTop: 'CHĂM SÓC Y KHOA',
-    titleAccent: 'Dịu lành & An tâm.',
-    desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dịu nhẹ cho chó mèo.',
-    ctaLabel: 'Xem thuốc & chăm sóc',
-    ctaCategory: 'hygiene',
-    image: '/images/hero-vet-banner.jpg',
-    imageAlt: 'Bộ sản phẩm thuốc trị nấm và chăm sóc da lông cho thú cưng',
-  },
-  {
-    id: 'gourmet-food',
-    titleTop: 'DINH DƯỠNG TỐI ƯU',
-    titleAccent: 'Bé khỏe mỗi ngày.',
-    desc: 'Pate tươi nguyên miếng, hạt khô cân bằng dưỡng chất nhập khẩu chính ngạch.',
-    ctaLabel: 'Khám phá dinh dưỡng & pate',
-    ctaCategory: 'food',
-    image: '/images/hero-pate-banner.jpg',
-    imageAlt: 'Pate tươi và hạt dinh dưỡng cao cấp cho chó mèo',
-  },
-  {
-    id: 'spa-hotel',
-    titleTop: 'DỊCH VỤ SPA 5 SAO',
-    titleAccent: 'Thư giãn & Tỏa sáng.',
-    desc: 'Quy trình tắm thảo mộc 7 bước chuẩn y khoa, cắt tỉa tạo kiểu và khách sạn giám sát 24/7.',
-    ctaLabel: 'Khám phá dịch vụ Spa',
-    ctaPage: 'service',
-    image: '/images/hero-spa-banner.jpg',
-    imageAlt: 'Dịch vụ Spa tắm gội và tạo kiểu chuẩn y khoa cho thú cưng',
-  },
-];
-
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [returnPage, setReturnPage] = useState<PageId>('home');
-  const [heroSlide, setHeroSlide] = useState(0);
 
   // Auth State (Guest mode strictly view-only; purchase/cart/booking require login)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -413,124 +368,59 @@ export function App() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-full pb-12"
             >
-              {/* Hero Banner Showcase (petshome.vn inspired) */}
-              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-7 pb-8">
-                {(() => {
-                  const activeBanner = HERO_BANNERS[heroSlide];
-                  return (
-                    <div className="relative rounded-3xl bg-[#eff5ff] border border-[#dfe6f0] overflow-hidden shadow-[0_18px_46px_rgba(23,50,77,0.06)]">
-                      {/* Desktop full-bleed product photography with soft left scrim */}
-                      <div className="hidden md:block absolute inset-0">
-                        <AnimatePresence mode="wait">
-                          <motion.img
-                            key={activeBanner.id}
-                            src={activeBanner.image}
-                            alt={activeBanner.imageAlt}
-                            initial={{ opacity: 0.4 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0.4 }}
-                            transition={{ duration: 0.35 }}
-                            className="w-full h-full object-cover object-right"
-                          />
-                        </AnimatePresence>
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#eff5ff] via-[#eff5ff]/95 via-48% to-transparent" />
-                      </div>
+              {/* Full-background Hero Banner */}
+              <section className="relative w-full overflow-hidden bg-[#eff5ff] border-b border-[#dfe6f0]">
+                <img
+                  src="/images/hero-spa-banner.jpg"
+                  alt="Chăm sóc thú cưng chuẩn y khoa và dịch vụ Spa 5 sao tại PetHub"
+                  className="absolute inset-0 w-full h-full object-cover object-[76%_center] sm:object-right"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/95 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
 
-                      <div className="relative z-10 px-6 sm:px-16 lg:px-20 py-9 sm:py-12 lg:py-14 md:min-h-[400px] lg:min-h-[430px] flex flex-col justify-center">
-                        <div className="max-w-[520px] space-y-5">
-                          <h1 className="text-[25px] sm:text-[38px] lg:text-[44px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
-                            {activeBanner.titleTop}
-                            <br />
-                            <span className="text-[#0874e8]">{activeBanner.titleAccent}</span>
-                          </h1>
+                <div className="relative z-10 max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-12 sm:py-16 lg:py-20 min-h-[360px] sm:min-h-[430px] lg:min-h-[470px] flex flex-col justify-center">
+                  <div className="max-w-[540px] space-y-5">
+                    <h1 className="text-[28px] sm:text-[40px] lg:text-[46px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
+                      Chăm sóc chuẩn y khoa.
+                      <br />
+                      <span className="text-[#0667d0]">An tâm mỗi ngày.</span>
+                    </h1>
 
-                          <p className="text-[14px] sm:text-[15px] text-[#425a70] max-w-[440px] leading-relaxed font-medium">
-                            {activeBanner.desc}
-                          </p>
+                    <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
+                      Dinh dưỡng tuyển chọn, thuốc đặc trị chính hãng và dịch vụ Spa 5 sao cho thú cưng.
+                    </p>
 
-                          <div className="flex flex-wrap items-center gap-3 pt-1">
-                            <button
-                              onClick={() =>
-                                activeBanner.ctaPage
-                                  ? navigateTo(activeBanner.ctaPage)
-                                  : activeBanner.ctaCategory && handleSelectCategory(activeBanner.ctaCategory)
-                              }
-                              className="h-11 sm:h-12 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[13px] sm:text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(8,116,232,0.22)] cursor-pointer transition-colors"
-                            >
-                              <span>{activeBanner.ctaLabel}</span>
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Mobile studio visual cleanly framed on the product showcase side */}
-                      <div className="md:hidden px-4 pb-8">
-                        <div className="h-[210px] w-full rounded-2xl overflow-hidden border border-[#dfe6f0] bg-white">
-                          <img
-                            src={activeBanner.image}
-                            alt={activeBanner.imageAlt}
-                            className="w-[162%] max-w-none -ml-[62%] h-full object-cover object-center"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Left / Right Slide Arrows */}
+                    <div className="pt-1">
                       <button
-                        type="button"
-                        aria-label="Banner trước"
-                        onClick={() =>
-                          setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
-                        }
-                        className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/85 hover:bg-white border border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                        onClick={() => handleSelectCategory('all')}
+                        className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <span>Khám phá sản phẩm</span>
+                        <ArrowRight className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
-                        aria-label="Banner tiếp theo"
-                        onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
-                        className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/85 hover:bg-white border border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-
-                      {/* Slide Dots */}
-                      <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-                        {HERO_BANNERS.map((b, idx) => (
-                          <button
-                            key={b.id}
-                            type="button"
-                            aria-label={`Chuyển đến banner ${idx + 1}`}
-                            onClick={() => setHeroSlide(idx)}
-                            className={`h-2 rounded-full transition-all cursor-pointer ${
-                              heroSlide === idx ? 'w-7 bg-[#0874e8]' : 'w-2 bg-[#17324d]/25 hover:bg-[#17324d]/45'
-                            }`}
-                          />
-                        ))}
-                      </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
+              </section>
 
-                {/* 4 Commitments Bar */}
-                <div className="mt-5 rounded-2xl bg-white border border-[#dfe6f0] px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* 4 Commitments Bar */}
+              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-6 pb-2">
+                <div className="rounded-2xl bg-white border border-[#dfe6f0] px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {[
                     {
                       icon: ShieldCheck,
-                      color: 'text-[#0874e8]',
+                      color: 'text-[#0667d0]',
                       title: 'Chính hãng 100%',
                       sub: 'Kiểm định nguồn gốc rõ ràng',
                     },
                     {
                       icon: Truck,
-                      color: 'text-[#ff641f]',
+                      color: 'text-[#c2410c]',
                       title: 'Giao nhanh 2 giờ',
                       sub: 'Miễn phí đơn từ 499.000₫',
                     },
                     {
                       icon: Headphones,
-                      color: 'text-[#0874e8]',
+                      color: 'text-[#0667d0]',
                       title: 'Tư vấn thú y',
                       sub: 'Đồng hành chuyên môn mỗi ngày',
                     },
@@ -550,8 +440,8 @@ export function App() {
                           <IconComp className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="text-[13px] font-bold text-[#17324d]">{pillar.title}</div>
-                          <div className="text-[12px] text-[#587085]">{pillar.sub}</div>
+                          <div className="text-[14px] font-bold text-[#17324d]">{pillar.title}</div>
+                          <div className="text-[13px] text-[#52657a]">{pillar.sub}</div>
                         </div>
                       </div>
                     );
@@ -562,17 +452,17 @@ export function App() {
               {/* Brand Statement */}
               <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-10 border-b border-[#dfe6f0]">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="space-y-2 max-w-[680px]">
+                  <div className="space-y-2 max-w-[58ch]">
                     <h2 className="text-[26px] lg:text-[32px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                       Tin chọn bởi hơn 50.000 gia đình Việt.
                     </h2>
-                    <p className="text-[14px] text-[#587085] leading-relaxed">
-                      Mỗi sản phẩm tại PetHub đều được chọn lọc kỹ lưỡng về thành phần, chất liệu và độ an toàn lâu dài.
+                    <p className="text-[14px] text-[#52657a] leading-relaxed max-w-[58ch]">
+                      Mỗi sản phẩm tại PetHub đều được chọn lọc kỹ lưỡng về thành phần, chất liệu và độ an toàn.
                     </p>
                   </div>
                   <button
                     onClick={() => handleSelectCategory('all')}
-                    className="text-[13px] font-bold text-[#0874e8] hover:underline flex items-center gap-1.5 cursor-pointer self-start lg:self-auto shrink-0"
+                    className="py-2 px-1 text-[13px] font-bold text-[#0667d0] hover:underline flex items-center gap-1.5 cursor-pointer self-start lg:self-auto shrink-0"
                   >
                     <span>Xem toàn bộ sản phẩm</span>
                     <ChevronRight className="w-4 h-4" />
@@ -588,7 +478,7 @@ export function App() {
                   </h2>
                   <button
                     onClick={() => handleSelectCategory('all')}
-                    className="text-[13px] font-bold text-[#0874e8] hover:underline flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                    className="py-2 px-1 text-[13px] font-bold text-[#0667d0] hover:underline flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
                   >
                     <span>Tất cả danh mục</span>
                     <ArrowRight className="w-4 h-4" />
@@ -601,7 +491,7 @@ export function App() {
                       key={sup.id}
                       whileHover={{ y: -4 }}
                       onClick={() => handleSelectCategory(sup.filterCategory)}
-                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0874e8]/50 p-5 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/50 p-5 cursor-pointer transition-all duration-300 flex flex-col justify-between"
                     >
                       <div>
                         <div className="h-48 w-full rounded-xl overflow-hidden mb-5 bg-[#f8faff]">
@@ -611,16 +501,16 @@ export function App() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
-                        <h3 className="text-[19px] font-bold text-[#17324d] group-hover:text-[#0874e8] transition-colors">
+                        <h3 className="text-[19px] font-bold text-[#17324d] group-hover:text-[#0667d0] transition-colors">
                           {sup.title}
                         </h3>
-                        <p className="text-[13px] text-[#587085] mt-1.5 leading-relaxed">
+                        <p className="text-[13px] text-[#52657a] mt-1.5 leading-relaxed">
                           {sup.desc}
                         </p>
                       </div>
-                      <div className="pt-4 mt-5 border-t border-[#dfe6f0] flex items-center justify-between">
-                        <span className="text-[11px] text-[#587085] font-medium">{sup.meta}</span>
-                        <span className="text-[12px] font-bold text-[#0874e8] flex items-center gap-1">
+                      <div className="pt-4 mt-5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
+                        <span className="text-[13px] text-[#52657a] font-medium">{sup.meta}</span>
+                        <span className="text-[13px] font-bold text-[#0667d0] flex items-center gap-1 shrink-0">
                           <span>Khám phá</span>
                           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                         </span>
@@ -637,12 +527,12 @@ export function App() {
                     <h2 className="text-[26px] lg:text-[30px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                       Sản phẩm nổi bật
                     </h2>
-                    <p className="text-[13px] text-[#587085] mt-1">
+                    <p className="text-[14px] text-[#52657a] mt-1">
                       Được khách hàng đánh giá cao và tin dùng mỗi ngày.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar">
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar">
                     {[
                       { id: 'all', label: 'Tất cả' },
                       { id: 'food', label: 'Dinh dưỡng & Pate' },
@@ -653,10 +543,10 @@ export function App() {
                       <button
                         key={tab.id}
                         onClick={() => setHomeCategoryTab(tab.id as typeof homeCategoryTab)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                        className={`px-4 py-2 rounded-lg text-[13px] font-bold transition cursor-pointer whitespace-nowrap ${
                           homeCategoryTab === tab.id
-                            ? 'bg-[#0874e8] text-white shadow-xs'
-                            : 'text-[#587085] hover:text-[#17324d]'
+                            ? 'bg-[#0667d0] text-white shadow-xs'
+                            : 'text-[#52657a] hover:text-[#17324d]'
                         }`}
                       >
                         {tab.label}
@@ -669,7 +559,7 @@ export function App() {
                   {featuredProducts.map((item) => (
                     <div
                       key={item.id}
-                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0874e8]/40 p-4 flex flex-col justify-between transition-all hover:shadow-[0_14px_30px_rgba(23,50,77,0.07)]"
+                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-all hover:shadow-[0_14px_30px_rgba(23,50,77,0.07)]"
                     >
                       <div>
                         <div
@@ -677,7 +567,7 @@ export function App() {
                           className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3.5 cursor-pointer"
                         >
                           {item.discountBadge && (
-                            <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#ff641f] text-white text-[10px] font-bold z-10">
+                            <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
                               {item.discountBadge}
                             </span>
                           )}
@@ -689,29 +579,29 @@ export function App() {
                         </div>
 
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-[#0874e8] uppercase tracking-wider">
+                          <span className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
                             {item.brand}
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#587085] tabular-nums">
-                            <Star className="w-3 h-3 fill-[#ffb547] text-[#ffb547]" />
+                          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#52657a] tabular-nums">
+                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
                             {item.rating.toFixed(1)} ({item.reviewCount})
                           </span>
                         </div>
 
-                        <h4
+                        <h3
                           onClick={() => openProductDetail(item)}
-                          className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0874e8] cursor-pointer"
+                          className="text-[15px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0667d0] cursor-pointer"
                         >
                           {item.name}
-                        </h4>
-                        <div className="text-[11px] text-[#587085] mt-1">{item.packSize}</div>
+                        </h3>
+                        <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
                       </div>
 
                       <div className="pt-3.5 mt-3.5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
                         <div className="tabular-nums">
                           <div className="text-[16px] font-extrabold text-[#17324d]">{item.price}</div>
                           {item.originalPrice && (
-                            <div className="text-[11px] text-[#94a3b8] line-through">
+                            <div className="text-[12px] text-[#52657a] line-through">
                               {item.originalPrice}
                             </div>
                           )}
@@ -720,7 +610,7 @@ export function App() {
                         {isLoggedIn ? (
                           <button
                             onClick={() => addProductToCart(item)}
-                            className="h-9 px-3 rounded-lg bg-[#0874e8] hover:bg-[#1464f4] text-white font-semibold text-[12px] flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
                             <ShoppingBag className="w-3.5 h-3.5" />
                             <span>Thêm vào giỏ</span>
@@ -728,7 +618,7 @@ export function App() {
                         ) : (
                           <button
                             onClick={() => openProductDetail(item)}
-                            className="h-9 px-3 rounded-lg border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] hover:text-[#0874e8] font-semibold text-[12px] cursor-pointer transition-colors"
+                            className="py-2 px-3.5 rounded-lg border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-semibold text-[13px] cursor-pointer transition-colors"
                           >
                             Xem chi tiết
                           </button>
@@ -739,32 +629,32 @@ export function App() {
                 </div>
               </section>
 
-              {/* Limited Flash Sale */}
-              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-10">
-                <div className="rounded-3xl bg-gradient-to-r from-[#eff5ff] via-[#f8faff] to-[#fff5f0] border border-[#dfe6f0] p-6 sm:p-8 lg:p-10">
+              {/* Limited Flash Sale — unboxed full-width subtle band so cards are NOT nested */}
+              <section className="w-full bg-[#f8faff] border-y border-[#dfe6f0] py-12">
+                <div className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#dfe6f0]">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#ff641f] text-white flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#c2410c] text-white flex items-center justify-center shrink-0">
                         <Zap className="w-5 h-5" />
                       </div>
                       <div>
                         <h2 className="text-[22px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                           Ưu đãi giới hạn hôm nay
                         </h2>
-                        <p className="text-[12px] text-[#587085]">
+                        <p className="text-[13px] text-[#52657a]">
                           Mức giá đặc quyền áp dụng đến hết khung giờ.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 tabular-nums">
-                      <span className="text-[12px] font-semibold text-[#587085]">Kết thúc sau</span>
-                      <div className="flex items-center gap-1 text-xs font-bold text-white">
+                      <span className="text-[13px] font-semibold text-[#52657a]">Kết thúc sau</span>
+                      <div className="flex items-center gap-1 text-[13px] font-bold text-white">
                         <span className="px-2.5 py-1.5 rounded-lg bg-[#17324d]">08</span>
                         <span className="text-[#17324d]">:</span>
                         <span className="px-2.5 py-1.5 rounded-lg bg-[#17324d]">45</span>
                         <span className="text-[#17324d]">:</span>
-                        <span className="px-2.5 py-1.5 rounded-lg bg-[#ff641f]">22</span>
+                        <span className="px-2.5 py-1.5 rounded-lg bg-[#c2410c]">22</span>
                       </div>
                     </div>
                   </div>
@@ -784,7 +674,7 @@ export function App() {
                               className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3 cursor-pointer"
                             >
                               {item.discountBadge && (
-                                <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#ff641f] text-white text-[10px] font-bold z-10">
+                                <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
                                   {item.discountBadge}
                                 </span>
                               )}
@@ -795,29 +685,29 @@ export function App() {
                               />
                             </div>
 
-                            <div className="text-[10px] font-bold text-[#0874e8] uppercase tracking-wider">
+                            <div className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
                               {item.brand}
                             </div>
-                            <h4
+                            <h3
                               onClick={() => openProductDetail(item)}
-                              className="text-[13px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0874e8] cursor-pointer"
+                              className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0] cursor-pointer"
                             >
                               {item.name}
-                            </h4>
-                            <div className="text-[11px] text-[#587085] mt-1">{item.packSize}</div>
-                            <div className="inline-flex items-center gap-1 text-[11px] text-[#587085] mt-1 tabular-nums">
-                              <Star className="w-3 h-3 fill-[#ffb547] text-[#ffb547]" />
+                            </h3>
+                            <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
+                            <div className="inline-flex items-center gap-1 text-[12px] text-[#52657a] mt-1 tabular-nums">
+                              <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
                               <span>{item.rating.toFixed(1)} ({item.reviewCount})</span>
                             </div>
                           </div>
 
                           <div className="pt-3 mt-3 border-t border-[#dfe6f0] space-y-2.5">
                             <div className="flex items-baseline gap-2 tabular-nums">
-                              <span className="text-[17px] font-extrabold text-[#ff641f]">
+                              <span className="text-[17px] font-extrabold text-[#c2410c]">
                                 {item.price}
                               </span>
                               {item.originalPrice && (
-                                <span className="text-[11px] text-[#94a3b8] line-through">
+                                <span className="text-[12px] text-[#52657a] line-through">
                                   {item.originalPrice}
                                 </span>
                               )}
@@ -826,11 +716,11 @@ export function App() {
                             <div>
                               <div className="h-1.5 w-full bg-[#f0f3f6] rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-[#ff641f] rounded-full"
+                                  className="h-full bg-[#c2410c] rounded-full"
                                   style={{ width: `${Math.min(100, (sold / total) * 100)}%` }}
                                 />
                               </div>
-                              <div className="text-[10px] text-[#587085] font-medium mt-1 flex justify-between tabular-nums">
+                              <div className="text-[12px] text-[#52657a] font-medium mt-1.5 flex justify-between tabular-nums">
                                 <span>Đã bán {sold}</span>
                                 <span>Còn {Math.max(0, total - sold)}</span>
                               </div>
@@ -839,14 +729,14 @@ export function App() {
                             {isLoggedIn ? (
                               <button
                                 onClick={() => addProductToCart(item)}
-                                className="w-full py-2 rounded-lg bg-[#0874e8] hover:bg-[#1464f4] text-white font-semibold text-xs cursor-pointer transition-colors"
+                                className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
                               >
                                 Thêm vào giỏ
                               </button>
                             ) : (
                               <button
                                 onClick={() => openProductDetail(item)}
-                                className="w-full py-2 rounded-lg border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] hover:text-[#0874e8] font-semibold text-xs cursor-pointer transition-colors"
+                                className="w-full py-2.5 px-4 rounded-lg border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-semibold text-[13px] cursor-pointer transition-colors"
                               >
                                 Xem chi tiết &amp; Đánh giá
                               </button>
@@ -860,38 +750,40 @@ export function App() {
               </section>
 
               {/* Services Section */}
-              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-12 border-t border-[#dfe6f0]">
-                <div className="max-w-[540px] mb-9 space-y-2">
+              <section className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-12">
+                <div className="max-w-[54ch] mb-9 space-y-2">
                   <h2 className="text-[28px] lg:text-[32px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                     Chăm sóc chuẩn y khoa.
                   </h2>
-                  <p className="text-[14px] text-[#587085]">
+                  <p className="text-[14px] text-[#52657a]">
                     Không gian thư giãn riêng biệt, nhẹ nhàng và an toàn tuyệt đối.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-8 flex flex-col justify-between min-h-[300px]">
+                  <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-8 flex flex-col justify-between min-h-[270px]">
                     <div className="space-y-3">
-                      <div className="w-11 h-11 rounded-xl bg-white border border-[#dfe6f0] text-[#0874e8] flex items-center justify-center">
-                        <Sparkles className="w-5 h-5" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-[#dfe6f0] text-[#0667d0] flex items-center justify-center shrink-0">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-[22px] font-bold text-[#17324d]">
+                          Spa &amp; Grooming
+                        </h3>
                       </div>
-                      <h3 className="text-[22px] font-bold text-[#17324d]">
-                        Spa &amp; Grooming
-                      </h3>
-                      <p className="text-[13px] text-[#587085] leading-relaxed max-w-[420px]">
+                      <p className="text-[14px] text-[#52657a] leading-relaxed max-w-[46ch]">
                         Tắm thảo mộc, cắt tỉa tạo phom và vệ sinh toàn diện theo quy trình 7 bước dịu nhẹ.
                       </p>
                     </div>
 
-                    <div className="pt-5 mt-6 border-t border-[#dfe6f0] flex items-center justify-between">
+                    <div className="pt-5 mt-6 border-t border-[#dfe6f0] flex items-center justify-between gap-4">
                       <div className="tabular-nums">
-                        <div className="text-[11px] text-[#587085]">Chỉ từ</div>
-                        <div className="text-[20px] font-extrabold text-[#0874e8]">180.000₫</div>
+                        <div className="text-[13px] text-[#52657a]">Chỉ từ</div>
+                        <div className="text-[20px] font-extrabold text-[#0667d0]">180.000₫</div>
                       </div>
                       <button
                         onClick={() => navigateTo('service')}
-                        className="h-10 px-5 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-semibold text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                        className="py-2.5 px-5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors flex items-center gap-1.5"
                       >
                         <span>{isLoggedIn ? 'Đặt lịch Spa' : 'Xem bảng giá'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -899,30 +791,32 @@ export function App() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-[#fff8f5] border border-[#ffe4d6] p-8 flex flex-col justify-between min-h-[300px]">
+                  <div className="rounded-2xl bg-[#fff8f5] border border-[#ffe4d6] p-8 flex flex-col justify-between min-h-[270px]">
                     <div className="space-y-3">
-                      <div className="w-11 h-11 rounded-xl bg-white border border-[#ffe4d6] text-[#ff641f] flex items-center justify-center">
-                        <PawPrint className="w-5 h-5" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-[#ffe4d6] text-[#c2410c] flex items-center justify-center shrink-0">
+                          <PawPrint className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-[22px] font-bold text-[#17324d]">
+                          Khách sạn thú cưng 5 sao
+                        </h3>
                       </div>
-                      <h3 className="text-[22px] font-bold text-[#17324d]">
-                        Khách sạn thú cưng 5 sao
-                      </h3>
-                      <p className="text-[13px] text-[#587085] leading-relaxed max-w-[420px]">
+                      <p className="text-[14px] text-[#52657a] leading-relaxed max-w-[46ch]">
                         Phòng điều hòa riêng biệt, camera theo dõi 24/7 và chế độ dinh dưỡng theo yêu cầu.
                       </p>
                     </div>
 
-                    <div className="pt-5 mt-6 border-t border-[#ffe4d6] flex items-center justify-between">
+                    <div className="pt-5 mt-6 border-t border-[#ffe4d6] flex items-center justify-between gap-4">
                       <div className="tabular-nums">
-                        <div className="text-[11px] text-[#587085]">Chỉ từ</div>
-                        <div className="text-[20px] font-extrabold text-[#ff641f]">150.000₫ / ngày</div>
+                        <div className="text-[13px] text-[#52657a]">Chỉ từ</div>
+                        <div className="text-[20px] font-extrabold text-[#c2410c]">150.000₫ / ngày</div>
                       </div>
                       <button
                         onClick={() => {
                           setSelectedPackageId('pkg-4');
                           navigateTo('service');
                         }}
-                        className="h-10 px-5 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-semibold text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                        className="py-2.5 px-5 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-semibold text-[13px] cursor-pointer transition-colors flex items-center gap-1.5"
                       >
                         <span>{isLoggedIn ? 'Đặt phòng ngay' : 'Xem chi tiết'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -947,21 +841,21 @@ export function App() {
               className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
             >
               {/* Breadcrumb */}
-              <div className="h-14 flex items-center gap-2.5 text-[12px]">
+              <div className="h-14 flex items-center gap-2.5 text-[13px]">
                 <button
                   onClick={() => navigateTo('home')}
-                  className="text-[#587085] hover:text-[#0874e8] cursor-pointer"
+                  className="text-[#52657a] hover:text-[#0667d0] cursor-pointer"
                 >
                   Trang chủ
                 </button>
-                <ChevronRight className="w-3.5 h-3.5 text-[#587085]" />
-                <span className="font-semibold text-[#0874e8]">
+                <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
+                <span className="font-semibold text-[#0667d0]">
                   {CATEGORY_LABELS[selectedCategoryFilter]}
                 </span>
               </div>
 
-              {/* Filter Header */}
-              <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-7 lg:p-10 mb-8">
+              {/* Filter Header — flat editorial header without nested bordered cards */}
+              <div className="pb-8 mb-8 border-b border-[#dfe6f0]">
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
                   <div className="space-y-2">
                     <h1 className="text-[30px] lg:text-[36px] font-extrabold text-[#17324d] tracking-[-0.02em]">
@@ -969,19 +863,19 @@ export function App() {
                         ? `Kết quả cho "${searchQuery}"`
                         : 'Cửa hàng đồ dùng thú cưng'}
                     </h1>
-                    <p className="text-[14px] text-[#587085]">
+                    <p className="text-[14px] text-[#52657a] max-w-[58ch] leading-relaxed">
                       Hiển thị {filteredSearchList.length} sản phẩm chính hãng. Bấm vào từng sản phẩm để xem thông tin và đánh giá thực tế.
                     </p>
                   </div>
 
                   {!isLoggedIn && (
-                    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white border border-[#dfe6f0] text-xs text-[#17324d] shrink-0">
-                      <Lock className="w-4 h-4 text-[#0874e8] shrink-0" />
+                    <div className="flex items-center gap-2.5 text-[13px] text-[#17324d] shrink-0">
+                      <Lock className="w-4 h-4 text-[#0667d0] shrink-0" />
                       <span>
                         Bạn đang xem ở chế độ khách.{' '}
                         <button
                           onClick={() => requireLoginFor('search', 'Đăng nhập để mở khóa giỏ hàng và đặt mua.')}
-                          className="font-bold text-[#0874e8] hover:underline cursor-pointer"
+                          className="font-bold text-[#0667d0] hover:underline cursor-pointer"
                         >
                           Đăng nhập để mua hàng
                         </button>
@@ -1004,10 +898,10 @@ export function App() {
                     <button
                       key={pill.id}
                       onClick={() => setSelectedCategoryFilter(pill.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
                         selectedCategoryFilter === pill.id
-                          ? 'bg-[#0874e8] text-white'
-                          : 'bg-white text-[#587085] border border-[#dfe6f0] hover:border-[#0874e8] hover:text-[#17324d]'
+                          ? 'bg-[#0667d0] text-white'
+                          : 'bg-[#f8faff] text-[#52657a] border border-[#dfe6f0] hover:border-[#0667d0] hover:text-[#17324d]'
                       }`}
                     >
                       {pill.label}
@@ -1022,7 +916,7 @@ export function App() {
                   <h2 className="text-lg font-bold text-[#17324d]">
                     Không tìm thấy sản phẩm phù hợp
                   </h2>
-                  <p className="text-sm text-[#587085]">
+                  <p className="text-sm text-[#52657a]">
                     Thử tìm với từ khóa khác hoặc đặt lại bộ lọc danh mục.
                   </p>
                   <button
@@ -1030,7 +924,7 @@ export function App() {
                       setSearchQuery('');
                       setSelectedCategoryFilter('all');
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#0874e8] text-white text-xs font-bold cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
                   >
                     Xem tất cả sản phẩm
                   </button>
@@ -1067,22 +961,22 @@ export function App() {
               className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
             >
               {/* Breadcrumb */}
-              <div className="h-14 flex items-center gap-2.5 text-[12px] flex-wrap">
+              <div className="h-14 flex items-center gap-2.5 text-[13px] flex-wrap">
                 <button
                   onClick={() => navigateTo('home')}
-                  className="text-[#587085] hover:text-[#0874e8] cursor-pointer"
+                  className="text-[#52657a] hover:text-[#0667d0] cursor-pointer"
                 >
                   Trang chủ
                 </button>
-                <ChevronRight className="w-3.5 h-3.5 text-[#587085]" />
+                <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
                 <button
                   onClick={() => handleSelectCategory(selectedProduct.category)}
-                  className="text-[#587085] hover:text-[#0874e8] cursor-pointer"
+                  className="text-[#52657a] hover:text-[#0667d0] cursor-pointer"
                 >
                   {CATEGORY_LABELS[selectedProduct.category]}
                 </button>
-                <ChevronRight className="w-3.5 h-3.5 text-[#587085]" />
-                <span className="font-semibold text-[#0874e8] truncate max-w-[180px] sm:max-w-[320px]">
+                <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
+                <span className="font-semibold text-[#0667d0] truncate max-w-[180px] sm:max-w-[320px]">
                   {selectedProduct.name}
                 </span>
               </div>
@@ -1092,7 +986,7 @@ export function App() {
                 <div className="lg:col-span-7 space-y-4">
                   <div className="relative aspect-4/3 rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] overflow-hidden">
                     {selectedProduct.discountBadge && (
-                      <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#ff641f] text-white text-[11px] font-bold z-10">
+                      <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
                         {selectedProduct.discountBadge}
                       </span>
                     )}
@@ -1111,7 +1005,7 @@ export function App() {
                           onClick={() => setActiveGalleryIdx(idx)}
                           className={`aspect-square rounded-xl bg-[#eff5ff] border-2 overflow-hidden cursor-pointer transition ${
                             activeGalleryIdx === idx
-                              ? 'border-[#0874e8]'
+                              ? 'border-[#0667d0]'
                               : 'border-transparent opacity-75 hover:opacity-100'
                           }`}
                         >
@@ -1125,8 +1019,8 @@ export function App() {
                     </div>
                   )}
 
-                  <div className="p-4 rounded-xl bg-[#f8faff] border border-[#dfe6f0] flex items-center gap-3 text-[13px] text-[#587085]">
-                    <ShieldCheck className="w-5 h-5 text-[#0874e8] shrink-0" />
+                  <div className="p-4 rounded-xl bg-[#f8faff] border border-[#dfe6f0] flex items-center gap-3 text-[13px] text-[#52657a]">
+                    <ShieldCheck className="w-5 h-5 text-[#0667d0] shrink-0" />
                     <span>100% chính hãng · Kiểm định chất lượng thú y · Đổi trả trong 7 ngày.</span>
                   </div>
                 </div>
@@ -1135,11 +1029,11 @@ export function App() {
                 <div className="lg:col-span-5 space-y-6 bg-white rounded-2xl border border-[#dfe6f0] p-6 lg:p-8">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[12px] font-bold text-[#0874e8] uppercase tracking-wider">
+                      <span className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
                         {selectedProduct.brand}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                        <Check className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
+                        <Check className="w-3.5 h-3.5" />
                         <span>Còn {selectedProduct.stockCount} sản phẩm</span>
                       </span>
                     </div>
@@ -1147,33 +1041,33 @@ export function App() {
                     <h1 className="text-[24px] lg:text-[26px] font-extrabold text-[#17324d] leading-snug">
                       {selectedProduct.name}
                     </h1>
-                    <div className="text-[13px] text-[#587085] mt-1">{selectedProduct.packSize}</div>
-                    <div className="text-[12px] font-semibold mt-2.5 flex items-center gap-2 tabular-nums">
+                    <div className="text-[13px] text-[#52657a] mt-1">{selectedProduct.packSize}</div>
+                    <div className="text-[13px] font-semibold mt-2.5 flex items-center gap-2 tabular-nums">
                       <span className="inline-flex items-center gap-1 text-[#17324d]">
                         <Star className="w-4 h-4 fill-[#ffb547] text-[#ffb547]" />
                         <span>{selectedProduct.rating.toFixed(1)}</span>
                       </span>
-                      <span className="text-[#587085]">
+                      <span className="text-[#52657a]">
                         ({productReviews.length} đánh giá từ khách hàng)
                       </span>
-                      <a href="#product-reviews" className="text-[#0874e8] hover:underline">
+                      <a href="#product-reviews" className="text-[#0667d0] hover:underline">
                         Xem đánh giá
                       </a>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#f8faff] border border-[#dfe6f0] space-y-1.5">
+                  <div className="py-3 border-y border-[#dfe6f0] space-y-1.5">
                     <div className="flex items-baseline gap-3 tabular-nums">
                       <span className="text-[28px] font-extrabold text-[#17324d]">
                         {selectedProduct.price}
                       </span>
                       {selectedProduct.originalPrice && (
-                        <span className="text-[14px] text-[#94a3b8] line-through">
+                        <span className="text-[14px] text-[#52657a] line-through">
                           {selectedProduct.originalPrice}
                         </span>
                       )}
                     </div>
-                    <p className="text-[13px] text-[#587085] leading-relaxed">
+                    <p className="text-[14px] text-[#52657a] leading-relaxed">
                       {selectedProduct.description}
                     </p>
                   </div>
@@ -1182,7 +1076,7 @@ export function App() {
                   <ul className="space-y-2 text-[13px] text-[#17324d]">
                     {selectedProduct.highlights.map((hl, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#0874e8] shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-[#0667d0] shrink-0 mt-0.5" />
                         <span>{hl}</span>
                       </li>
                     ))}
@@ -1190,7 +1084,7 @@ export function App() {
 
                   {/* Size / Variant Selector */}
                   <div className="space-y-2">
-                    <label className="text-[12px] font-bold text-[#17324d] block">
+                    <label className="text-[13px] font-bold text-[#17324d] block">
                       Quy cách đóng gói
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -1198,10 +1092,10 @@ export function App() {
                         <button
                           key={size}
                           onClick={() => setProductSelectedSize(size)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          className={`py-2.5 px-3 rounded-xl text-[13px] font-bold border transition cursor-pointer ${
                             productSelectedSize === size
-                              ? 'border-[#0874e8] bg-[#eff5ff] text-[#0874e8]'
-                              : 'border-[#dfe6f0] bg-white text-[#587085] hover:border-[#0874e8]'
+                              ? 'border-[#0667d0] bg-[#eff5ff] text-[#0667d0]'
+                              : 'border-[#dfe6f0] bg-white text-[#52657a] hover:border-[#0667d0]'
                           }`}
                         >
                           {size}
@@ -1214,10 +1108,10 @@ export function App() {
                   {isLoggedIn ? (
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center gap-3">
-                        <div className="h-11 rounded-xl border border-[#dfe6f0] flex items-center px-2 bg-white">
+                        <div className="py-1.5 rounded-xl border border-[#dfe6f0] flex items-center px-2 bg-white">
                           <button
                             onClick={() => setProductQuantity((q) => Math.max(1, q - 1))}
-                            className="w-7 h-7 flex items-center justify-center text-[#587085] hover:text-[#17324d] cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
                             aria-label="Giảm số lượng"
                           >
                             <Minus className="w-3.5 h-3.5" />
@@ -1227,7 +1121,7 @@ export function App() {
                           </span>
                           <button
                             onClick={() => setProductQuantity((q) => q + 1)}
-                            className="w-7 h-7 flex items-center justify-center text-[#587085] hover:text-[#17324d] cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
                             aria-label="Tăng số lượng"
                           >
                             <Plus className="w-3.5 h-3.5" />
@@ -1238,7 +1132,7 @@ export function App() {
                           onClick={() =>
                             addProductToCart(selectedProduct, productQuantity, productSelectedSize)
                           }
-                          className="flex-1 h-11 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                          className="flex-1 py-3 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                         >
                           <ShoppingBag className="w-4 h-4" />
                           <span>Thêm vào giỏ hàng</span>
@@ -1257,22 +1151,22 @@ export function App() {
                             navigateTo('cart');
                           }
                         }}
-                        className="w-full h-11 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
                         <span>Mua ngay · Giao nhanh 2 giờ</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                   ) : (
-                    <div className="p-5 rounded-xl bg-[#eff5ff] border border-[#dfe6f0] space-y-3">
+                    <div className="pt-4 border-t border-[#dfe6f0] space-y-3">
                       <div className="flex items-start gap-2.5">
-                        <Lock className="w-4 h-4 text-[#0874e8] shrink-0 mt-0.5" />
+                        <Lock className="w-4 h-4 text-[#0667d0] shrink-0 mt-0.5" />
                         <div>
-                          <div className="text-[13px] font-bold text-[#17324d]">
+                          <div className="text-[14px] font-bold text-[#17324d]">
                             Đăng nhập để đặt mua sản phẩm
                           </div>
-                          <p className="text-[12px] text-[#587085] mt-0.5 leading-relaxed">
-                            Khách tham quan có thể xem chi tiết và đọc đánh giá. Vui lòng đăng nhập tài khoản thành viên để thêm vào giỏ hàng hoặc thanh toán.
+                          <p className="text-[13px] text-[#52657a] mt-0.5 leading-relaxed">
+                            Khách tham quan có thể xem chi tiết và đọc đánh giá. Vui lòng đăng nhập thành viên để mua hàng.
                           </p>
                         </div>
                       </div>
@@ -1281,7 +1175,7 @@ export function App() {
                           onClick={() =>
                             requireLoginFor('product', 'Đăng nhập để thêm sản phẩm vào giỏ hàng.')
                           }
-                          className="flex-1 h-10 px-4 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-xs cursor-pointer transition-colors"
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[13px] cursor-pointer transition-colors"
                         >
                           Đăng nhập để mua hàng
                         </button>
@@ -1290,7 +1184,7 @@ export function App() {
                             setReturnPage('product');
                             navigateTo('register');
                           }}
-                          className="h-10 px-4 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] font-bold text-xs cursor-pointer transition-colors"
+                          className="py-2.5 px-4 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[13px] cursor-pointer transition-colors"
                         >
                           Đăng ký
                         </button>
@@ -1321,7 +1215,7 @@ export function App() {
                             <Star key={i} className="w-4 h-4 fill-[#ffb547]" />
                           ))}
                         </div>
-                        <div className="text-[12px] text-[#587085] mt-1">
+                        <div className="text-[13px] text-[#52657a] mt-1">
                           Dựa trên {productReviews.length} nhận xét đã xác thực
                         </div>
                       </div>
@@ -1333,15 +1227,15 @@ export function App() {
                         { stars: 4, pct: 10 },
                         { stars: 3, pct: 2 },
                       ].map((row) => (
-                        <div key={row.stars} className="flex items-center gap-2.5 text-xs tabular-nums">
-                          <span className="w-10 text-[#587085] font-medium">{row.stars} sao</span>
+                        <div key={row.stars} className="flex items-center gap-2.5 text-[13px] tabular-nums">
+                          <span className="w-11 text-[#52657a] font-medium">{row.stars} sao</span>
                           <div className="flex-1 h-1.5 rounded-full bg-[#dfe6f0] overflow-hidden">
                             <div
-                              className="h-full bg-[#0874e8] rounded-full"
+                              className="h-full bg-[#0667d0] rounded-full"
                               style={{ width: `${row.pct}%` }}
                             />
                           </div>
-                          <span className="w-8 text-right text-[#587085]">{row.pct}%</span>
+                          <span className="w-9 text-right text-[#52657a]">{row.pct}%</span>
                         </div>
                       ))}
                     </div>
@@ -1380,18 +1274,18 @@ export function App() {
                         value={reviewPetTag}
                         onChange={(e) => setReviewPetTag(e.target.value)}
                         placeholder="Ví dụ: Nuôi Poodle 2 tuổi"
-                        className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs text-[#17324d] focus:outline-none focus:border-[#0874e8]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] text-[#17324d] focus:outline-none focus:border-[#0667d0]"
                       />
                       <textarea
                         rows={3}
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
                         placeholder="Chia sẻ trải nghiệm thực tế về sản phẩm..."
-                        className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs text-[#17324d] focus:outline-none focus:border-[#0874e8]"
+                        className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] text-[#17324d] focus:outline-none focus:border-[#0667d0]"
                       />
                       <button
                         type="submit"
-                        className="w-full h-10 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white text-xs font-bold cursor-pointer transition-colors"
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors"
                       >
                         Gửi đánh giá
                       </button>
@@ -1399,17 +1293,17 @@ export function App() {
                   ) : (
                     <div className="rounded-2xl bg-white border border-[#dfe6f0] p-6 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-bold text-[#17324d]">
-                        <MessageSquare className="w-4 h-4 text-[#0874e8]" />
+                        <MessageSquare className="w-4 h-4 text-[#0667d0]" />
                         <span>Chia sẻ cảm nhận sản phẩm</span>
                       </div>
-                      <p className="text-xs text-[#587085] leading-relaxed">
+                      <p className="text-[13px] text-[#52657a] leading-relaxed">
                         Chỉ hội viên đã đăng nhập mới có thể gửi đánh giá mới.
                       </p>
                       <button
                         onClick={() =>
                           requireLoginFor('product', 'Đăng nhập để gửi đánh giá sản phẩm.')
                         }
-                        className="text-xs font-bold text-[#0874e8] hover:underline cursor-pointer"
+                        className="text-[13px] font-bold text-[#0667d0] hover:underline cursor-pointer"
                       >
                         Đăng nhập để viết đánh giá →
                       </button>
@@ -1429,13 +1323,13 @@ export function App() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-[#17324d]">{rev.author}</span>
                             {rev.verified && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full">
                                 <Check className="w-3 h-3" />
                                 <span>Đã mua hàng</span>
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-[#587085] mt-0.5">{rev.petTag}</div>
+                          <div className="text-[13px] text-[#52657a] mt-0.5">{rev.petTag}</div>
                         </div>
 
                         <div className="text-right">
@@ -1444,11 +1338,11 @@ export function App() {
                               <Star key={i} className="w-3.5 h-3.5 fill-[#ffb547]" />
                             ))}
                           </div>
-                          <div className="text-[11px] text-[#94a3b8] mt-1">{rev.date}</div>
+                          <div className="text-[12px] text-[#52657a] mt-1">{rev.date}</div>
                         </div>
                       </div>
 
-                      <p className="text-[13px] text-[#17324d] leading-relaxed">{rev.comment}</p>
+                      <p className="text-[14px] text-[#17324d] leading-relaxed">{rev.comment}</p>
                     </div>
                   ))}
                 </div>
@@ -1470,32 +1364,32 @@ export function App() {
             >
               {/* Stepper */}
               <div className="h-20 flex items-center justify-center gap-6 text-[13px] font-semibold">
-                <span className="text-[#0874e8] flex items-center gap-2 font-bold">
-                  <span className="w-6 h-6 rounded-full bg-[#0874e8] text-white text-xs flex items-center justify-center">
+                <span className="text-[#0667d0] flex items-center gap-2 font-bold">
+                  <span className="w-6 h-6 rounded-full bg-[#0667d0] text-white text-xs flex items-center justify-center">
                     1
                   </span>
                   <span>Giỏ hàng</span>
                 </span>
                 <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#587085]">2. Thanh toán</span>
+                <span className="text-[#52657a]">2. Thanh toán</span>
                 <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#587085]">3. Hoàn tất</span>
+                <span className="text-[#52657a]">3. Hoàn tất</span>
               </div>
 
               {cartItems.length === 0 ? (
                 <div className="max-w-[520px] mx-auto rounded-2xl border border-[#dfe6f0] bg-[#f8faff] text-center py-14 px-6 space-y-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#eff5ff] text-[#0874e8] mx-auto flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-[#eff5ff] text-[#0667d0] mx-auto flex items-center justify-center">
                     <ShoppingBag className="w-8 h-8" />
                   </div>
                   <h2 className="text-xl font-extrabold text-[#17324d]">
                     Giỏ hàng của bạn đang trống
                   </h2>
-                  <p className="text-sm text-[#587085]">
+                  <p className="text-sm text-[#52657a]">
                     Chọn thêm thức ăn dinh dưỡng hoặc phụ kiện chăm sóc cho thú cưng của bạn.
                   </p>
                   <button
                     onClick={() => handleSelectCategory('all')}
-                    className="h-11 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-sm cursor-pointer transition-colors"
+                    className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm cursor-pointer transition-colors"
                   >
                     Khám phá sản phẩm
                   </button>
@@ -1513,7 +1407,7 @@ export function App() {
                           setCartItems([]);
                           triggerToast('Đã xóa toàn bộ sản phẩm trong giỏ.');
                         }}
-                        className="text-xs font-semibold text-[#ff641f] hover:underline cursor-pointer"
+                        className="text-[13px] font-semibold text-[#c2410c] hover:underline cursor-pointer"
                       >
                         Xóa tất cả
                       </button>
@@ -1528,12 +1422,12 @@ export function App() {
                             className="w-20 h-20 rounded-xl object-cover bg-[#f3f7ff] shrink-0"
                           />
                           <div className="flex-1 space-y-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0874e8] bg-[#eff5ff] px-2 py-0.5 rounded">
+                            <span className="text-[12px] font-bold uppercase tracking-wider text-[#0667d0] bg-[#eff5ff] px-2.5 py-0.5 rounded">
                               {item.category}
                             </span>
                             <h3 className="text-sm font-bold text-[#17324d]">{item.name}</h3>
-                            <p className="text-xs text-[#587085]">{item.desc}</p>
-                            <div className="text-sm font-extrabold text-[#0874e8] tabular-nums">
+                            <p className="text-[13px] text-[#52657a]">{item.desc}</p>
+                            <div className="text-sm font-extrabold text-[#0667d0] tabular-nums">
                               {(item.price * item.quantity).toLocaleString('vi-VN')}₫
                             </div>
                           </div>
@@ -1560,7 +1454,7 @@ export function App() {
                             </div>
                             <button
                               onClick={() => removeCartItem(item.id)}
-                              className="p-2 text-[#587085] hover:text-[#ff641f] cursor-pointer transition-colors"
+                              className="p-2 text-[#52657a] hover:text-[#c2410c] cursor-pointer transition-colors"
                               aria-label="Xóa sản phẩm"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1573,10 +1467,10 @@ export function App() {
 
                   {/* Right Summary Column */}
                   <div className="lg:col-span-4 bg-white rounded-2xl border border-[#dfe6f0] p-6 space-y-5">
-                    <h3 className="text-base font-bold text-[#17324d]">Tóm tắt đơn hàng</h3>
+                    <h2 className="text-base font-bold text-[#17324d]">Tóm tắt đơn hàng</h2>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#17324d] block">
+                      <label className="text-[13px] font-bold text-[#17324d] block">
                         Mã ưu đãi hội viên
                       </label>
                       <div className="flex items-center gap-2">
@@ -1585,7 +1479,7 @@ export function App() {
                           value={voucherCode}
                           onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                           placeholder="Nhập PETHUB100K..."
-                          className="flex-1 h-10 px-3 text-xs rounded-xl border border-[#dfe6f0] bg-[#f8faff] font-bold text-[#0874e8] uppercase focus:outline-none"
+                          className="flex-1 h-10 px-3 text-[13px] rounded-xl border border-[#dfe6f0] bg-[#f8faff] font-bold text-[#0667d0] uppercase focus:outline-none"
                         />
                         <button
                           type="button"
@@ -1597,27 +1491,27 @@ export function App() {
                               triggerToast('Mã chưa hợp lệ. Thử mã hội viên: PETHUB100K');
                             }
                           }}
-                          className="h-10 px-3.5 rounded-xl bg-[#0874e8] text-white text-xs font-bold hover:bg-[#1464f4] transition cursor-pointer"
+                          className="py-2.5 px-4 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold hover:bg-[#0558b5] transition cursor-pointer shrink-0"
                         >
                           {isVoucherApplied ? 'Đã áp dụng' : 'Áp dụng'}
                         </button>
                       </div>
                     </div>
 
-                    <div className="space-y-2.5 pt-2 border-t border-[#dfe6f0] text-xs tabular-nums">
-                      <div className="flex justify-between text-[#587085]">
+                    <div className="space-y-2.5 pt-2 border-t border-[#dfe6f0] text-[13px] tabular-nums">
+                      <div className="flex justify-between text-[#52657a]">
                         <span>Tạm tính:</span>
                         <span className="font-bold text-[#17324d]">
                           {cartSubtotal.toLocaleString('vi-VN')}₫
                         </span>
                       </div>
                       {isVoucherApplied && (
-                        <div className="flex justify-between text-[#ff641f]">
+                        <div className="flex justify-between text-[#c2410c]">
                           <span>Ưu đãi hội viên:</span>
                           <span className="font-bold">-100.000₫</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-[#0874e8]">
+                      <div className="flex justify-between text-[#0667d0]">
                         <span>Vận chuyển:</span>
                         <span className="font-bold">Miễn phí</span>
                       </div>
@@ -1625,7 +1519,7 @@ export function App() {
 
                     <div className="pt-3 border-t border-[#dfe6f0] flex justify-between items-baseline tabular-nums">
                       <span className="text-sm font-bold text-[#17324d]">Tổng thanh toán:</span>
-                      <span className="text-xl font-extrabold text-[#0874e8]">
+                      <span className="text-xl font-extrabold text-[#0667d0]">
                         {cartFinalTotal.toLocaleString('vi-VN')}₫
                       </span>
                     </div>
@@ -1633,14 +1527,14 @@ export function App() {
                     <div className="space-y-2">
                       <button
                         onClick={() => handleCheckout(false)}
-                        className="w-full h-12 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
                         <span>Xác nhận thanh toán</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleCheckout(true)}
-                        className="w-full py-2 text-[11px] font-semibold text-[#587085] hover:text-[#17324d] cursor-pointer"
+                        className="w-full py-2 text-[12px] font-semibold text-[#52657a] hover:text-[#17324d] cursor-pointer"
                       >
                         Kiểm tra trạng thái giao dịch gián đoạn
                       </button>
@@ -1664,15 +1558,15 @@ export function App() {
               className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
             >
               {/* Breadcrumb */}
-              <div className="h-14 flex items-center gap-2.5 text-[12px]">
+              <div className="h-14 flex items-center gap-2.5 text-[13px]">
                 <button
                   onClick={() => navigateTo('home')}
-                  className="text-[#587085] hover:text-[#0874e8] cursor-pointer"
+                  className="text-[#52657a] hover:text-[#0667d0] cursor-pointer"
                 >
                   Trang chủ
                 </button>
-                <ChevronRight className="w-3.5 h-3.5 text-[#587085]" />
-                <span className="font-semibold text-[#0874e8]">Dịch vụ Spa &amp; Khách sạn 5 sao</span>
+                <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
+                <span className="font-semibold text-[#0667d0]">Dịch vụ Spa &amp; Khách sạn 5 sao</span>
               </div>
 
               {/* Hero Banner */}
@@ -1680,7 +1574,7 @@ export function App() {
                 <h1 className="text-[28px] lg:text-[34px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                   Spa &amp; Khách sạn thú cưng chuẩn y khoa
                 </h1>
-                <p className="text-[14px] text-[#587085] max-w-2xl leading-relaxed">
+                <p className="text-[14px] text-[#52657a] max-w-[58ch] leading-relaxed">
                   Quy trình vệ sinh 7 bước nhẹ nhàng, phòng lưu trú riêng biệt và đội ngũ chăm sóc tận tâm.
                 </p>
               </div>
@@ -1688,9 +1582,9 @@ export function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* Left Column: Packages + Booking Form (Gated for guests) */}
                 <div className="lg:col-span-7 space-y-6">
-                  {/* Packages Catalog — Publicly Viewable */}
-                  <div className="bg-white rounded-2xl border border-[#dfe6f0] p-6 lg:p-8 space-y-4">
-                    <h2 className="text-base font-bold text-[#17324d]">
+                  {/* Packages Catalog — flat container wrapper removed so cards aren't nested */}
+                  <div className="space-y-3.5">
+                    <h2 className="text-[18px] font-bold text-[#17324d]">
                       Bảng giá gói dịch vụ
                     </h2>
 
@@ -1701,28 +1595,28 @@ export function App() {
                           <div
                             key={pkg.id}
                             onClick={() => setSelectedPackageId(pkg.id)}
-                            className={`p-4 rounded-xl border transition cursor-pointer flex items-center justify-between gap-4 ${
+                            className={`p-5 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-4 ${
                               active
-                                ? 'bg-[#eff5ff] border-[#0874e8]'
-                                : 'bg-[#f8faff] border-[#dfe6f0] hover:border-[#0874e8]/60'
+                                ? 'bg-[#eff5ff] border-[#0667d0]'
+                                : 'bg-white border-[#dfe6f0] hover:border-[#0667d0]/60'
                             }`}
                           >
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-bold text-[#17324d]">{pkg.name}</span>
+                                <span className="text-[15px] font-bold text-[#17324d]">{pkg.name}</span>
                                 {pkg.isPopular && (
-                                  <span className="px-2 py-0.5 rounded-full bg-[#ff641f] text-white text-[10px] font-bold">
+                                  <span className="px-2.5 py-0.5 rounded-full bg-[#c2410c] text-white text-[12px] font-bold">
                                     Phổ biến nhất
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#587085] leading-relaxed">{pkg.desc}</p>
-                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#587085]">
-                                <Clock className="w-3.5 h-3.5 text-[#0874e8]" />
+                              <p className="text-[13px] text-[#52657a] leading-relaxed">{pkg.desc}</p>
+                              <div className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#52657a]">
+                                <Clock className="w-3.5 h-3.5 text-[#0667d0]" />
                                 <span>Thời lượng: {pkg.duration}</span>
                               </div>
                             </div>
-                            <div className="text-base font-extrabold text-[#0874e8] shrink-0 tabular-nums">
+                            <div className="text-base font-extrabold text-[#0667d0] shrink-0 tabular-nums">
                               {pkg.priceStr}
                             </div>
                           </div>
@@ -1748,7 +1642,7 @@ export function App() {
                       </h2>
 
                       <div className="space-y-2.5">
-                        <label className="text-xs font-bold text-[#17324d] block">
+                        <label className="text-[13px] font-bold text-[#17324d] block">
                           Phân loại thú cưng
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -1762,10 +1656,10 @@ export function App() {
                               key={t}
                               type="button"
                               onClick={() => setBookingPetType(t)}
-                              className={`p-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                              className={`py-2.5 px-3 rounded-xl text-[13px] font-bold border transition cursor-pointer ${
                                 bookingPetType === t
-                                  ? 'bg-[#eff5ff] border-[#0874e8] text-[#0874e8]'
-                                  : 'bg-white border-[#dfe6f0] text-[#587085] hover:border-[#0874e8]'
+                                  ? 'bg-[#eff5ff] border-[#0667d0] text-[#0667d0]'
+                                  : 'bg-white border-[#dfe6f0] text-[#52657a] hover:border-[#0667d0]'
                               }`}
                             >
                               {t}
@@ -1776,14 +1670,14 @@ export function App() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#587085] flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#0874e8]" />
+                          <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[#0667d0]" />
                             <span>Ngày hẹn</span>
                           </label>
                           <select
                             value={bookingDate}
                             onChange={(e) => setBookingDate(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs font-bold text-[#17324d] focus:outline-none"
+                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
                           >
                             <option value="Hôm nay, 25/10">Hôm nay, 25/10</option>
                             <option value="Ngày mai, 26/10">Ngày mai, 26/10</option>
@@ -1793,14 +1687,14 @@ export function App() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#587085] flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-[#0874e8]" />
+                          <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-[#0667d0]" />
                             <span>Khung giờ</span>
                           </label>
                           <select
                             value={bookingTime}
                             onChange={(e) => setBookingTime(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs font-bold text-[#17324d] focus:outline-none"
+                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
                           >
                             <option value="09:00 Sáng">09:00 Sáng</option>
                             <option value="10:30 Sáng">10:30 Sáng</option>
@@ -1813,27 +1707,27 @@ export function App() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#587085]">Họ và tên</label>
+                          <label className="text-[13px] font-semibold text-[#52657a]">Họ và tên</label>
                           <input
                             type="text"
                             value={ownerName}
                             onChange={(e) => setOwnerName(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs font-bold text-[#17324d] focus:outline-none"
+                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#587085]">Số điện thoại</label>
+                          <label className="text-[13px] font-semibold text-[#52657a]">Số điện thoại</label>
                           <input
                             type="text"
                             value={ownerPhone}
                             onChange={(e) => setOwnerPhone(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs font-bold text-[#17324d] focus:outline-none"
+                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#587085]">
+                        <label className="text-[13px] font-semibold text-[#52657a]">
                           Ghi chú về tình trạng thú cưng
                         </label>
                         <textarea
@@ -1841,12 +1735,12 @@ export function App() {
                           onChange={(e) => setPetNote(e.target.value)}
                           placeholder="Ví dụ: Da nhạy cảm, cần tỉa gọn vùng mặt..."
                           rows={2}
-                          className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-xs text-[#17324d] focus:outline-none"
+                          className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] text-[#17324d] focus:outline-none"
                         />
                       </div>
 
                       {bookingConfirmed && (
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2.5">
+                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-[13px] text-emerald-800 flex items-center gap-2.5">
                           <CheckCircle2 className="w-4 h-4 shrink-0" />
                           <span>
                             Đã ghi nhận lịch hẹn <strong>{selectedSpaPackage.name}</strong> ({bookingPetType}) lúc{' '}
@@ -1857,7 +1751,7 @@ export function App() {
 
                       <button
                         type="submit"
-                        className="w-full h-12 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
                         <span>Xác nhận đặt lịch hẹn</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1866,15 +1760,15 @@ export function App() {
                   ) : (
                     <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-6 lg:p-8 space-y-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white border border-[#dfe6f0] flex items-center justify-center text-[#0874e8] shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-[#dfe6f0] flex items-center justify-center text-[#0667d0] shrink-0">
                           <Lock className="w-5 h-5" />
                         </div>
                         <div className="space-y-1">
-                          <h3 className="text-base font-bold text-[#17324d]">
+                          <h2 className="text-base font-bold text-[#17324d]">
                             Đăng nhập để đặt lịch dịch vụ
-                          </h3>
-                          <p className="text-[13px] text-[#587085] leading-relaxed">
-                            Bạn đã chọn gói <strong>{selectedSpaPackage.name}</strong> ({selectedSpaPackage.priceStr}). Vui lòng đăng nhập tài khoản thành viên để giữ khung giờ hẹn và theo dõi lịch sử chăm sóc.
+                          </h2>
+                          <p className="text-[13px] text-[#52657a] leading-relaxed max-w-[58ch]">
+                            Bạn đã chọn gói <strong>{selectedSpaPackage.name}</strong> ({selectedSpaPackage.priceStr}). Vui lòng đăng nhập thành viên để giữ khung giờ hẹn.
                           </p>
                         </div>
                       </div>
@@ -1883,7 +1777,7 @@ export function App() {
                           onClick={() =>
                             requireLoginFor('service', 'Đăng nhập để đặt lịch dịch vụ Spa & Khách sạn.')
                           }
-                          className="h-11 px-6 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-xs cursor-pointer transition-colors"
+                          className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[13px] cursor-pointer transition-colors"
                         >
                           Đăng nhập để đặt lịch
                         </button>
@@ -1892,7 +1786,7 @@ export function App() {
                             setReturnPage('service');
                             navigateTo('register');
                           }}
-                          className="h-11 px-6 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] font-bold text-xs cursor-pointer transition-colors"
+                          className="py-3 px-6 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[13px] cursor-pointer transition-colors"
                         >
                           Đăng ký thành viên mới
                         </button>
@@ -1904,10 +1798,10 @@ export function App() {
                 {/* Right Standards Column */}
                 <div className="lg:col-span-5 space-y-6">
                   <div className="bg-white rounded-2xl border border-[#dfe6f0] p-6 space-y-4">
-                    <h3 className="text-base font-bold text-[#0874e8] flex items-center gap-2">
+                    <h2 className="text-base font-bold text-[#0667d0] flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5" />
                       <span>Quy trình 7 bước chuẩn y khoa</span>
-                    </h3>
+                    </h2>
                     <div className="space-y-3 text-[13px] text-[#17324d]">
                       {[
                         '1. Kiểm tra tổng quát tình trạng da, lông, tai và móng',
@@ -1919,7 +1813,7 @@ export function App() {
                         '7. Xịt dưỡng phục hồi độ ẩm và kiểm tra lại trước khi bàn giao',
                       ].map((s, idx) => (
                         <div key={idx} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="w-4 h-4 text-[#0874e8] shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-4 h-4 text-[#0667d0] shrink-0 mt-0.5" />
                           <span>{s}</span>
                         </div>
                       ))}
@@ -1927,13 +1821,13 @@ export function App() {
                   </div>
 
                   <div className="p-5 rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-[#0874e8] text-white flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-full bg-[#0667d0] text-white flex items-center justify-center shrink-0">
                       <Phone className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-xs text-[#587085]">Tư vấn lịch trống trong ngày</div>
-                      <div className="text-lg font-extrabold text-[#0874e8] tabular-nums">1900 6868</div>
-                      <div className="text-[11px] text-[#587085]">Phục vụ 8:00 – 21:00 mỗi ngày</div>
+                      <div className="text-[13px] text-[#52657a]">Tư vấn lịch trống trong ngày</div>
+                      <div className="text-lg font-extrabold text-[#0667d0] tabular-nums">1900 6868</div>
+                      <div className="text-[13px] text-[#52657a]">Phục vụ 8:00 – 21:00 mỗi ngày</div>
                     </div>
                   </div>
                 </div>
@@ -1955,14 +1849,14 @@ export function App() {
             >
               {/* Primary Auth Card (Always First) */}
               <div className="w-full max-w-[520px] rounded-3xl bg-white border border-[#dfe6f0] shadow-[0_16px_40px_rgba(23,50,77,0.07)] p-7 sm:p-10">
-                <div className="w-full h-11 rounded-xl bg-[#f3f7ff] p-1 grid grid-cols-2 gap-1 mb-6">
+                <div className="w-full rounded-xl bg-[#f3f7ff] p-1 grid grid-cols-2 gap-1 mb-6">
                   <button
                     type="button"
                     onClick={() => navigateTo('login')}
-                    className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
+                    className={`py-2.5 rounded-lg text-[13px] font-bold transition cursor-pointer ${
                       currentPage === 'login'
-                        ? 'bg-white text-[#0874e8] shadow-xs'
-                        : 'text-[#587085] hover:text-[#17324d]'
+                        ? 'bg-white text-[#0667d0] shadow-xs'
+                        : 'text-[#52657a] hover:text-[#17324d]'
                     }`}
                   >
                     Đăng nhập
@@ -1970,10 +1864,10 @@ export function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo('register')}
-                    className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
+                    className={`py-2.5 rounded-lg text-[13px] font-bold transition cursor-pointer ${
                       currentPage === 'register'
-                        ? 'bg-white text-[#0874e8] shadow-xs'
-                        : 'text-[#587085] hover:text-[#17324d]'
+                        ? 'bg-white text-[#0667d0] shadow-xs'
+                        : 'text-[#52657a] hover:text-[#17324d]'
                     }`}
                   >
                     Đăng ký
@@ -1998,7 +1892,7 @@ export function App() {
                       <h1 className="text-[22px] font-extrabold text-[#17324d]">
                         Đăng nhập tài khoản
                       </h1>
-                      <p className="text-[13px] text-[#587085] mt-1">
+                      <p className="text-[14px] text-[#52657a] mt-1">
                         Nhập email hoặc số điện thoại hội viên để tiếp tục.
                       </p>
                     </div>
@@ -2007,8 +1901,8 @@ export function App() {
                       <label className="text-[12px] font-bold text-[#17324d] block">
                         Email hoặc Số điện thoại
                       </label>
-                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center gap-3">
-                        <Mail className="w-4 h-4 text-[#0874e8]" />
+                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0667d0] px-3.5 flex items-center gap-3">
+                        <Mail className="w-4 h-4 text-[#0667d0]" />
                         <input
                           type="text"
                           value={loginEmail}
@@ -2026,14 +1920,14 @@ export function App() {
                           onClick={() =>
                             triggerToast('Đã gửi hướng dẫn đặt lại mật khẩu tới email của bạn.')
                           }
-                          className="font-semibold text-[#0874e8] hover:underline cursor-pointer"
+                          className="py-1 font-semibold text-[#0667d0] hover:underline cursor-pointer"
                         >
                           Quên mật khẩu?
                         </button>
                       </div>
-                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center justify-between gap-3">
+                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0667d0] px-3.5 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                          <Lock className="w-4 h-4 text-[#587085]" />
+                          <Lock className="w-4 h-4 text-[#52657a]" />
                           <input
                             type={showPass ? 'text' : 'password'}
                             defaultValue="pethub2026"
@@ -2043,7 +1937,7 @@ export function App() {
                         <button
                           type="button"
                           onClick={() => setShowPass(!showPass)}
-                          className="text-[#587085] hover:text-[#17324d] cursor-pointer"
+                          className="py-1 text-[#52657a] hover:text-[#17324d] cursor-pointer"
                           aria-label="Ẩn hoặc hiện mật khẩu"
                         >
                           {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -2053,7 +1947,7 @@ export function App() {
 
                     <button
                       type="submit"
-                      className="w-full h-12 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                      className="w-full py-3 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                     >
                       <span>Đăng nhập</span>
                       <ArrowRight className="w-4 h-4" />
@@ -2077,7 +1971,7 @@ export function App() {
                       <h1 className="text-[22px] font-extrabold text-[#17324d]">
                         Đăng ký hội viên mới
                       </h1>
-                      <p className="text-[12px] text-[#587085] mt-0.5">
+                      <p className="text-[13px] text-[#52657a] mt-1">
                         Nhận mã giảm giá 100.000₫ (PETHUB100K) cho đơn hàng đầu tiên.
                       </p>
                     </div>
@@ -2091,7 +1985,7 @@ export function App() {
                           type="text"
                           value={regName}
                           onChange={(e) => setRegName(e.target.value)}
-                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
                       <div className="space-y-1">
@@ -2102,7 +1996,7 @@ export function App() {
                           type="text"
                           value={regPhone}
                           onChange={(e) => setRegPhone(e.target.value)}
-                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
                     </div>
@@ -2115,13 +2009,13 @@ export function App() {
                         type="email"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                        className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full h-12 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                      className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                     >
                       <span>Đăng ký &amp; Mở khóa mua sắm</span>
                       <ArrowRight className="w-4 h-4" />
@@ -2135,19 +2029,19 @@ export function App() {
                 {[
                   {
                     icon: ShoppingBag,
-                    color: 'text-[#0874e8]',
+                    color: 'text-[#0667d0]',
                     title: 'Giao nhanh 2 giờ',
                     desc: 'Lưu địa chỉ & theo dõi đơn tiện lợi',
                   },
                   {
                     icon: Calendar,
-                    color: 'text-[#ff641f]',
+                    color: 'text-[#c2410c]',
                     title: 'Đặt lịch Spa 24/7',
                     desc: 'Chủ động chọn khung giờ & gói chăm sóc',
                   },
                   {
                     icon: Gift,
-                    color: 'text-[#0874e8]',
+                    color: 'text-[#0667d0]',
                     title: 'Ưu đãi 100.000₫',
                     desc: 'Dùng mã PETHUB100K cho hội viên mới',
                   },
@@ -2156,14 +2050,14 @@ export function App() {
                   return (
                     <div
                       key={i}
-                      className="p-3.5 rounded-2xl bg-white border border-[#dfe6f0] flex items-center gap-3"
+                      className="p-4 rounded-2xl bg-white border border-[#dfe6f0] flex items-center gap-3"
                     >
                       <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center shrink-0">
                         <IconComp className={`w-4 h-4 ${feat.color}`} />
                       </div>
                       <div>
-                        <div className="text-[12.5px] font-bold text-[#17324d]">{feat.title}</div>
-                        <div className="text-[11px] text-[#587085]">{feat.desc}</div>
+                        <div className="text-[13px] font-bold text-[#17324d]">{feat.title}</div>
+                        <div className="text-[12px] text-[#52657a]">{feat.desc}</div>
                       </div>
                     </div>
                   );
@@ -2185,13 +2079,13 @@ export function App() {
               className="max-w-[1320px] mx-auto px-5 pb-16"
             >
               <div className="h-20 flex items-center justify-center gap-6 text-[13px] font-semibold">
-                <span className="text-[#0874e8]">1. Giỏ hàng</span>
+                <span className="text-[#0667d0]">1. Giỏ hàng</span>
                 <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#0874e8]">2. Thanh toán</span>
+                <span className="text-[#0667d0]">2. Thanh toán</span>
                 <div className="w-12 h-px bg-[#dfe6f0]" />
                 <span
                   className={`font-bold ${
-                    currentPage === 'checkout-success' ? 'text-[#0874e8]' : 'text-[#ff641f]'
+                    currentPage === 'checkout-success' ? 'text-[#0667d0]' : 'text-[#c2410c]'
                   }`}
                 >
                   3. Hoàn tất
@@ -2201,25 +2095,25 @@ export function App() {
               <div className="max-w-[600px] mx-auto pt-4 space-y-7 text-center">
                 {currentPage === 'checkout-success' ? (
                   <div className="space-y-3">
-                    <div className="w-16 h-16 rounded-2xl bg-[#eff5ff] text-[#0874e8] mx-auto flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl bg-[#eff5ff] text-[#0667d0] mx-auto flex items-center justify-center">
                       <Check className="w-8 h-8 stroke-[2.5]" />
                     </div>
                     <h1 className="text-[28px] font-extrabold text-[#17324d]">
                       Đặt hàng thành công
                     </h1>
-                    <p className="text-[14px] text-[#587085]">
+                    <p className="text-[14px] text-[#52657a]">
                       Cảm ơn {userName}. Đơn hàng đang được chuẩn bị và xác nhận đã gửi qua email của bạn.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="w-16 h-16 rounded-2xl bg-[#fff2e9] text-[#ff641f] mx-auto flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl bg-[#fff2e9] text-[#c2410c] mx-auto flex items-center justify-center">
                       <AlertTriangle className="w-8 h-8 stroke-[2.2]" />
                     </div>
-                    <h1 className="text-[28px] font-extrabold text-[#ff641f]">
+                    <h1 className="text-[28px] font-extrabold text-[#c2410c]">
                       Thanh toán chưa hoàn tất
                     </h1>
-                    <p className="text-[14px] text-[#587085]">
+                    <p className="text-[14px] text-[#52657a]">
                       Giao dịch bị gián đoạn. Sản phẩm vẫn được giữ trong giỏ hàng để bạn thanh toán lại.
                     </p>
                   </div>
@@ -2227,10 +2121,10 @@ export function App() {
 
                 <div className="rounded-2xl border border-[#dfe6f0] overflow-hidden text-left bg-white">
                   <div className="px-6 py-4 bg-[#f8faff] flex items-center justify-between text-[13px] tabular-nums">
-                    <span className="font-bold text-[#0874e8]">
+                    <span className="font-bold text-[#0667d0]">
                       Mã đơn hàng: {lastOrder?.code || '#PET8899'}
                     </span>
-                    <span className="text-[#587085]">Ngày: {lastOrder?.date || '25/10/2026'}</span>
+                    <span className="text-[#52657a]">Ngày: {lastOrder?.date || '25/10/2026'}</span>
                   </div>
 
                   <div className="p-6 divide-y divide-[#dfe6f0]">
@@ -2257,7 +2151,7 @@ export function App() {
                           <div className="text-[13px] font-bold text-[#17324d] truncate">
                             {ordItem.quantity}x {ordItem.name}
                           </div>
-                          <div className="text-[12px] text-[#587085]">{ordItem.desc}</div>
+                          <div className="text-[12px] text-[#52657a]">{ordItem.desc}</div>
                         </div>
                         <div className="text-[13px] font-bold text-[#17324d] tabular-nums">
                           {(ordItem.price * ordItem.quantity).toLocaleString('vi-VN')}₫
@@ -2273,7 +2167,7 @@ export function App() {
                     </span>
                     <span
                       className={`text-[12px] font-bold ${
-                        currentPage === 'checkout-success' ? 'text-[#0874e8]' : 'text-[#ff641f]'
+                        currentPage === 'checkout-success' ? 'text-[#0667d0]' : 'text-[#c2410c]'
                       }`}
                     >
                       {currentPage === 'checkout-success' ? 'Đã xác nhận' : 'Chờ thanh toán'}
@@ -2284,14 +2178,14 @@ export function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     onClick={() => handleSelectCategory('all')}
-                    className="h-12 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    className="py-3 px-5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                   >
                     <span>Tiếp tục mua sắm</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => navigateTo('cart')}
-                    className="h-12 rounded-xl border border-[#dfe6f0] hover:border-[#0874e8] text-[#17324d] font-bold text-[14px] cursor-pointer transition-colors"
+                    className="py-3 px-5 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[14px] cursor-pointer transition-colors"
                   >
                     {currentPage === 'checkout-fail' ? 'Thử thanh toán lại' : 'Xem giỏ hàng'}
                   </button>

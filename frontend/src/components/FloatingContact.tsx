@@ -61,7 +61,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
             onClick={() => setActiveChat(activeChat === 'zalo' ? null : 'zalo')}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(0,104,255,0.3)] cursor-pointer border-2 border-white"
+            className="w-12 h-12 rounded-full bg-[#0667d0] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(6,103,208,0.3)] cursor-pointer border-2 border-white"
             aria-label="Liên hệ Zalo"
           >
             <span className="font-extrabold text-[13px] tracking-tight leading-none">Zalo</span>
@@ -92,7 +92,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
             onClick={() => setActiveChat(activeChat === 'messenger' ? null : 'messenger')}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_6px_20px_rgba(23,50,77,0.14)] border border-[#dfe6f0] cursor-pointer"
+            className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_6px_20px_rgba(23,50,77,0.16)] border-2 border-white cursor-pointer"
             aria-label="Liên hệ Messenger"
           >
             <svg width="26" height="26" viewBox="0 0 36 36" fill="none" aria-hidden="true">
@@ -129,7 +129,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 8, scale: 0.94 }}
                 transition={{ duration: 0.18 }}
-                className="mr-3 px-3 py-1.5 rounded-lg bg-[#ff641f] text-white text-xs font-semibold shadow-md whitespace-nowrap"
+                className="mr-3 px-3 py-1.5 rounded-lg bg-[#c2410c] text-white text-xs font-semibold shadow-md whitespace-nowrap"
               >
                 Tổng đài: 1900 6868
               </motion.div>
@@ -142,7 +142,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
             }
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-[#ff641f] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(255,100,31,0.3)] cursor-pointer border-2 border-white"
+            className="w-12 h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(194,65,12,0.3)] cursor-pointer border-2 border-white"
             aria-label="Gọi tổng đài 1900 6868"
           >
             <Phone className="w-5 h-5" />
@@ -176,7 +176,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
                     <span>PetHub Hỗ Trợ</span>
                     <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                   </div>
-                  <div className="text-[10px] text-white/85 flex items-center gap-1">
+                  <div className="text-[11px] text-white flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block" />
                     <span>Trực tuyến 24/7</span>
                   </div>
@@ -195,10 +195,10 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
               {messages.map((m, idx) => (
                 <div
                   key={idx}
-                  className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
+                  className={`max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed ${
                     m.from === 'bot'
                       ? 'bg-white text-[#17324d] border border-[#dfe6f0]'
-                      : 'bg-[#0874e8] text-white ml-auto'
+                      : 'bg-[#0667d0] text-white ml-auto'
                   }`}
                 >
                   {m.text}
@@ -215,11 +215,11 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Nhập câu hỏi tư vấn..."
-                className="flex-1 text-xs px-3 py-2 rounded-lg bg-[#f3f7ff] text-[#17324d] focus:outline-none focus:ring-2 focus:ring-[#0874e8]"
+                className="flex-1 text-[13px] px-3 py-2 rounded-lg bg-[#f3f7ff] text-[#17324d] focus:outline-none focus:ring-2 focus:ring-[#0667d0]"
               />
               <button
                 type="submit"
-                className="p-2 rounded-lg bg-[#0874e8] text-white hover:bg-[#1464f4] transition cursor-pointer"
+                className="p-2 rounded-lg bg-[#0667d0] text-white hover:bg-[#0558b5] transition cursor-pointer"
                 aria-label="Gửi tin nhắn"
               >
                 <Send className="w-3.5 h-3.5" />
