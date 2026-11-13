@@ -75,8 +75,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
     }
   };
 
-  const productSubcategories: { id: 'all' | ProductCategory; label: string; desc: string }[] = [
-    { id: 'all', label: 'Tất cả sản phẩm', desc: 'Toàn bộ đồ dùng & chăm sóc chính hãng' },
+  const productSubcategories: { id: ProductCategory; label: string; desc: string }[] = [
     { id: 'food', label: 'Dinh dưỡng & Pate', desc: 'Hạt khô, pate tươi, thanh thưởng sạch răng' },
     { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế', desc: 'Thuốc trị nấm da, nhỏ gáy ve rận, sữa tắm' },
     { id: 'bed', label: 'Nệm ngủ & Không gian', desc: 'Nệm lông cừu, ổ mây thoáng khí' },
