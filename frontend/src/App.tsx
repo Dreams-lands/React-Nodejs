@@ -26,7 +26,6 @@ import {
   RotateCcw,
   ShoppingBag,
   Zap,
-  UserCheck,
   MessageSquare,
 } from 'lucide-react';
 import type {
@@ -1858,247 +1857,223 @@ export function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full bg-[#f8faff] py-14 px-5 flex items-center justify-center min-h-[720px]"
+              className="w-full bg-[#f8faff] py-10 lg:py-14 px-5 flex flex-col items-center justify-center gap-6 min-h-[640px]"
             >
-              <div className="w-full max-w-[980px] rounded-3xl bg-white border border-[#dfe6f0] shadow-[0_16px_40px_rgba(23,50,77,0.07)] overflow-hidden grid grid-cols-1 lg:grid-cols-12">
-                {/* Left Benefits */}
-                <div className="lg:col-span-5 bg-[#eff5ff] p-8 lg:p-10 flex flex-col justify-between space-y-6">
-                  <div className="space-y-5">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#dfe6f0] text-[11px] font-bold text-[#0874e8]">
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>HỘI VIÊN PETHUB</span>
-                    </div>
-
-                    <h2 className="text-[24px] lg:text-[26px] font-extrabold text-[#17324d] leading-snug">
-                      Trải nghiệm mua sắm &amp; đặt lịch trọn vẹn.
-                    </h2>
-
-                    <p className="text-[13px] text-[#587085] leading-relaxed">
-                      Đăng nhập để mở khóa giỏ hàng, đặt mua sản phẩm chính hãng, đặt lịch Spa định kỳ và tích điểm hội viên.
-                    </p>
-
-                    <div className="space-y-3 pt-1">
-                      {[
-                        {
-                          icon: ShoppingBag,
-                          color: 'text-[#0874e8]',
-                          title: 'Mua sắm & theo dõi đơn hàng',
-                          desc: 'Giao nhanh 2 giờ nội thành, lưu địa chỉ tiện lợi',
-                        },
-                        {
-                          icon: Calendar,
-                          color: 'text-[#ff641f]',
-                          title: 'Đặt lịch Spa & Khách sạn',
-                          desc: 'Chủ động chọn khung giờ và gói chăm sóc phù hợp',
-                        },
-                        {
-                          icon: Gift,
-                          color: 'text-[#0874e8]',
-                          title: 'Ưu đãi hội viên 100.000₫',
-                          desc: 'Áp dụng mã PETHUB100K cho thành viên mới',
-                        },
-                      ].map((feat, i) => {
-                        const IconComp = feat.icon;
-                        return (
-                          <div
-                            key={i}
-                            className="p-3.5 rounded-xl bg-white border border-[#dfe6f0] flex items-center gap-3.5"
-                          >
-                            <div className="w-9 h-9 rounded-lg bg-[#f3f7ff] flex items-center justify-center shrink-0">
-                              <IconComp className={`w-4 h-4 ${feat.color}`} />
-                            </div>
-                            <div>
-                              <div className="text-[13px] font-bold text-[#17324d]">{feat.title}</div>
-                              <div className="text-[11px] text-[#587085]">{feat.desc}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="py-3 px-4 rounded-xl bg-[#0874e8] text-white flex items-center justify-center gap-2 text-[12px] font-semibold">
-                    <Star className="w-4 h-4 fill-[#ffb547] text-[#ffb547]" />
-                    <span>Hơn 50.000 gia đình thú cưng tin chọn</span>
-                  </div>
+              {/* Primary Auth Card (Always First) */}
+              <div className="w-full max-w-[520px] rounded-3xl bg-white border border-[#dfe6f0] shadow-[0_16px_40px_rgba(23,50,77,0.07)] p-7 sm:p-10">
+                <div className="w-full h-11 rounded-xl bg-[#f3f7ff] p-1 grid grid-cols-2 gap-1 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('login')}
+                    className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
+                      currentPage === 'login'
+                        ? 'bg-white text-[#0874e8] shadow-xs'
+                        : 'text-[#587085] hover:text-[#17324d]'
+                    }`}
+                  >
+                    Đăng nhập
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('register')}
+                    className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
+                      currentPage === 'register'
+                        ? 'bg-white text-[#0874e8] shadow-xs'
+                        : 'text-[#587085] hover:text-[#17324d]'
+                    }`}
+                  >
+                    Đăng ký
+                  </button>
                 </div>
 
-                {/* Right Form */}
-                <div className="lg:col-span-7 p-8 lg:px-12 lg:py-10 flex flex-col justify-center">
-                  <div className="w-full h-11 rounded-xl bg-[#f3f7ff] p-1 grid grid-cols-2 gap-1 mb-6">
+                {currentPage === 'login' ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const nameFromEmail = loginEmail.includes('@')
+                        ? ownerName
+                        : loginEmail.trim() || 'Trịnh Khoa';
+                      setUserName(nameFromEmail);
+                      setIsLoggedIn(true);
+                      triggerToast(`Đăng nhập thành công. Xin chào ${nameFromEmail}.`);
+                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <h1 className="text-[22px] font-extrabold text-[#17324d]">
+                        Đăng nhập tài khoản
+                      </h1>
+                      <p className="text-[13px] text-[#587085] mt-1">
+                        Nhập email hoặc số điện thoại hội viên để tiếp tục.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-bold text-[#17324d] block">
+                        Email hoặc Số điện thoại
+                      </label>
+                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center gap-3">
+                        <Mail className="w-4 h-4 text-[#0874e8]" />
+                        <input
+                          type="text"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="flex-1 bg-transparent text-[13px] font-medium text-[#17324d] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[12px]">
+                        <label className="font-bold text-[#17324d]">Mật khẩu</label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerToast('Đã gửi hướng dẫn đặt lại mật khẩu tới email của bạn.')
+                          }
+                          className="font-semibold text-[#0874e8] hover:underline cursor-pointer"
+                        >
+                          Quên mật khẩu?
+                        </button>
+                      </div>
+                      <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Lock className="w-4 h-4 text-[#587085]" />
+                          <input
+                            type={showPass ? 'text' : 'password'}
+                            defaultValue="pethub2026"
+                            className="flex-1 bg-transparent text-[13px] font-bold text-[#17324d] focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="text-[#587085] hover:text-[#17324d] cursor-pointer"
+                          aria-label="Ẩn hoặc hiện mật khẩu"
+                        >
+                          {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
                     <button
-                      type="button"
-                      onClick={() => navigateTo('login')}
-                      className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
-                        currentPage === 'login'
-                          ? 'bg-white text-[#0874e8] shadow-xs'
-                          : 'text-[#587085] hover:text-[#17324d]'
-                      }`}
+                      type="submit"
+                      className="w-full h-12 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                     >
-                      Đăng nhập
+                      <span>Đăng nhập</span>
+                      <ArrowRight className="w-4 h-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateTo('register')}
-                      className={`rounded-lg text-[13px] font-bold transition cursor-pointer ${
-                        currentPage === 'register'
-                          ? 'bg-white text-[#0874e8] shadow-xs'
-                          : 'text-[#587085] hover:text-[#17324d]'
-                      }`}
-                    >
-                      Đăng ký
-                    </button>
-                  </div>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const chosenName = regName.trim() || 'Thành viên mới';
+                      setUserName(chosenName);
+                      setOwnerName(chosenName);
+                      setOwnerPhone(regPhone);
+                      setIsLoggedIn(true);
+                      triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
+                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <h1 className="text-[22px] font-extrabold text-[#17324d]">
+                        Đăng ký hội viên mới
+                      </h1>
+                      <p className="text-[12px] text-[#587085] mt-0.5">
+                        Nhận mã giảm giá 100.000₫ (PETHUB100K) cho đơn hàng đầu tiên.
+                      </p>
+                    </div>
 
-                  {currentPage === 'login' ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const nameFromEmail = loginEmail.includes('@')
-                          ? ownerName
-                          : loginEmail.trim() || 'Trịnh Khoa';
-                        setUserName(nameFromEmail);
-                        setIsLoggedIn(true);
-                        triggerToast(`Đăng nhập thành công. Xin chào ${nameFromEmail}.`);
-                        navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
-                      }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <h1 className="text-[22px] font-extrabold text-[#17324d]">
-                          Đăng nhập tài khoản
-                        </h1>
-                        <p className="text-[13px] text-[#587085] mt-1">
-                          Nhập email hoặc số điện thoại hội viên để tiếp tục.
-                        </p>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[12px] font-bold text-[#17324d] block">
-                          Email hoặc Số điện thoại
-                        </label>
-                        <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center gap-3">
-                          <Mail className="w-4 h-4 text-[#0874e8]" />
-                          <input
-                            type="text"
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                            className="flex-1 bg-transparent text-[13px] font-medium text-[#17324d] focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[12px]">
-                          <label className="font-bold text-[#17324d]">Mật khẩu</label>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              triggerToast('Đã gửi hướng dẫn đặt lại mật khẩu tới email của bạn.')
-                            }
-                            className="font-semibold text-[#0874e8] hover:underline cursor-pointer"
-                          >
-                            Quên mật khẩu?
-                          </button>
-                        </div>
-                        <div className="h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus-within:border-[#0874e8] px-3.5 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 flex-1">
-                            <Lock className="w-4 h-4 text-[#587085]" />
-                            <input
-                              type={showPass ? 'text' : 'password'}
-                              defaultValue="pethub2026"
-                              className="flex-1 bg-transparent text-[13px] font-bold text-[#17324d] focus:outline-none"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowPass(!showPass)}
-                            className="text-[#587085] hover:text-[#17324d] cursor-pointer"
-                            aria-label="Ẩn hoặc hiện mật khẩu"
-                          >
-                            {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full h-12 rounded-xl bg-[#0874e8] hover:bg-[#1464f4] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <span>Đăng nhập</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </form>
-                  ) : (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const chosenName = regName.trim() || 'Thành viên mới';
-                        setUserName(chosenName);
-                        setOwnerName(chosenName);
-                        setOwnerPhone(regPhone);
-                        setIsLoggedIn(true);
-                        triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
-                        navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
-                      }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <h1 className="text-[22px] font-extrabold text-[#17324d]">
-                          Đăng ký hội viên mới
-                        </h1>
-                        <p className="text-[12px] text-[#587085] mt-0.5">
-                          Nhận mã giảm giá 100.000₫ (PETHUB100K) cho đơn hàng đầu tiên.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div className="space-y-1">
-                          <label className="text-[12px] font-bold text-[#17324d] block">
-                            Họ và tên
-                          </label>
-                          <input
-                            type="text"
-                            value={regName}
-                            onChange={(e) => setRegName(e.target.value)}
-                            className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[12px] font-bold text-[#17324d] block">
-                            Số điện thoại
-                          </label>
-                          <input
-                            type="text"
-                            value={regPhone}
-                            onChange={(e) => setRegPhone(e.target.value)}
-                            className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div className="space-y-1">
                         <label className="text-[12px] font-bold text-[#17324d] block">
-                          Địa chỉ Email
+                          Họ và tên
                         </label>
                         <input
-                          type="email"
-                          value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
+                          type="text"
+                          value={regName}
+                          onChange={(e) => setRegName(e.target.value)}
                           className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
+                      <div className="space-y-1">
+                        <label className="text-[12px] font-bold text-[#17324d] block">
+                          Số điện thoại
+                        </label>
+                        <input
+                          type="text"
+                          value={regPhone}
+                          onChange={(e) => setRegPhone(e.target.value)}
+                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                        />
+                      </div>
+                    </div>
 
-                      <button
-                        type="submit"
-                        className="w-full h-12 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <span>Đăng ký &amp; Mở khóa mua sắm</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </form>
-                  )}
-                </div>
+                    <div className="space-y-1">
+                      <label className="text-[12px] font-bold text-[#17324d] block">
+                        Địa chỉ Email
+                      </label>
+                      <input
+                        type="email"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0874e8] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full h-12 rounded-xl bg-[#ff641f] hover:bg-[#ee5e17] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <span>Đăng ký &amp; Mở khóa mua sắm</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* Compact Member Benefits Row Below Form */}
+              <div className="w-full max-w-[780px] grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: ShoppingBag,
+                    color: 'text-[#0874e8]',
+                    title: 'Giao nhanh 2 giờ',
+                    desc: 'Lưu địa chỉ & theo dõi đơn tiện lợi',
+                  },
+                  {
+                    icon: Calendar,
+                    color: 'text-[#ff641f]',
+                    title: 'Đặt lịch Spa 24/7',
+                    desc: 'Chủ động chọn khung giờ & gói chăm sóc',
+                  },
+                  {
+                    icon: Gift,
+                    color: 'text-[#0874e8]',
+                    title: 'Ưu đãi 100.000₫',
+                    desc: 'Dùng mã PETHUB100K cho hội viên mới',
+                  },
+                ].map((feat, i) => {
+                  const IconComp = feat.icon;
+                  return (
+                    <div
+                      key={i}
+                      className="p-3.5 rounded-2xl bg-white border border-[#dfe6f0] flex items-center gap-3"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center shrink-0">
+                        <IconComp className={`w-4 h-4 ${feat.color}`} />
+                      </div>
+                      <div>
+                        <div className="text-[12.5px] font-bold text-[#17324d]">{feat.title}</div>
+                        <div className="text-[11px] text-[#587085]">{feat.desc}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
