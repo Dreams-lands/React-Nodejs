@@ -3,6 +3,7 @@ export type PageId =
   | 'search'
   | 'product'
   | 'service'
+  | 'contact'
   | 'cart'
   | 'login'
   | 'register'
@@ -804,7 +805,7 @@ export const SPA_PACKAGES: SpaPackage[] = [
   },
   {
     id: 'pkg-3',
-    name: 'Spa Toàn diện 7 Bước',
+    name: 'Chăm sóc Toàn diện 7 Bước',
     desc: 'Trọn gói tắm thảo mộc, massage thư giãn, sấy tạo phom, cắt tỉa nghệ thuật, cắt dũa móng và vệ sinh tai chuyên sâu.',
     price: 390000,
     priceStr: '390.000₫',

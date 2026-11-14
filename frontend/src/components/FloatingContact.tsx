@@ -13,7 +13,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = ({ onQuickToast }
   const [messages, setMessages] = useState([
     {
       from: 'bot',
-      text: 'Xin chào! Chuyên viên PetHub sẵn sàng tư vấn dinh dưỡng, phụ kiện và dịch vụ Spa cho thú cưng của bạn.',
+      text: 'Xin chào! Chuyên viên PetHub sẵn sàng tư vấn dinh dưỡng, phụ kiện và dịch vụ chăm sóc cho thú cưng của bạn.',
     },
   ]);
 

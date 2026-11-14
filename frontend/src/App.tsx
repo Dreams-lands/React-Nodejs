@@ -28,6 +28,8 @@ import {
   ShoppingBag,
   Zap,
   MessageSquare,
+  MapPin,
+  Send,
 } from 'lucide-react';
 import type {
   PageId,
@@ -55,6 +57,9 @@ interface OrderSnapshot {
   date: string;
   items: CartItem[];
   total: number;
+  customerName?: string;
+  customerPhone?: string;
+  isGuest?: boolean;
 }
 
 const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
@@ -63,7 +68,7 @@ const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   bed: 'Nệm & Không gian',
   backpack: 'Balo & Phụ kiện',
   hygiene: 'Thuốc & Chăm sóc y tế',
-  spa: 'Dịch vụ Spa',
+  spa: 'Dịch vụ chăm sóc',
 };
 
 const HERO_BANNERS: Array<{
@@ -99,13 +104,13 @@ const HERO_BANNERS: Array<{
   },
   {
     id: 'spa-hotel',
-    titleTop: 'DỊCH VỤ SPA 5 SAO',
+    titleTop: 'DỊCH VỤ CHĂM SÓC 5 SAO',
     titleAccent: 'Thư giãn & Tỏa sáng.',
     desc: 'Quy trình tắm thảo mộc 7 bước chuẩn y khoa, cắt tỉa tạo kiểu và khách sạn giám sát 24/7.',
-    ctaLabel: 'Khám phá dịch vụ Spa',
+    ctaLabel: 'Khám phá dịch vụ chăm sóc',
     ctaPage: 'service',
     image: '/images/hero-spa-banner.jpg',
-    imageAlt: 'Dịch vụ Spa tắm gội và tạo kiểu chuẩn y khoa cho thú cưng',
+    imageAlt: 'Dịch vụ chăm sóc tắm gội và tạo kiểu chuẩn y khoa cho thú cưng',
   },
 ];
 
@@ -114,7 +119,7 @@ export function App() {
   const [returnPage, setReturnPage] = useState<PageId>('home');
   const [heroSlide, setHeroSlide] = useState(0);
 
-  // Auth State (Guest mode strictly view-only; purchase/cart/booking require login)
+  // Auth State (Guests can purchase & book; discount voucher codes require login)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('Trịnh Khoa');
 
@@ -138,10 +143,11 @@ export function App() {
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Cart & Order State (empty & inaccessible until authenticated)
+  // Cart & Order State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [voucherCode, setVoucherCode] = useState('PETHUB100K');
+  const [voucherCode, setVoucherCode] = useState('');
   const [isVoucherApplied, setIsVoucherApplied] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState('128 Nguyễn Trãi, Quận 1, TP.HCM');
   const [lastOrder, setLastOrder] = useState<OrderSnapshot | null>(null);
 
   // Service Booking State
@@ -156,10 +162,20 @@ export function App() {
 
   // Auth Form State
   const [showPass, setShowPass] = useState(false);
+  const [showRegPass, setShowRegPass] = useState(false);
   const [loginEmail, setLoginEmail] = useState('khoa.trinh@pethub.vn');
   const [regName, setRegName] = useState('Trịnh Khoa');
   const [regPhone, setRegPhone] = useState('0909 686 868');
   const [regEmail, setRegEmail] = useState('khoa.trinh@pethub.vn');
+  const [regPassword, setRegPassword] = useState('');
+  const [regError, setRegError] = useState<string | null>(null);
+
+  // Contact Page Form State
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactTopic, setContactTopic] = useState('Tư vấn sản phẩm & dinh dưỡng');
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSent, setContactSent] = useState(false);
 
   const triggerToast = (msg: string) => {
     setToastMsg(msg);
@@ -169,13 +185,6 @@ export function App() {
   };
 
   const navigateTo = (page: PageId) => {
-    if (!isLoggedIn && (page === 'cart' || page === 'checkout-success' || page === 'checkout-fail')) {
-      setReturnPage(page === 'cart' ? 'cart' : 'home');
-      setCurrentPage('login');
-      triggerToast('Vui lòng đăng nhập để sử dụng giỏ hàng và thanh toán.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -204,6 +213,7 @@ export function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCartItems([]);
+    setVoucherCode('');
     setIsVoucherApplied(false);
     setBookingConfirmed(false);
     setCurrentPage('home');
@@ -234,19 +244,13 @@ export function App() {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cartItems]);
 
-  const discountAmount = isVoucherApplied && cartSubtotal > 0 ? 100000 : 0;
+  const discountAmount = isLoggedIn && isVoucherApplied && cartSubtotal > 0 ? 100000 : 0;
   const cartFinalTotal = Math.max(0, cartSubtotal - discountAmount);
   const totalCartCount = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
 
   const addProductToCart = (item: ProductItem, qty = 1, sizeLabel?: string) => {
-    if (!isLoggedIn) {
-      requireLoginFor('product', 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.');
-      setSelectedProductId(item.id);
-      return false;
-    }
-
     const chosenSize = sizeLabel || item.sizes[0] || item.packSize;
     const itemName = `${item.name} (${chosenSize})`;
 
@@ -295,15 +299,14 @@ export function App() {
   };
 
   const handleCheckout = (simulateFail = false) => {
-    if (!isLoggedIn) {
-      requireLoginFor('cart', 'Vui lòng đăng nhập để thanh toán.');
-      return;
-    }
     const snapshot: OrderSnapshot = {
       code: `#PET${Math.floor(1000 + Math.random() * 9000)}`,
       date: '25/10/2026',
       items: [...cartItems],
       total: cartFinalTotal,
+      customerName: isLoggedIn ? userName : (ownerName || 'Quý khách'),
+      customerPhone: ownerPhone || '',
+      isGuest: isLoggedIn ? false : true,
     };
     setLastOrder(snapshot);
     if (!simulateFail) {
@@ -724,22 +727,13 @@ export function App() {
                           )}
                         </div>
 
-                        {isLoggedIn ? (
-                          <button
-                            onClick={() => addProductToCart(item)}
-                            className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors"
-                          >
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            <span>Thêm vào giỏ</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => openProductDetail(item)}
-                            className="py-2 px-3.5 rounded-lg border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-semibold text-[13px] cursor-pointer transition-colors"
-                          >
-                            Xem chi tiết
-                          </button>
-                        )}
+                        <button
+                          onClick={() => addProductToCart(item)}
+                          className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Thêm vào giỏ</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -843,21 +837,12 @@ export function App() {
                               </div>
                             </div>
 
-                            {isLoggedIn ? (
-                              <button
-                                onClick={() => addProductToCart(item)}
-                                className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
-                              >
-                                Thêm vào giỏ
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => openProductDetail(item)}
-                                className="w-full py-2.5 px-4 rounded-lg border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-semibold text-[13px] cursor-pointer transition-colors"
-                              >
-                                Xem chi tiết &amp; Đánh giá
-                              </button>
-                            )}
+                            <button
+                              onClick={() => addProductToCart(item)}
+                              className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
+                            >
+                              Thêm vào giỏ
+                            </button>
                           </div>
                         </div>
                       );
@@ -885,7 +870,7 @@ export function App() {
                           <Sparkles className="w-5 h-5" />
                         </div>
                         <h3 className="text-[22px] font-bold text-[#17324d]">
-                          Spa &amp; Grooming
+                          Dịch vụ chăm sóc &amp; Làm đẹp
                         </h3>
                       </div>
                       <p className="text-[14px] text-[#52657a] leading-relaxed max-w-[46ch]">
@@ -902,7 +887,7 @@ export function App() {
                         onClick={() => navigateTo('service')}
                         className="py-2.5 px-5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors flex items-center gap-1.5"
                       >
-                        <span>{isLoggedIn ? 'Đặt lịch Spa' : 'Xem bảng giá'}</span>
+                        <span>Đặt lịch chăm sóc</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -935,7 +920,7 @@ export function App() {
                         }}
                         className="py-2.5 px-5 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-semibold text-[13px] cursor-pointer transition-colors flex items-center gap-1.5"
                       >
-                        <span>{isLoggedIn ? 'Đặt phòng ngay' : 'Xem chi tiết'}</span>
+                        <span>Đặt phòng ngay</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -1238,88 +1223,58 @@ export function App() {
                     </div>
                   </div>
 
-                  {/* Purchase Actions — Auth Gated */}
-                  {isLoggedIn ? (
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center gap-3">
-                        <div className="py-1.5 rounded-xl border border-[#dfe6f0] flex items-center px-2 bg-white">
-                          <button
-                            onClick={() => setProductQuantity((q) => Math.max(1, q - 1))}
-                            className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
-                            aria-label="Giảm số lượng"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-10 text-center font-bold text-sm text-[#17324d] tabular-nums">
-                            {productQuantity}
-                          </span>
-                          <button
-                            onClick={() => setProductQuantity((q) => q + 1)}
-                            className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
-                            aria-label="Tăng số lượng"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
+                  {/* Purchase Actions */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-3">
+                      <div className="py-1.5 rounded-xl border border-[#dfe6f0] flex items-center px-2 bg-white">
                         <button
-                          onClick={() =>
-                            addProductToCart(selectedProduct, productQuantity, productSelectedSize)
-                          }
-                          className="flex-1 py-3 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                          onClick={() => setProductQuantity((q) => Math.max(1, q - 1))}
+                          className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
+                          aria-label="Giảm số lượng"
                         >
-                          <ShoppingBag className="w-4 h-4" />
-                          <span>Thêm vào giỏ hàng</span>
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-10 text-center font-bold text-sm text-[#17324d] tabular-nums">
+                          {productQuantity}
+                        </span>
+                        <button
+                          onClick={() => setProductQuantity((q) => q + 1)}
+                          className="w-8 h-8 flex items-center justify-center text-[#52657a] hover:text-[#17324d] cursor-pointer"
+                          aria-label="Tăng số lượng"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       <button
-                        onClick={() => {
-                          if (
-                            addProductToCart(
-                              selectedProduct,
-                              productQuantity,
-                              productSelectedSize
-                            )
-                          ) {
-                            navigateTo('cart');
-                          }
-                        }}
-                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        onClick={() =>
+                          addProductToCart(selectedProduct, productQuantity, productSelectedSize)
+                        }
+                        className="flex-1 py-3 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
-                        <span>Mua ngay · Giao nhanh 2 giờ</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Thêm vào giỏ hàng</span>
                       </button>
                     </div>
-                  ) : (
-                    <div className="pt-4 border-t border-[#dfe6f0] space-y-3">
-                      <div className="flex items-center gap-2.5">
-                        <Lock className="w-4 h-4 text-[#0667d0] shrink-0" />
-                        <div className="text-[14px] font-bold text-[#17324d]">
-                          Đăng nhập để đặt mua sản phẩm
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2.5">
-                        <button
-                          onClick={() =>
-                            requireLoginFor('product', 'Đăng nhập để thêm sản phẩm vào giỏ hàng.')
-                          }
-                          className="flex-1 py-2.5 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[13px] cursor-pointer transition-colors"
-                        >
-                          Đăng nhập để mua hàng
-                        </button>
-                        <button
-                          onClick={() => {
-                            setReturnPage('product');
-                            navigateTo('register');
-                          }}
-                          className="py-2.5 px-4 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[13px] cursor-pointer transition-colors"
-                        >
-                          Đăng ký
-                        </button>
-                      </div>
-                    </div>
-                  )}
+
+                    <button
+                      onClick={() => {
+                        if (
+                          addProductToCart(
+                            selectedProduct,
+                            productQuantity,
+                            productSelectedSize
+                          )
+                        ) {
+                          navigateTo('cart');
+                        }
+                      }}
+                      className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <span>Mua ngay · Giao nhanh 2 giờ</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1480,9 +1435,9 @@ export function App() {
           )}
 
           {/* ===================================================================
-           * 4. CART & CHECKOUT PAGE (Auth Required)
+           * 4. CART & CHECKOUT PAGE (Guest & Member Checkout)
            * =================================================================== */}
-          {currentPage === 'cart' && isLoggedIn && (
+          {currentPage === 'cart' && (
             <motion.div
               key="cart"
               initial={{ opacity: 0, y: 12 }}
@@ -1598,34 +1553,69 @@ export function App() {
                   <div className="lg:col-span-4 bg-white rounded-2xl border border-[#dfe6f0] p-6 space-y-5">
                     <h2 className="text-base font-bold text-[#17324d]">Tóm tắt đơn hàng</h2>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-[#17324d] block">
-                        Mã ưu đãi hội viên
-                      </label>
-                      <div className="flex items-center gap-2">
+                    {/* Delivery Contact Details (works for both guests and logged-in members) */}
+                    <div className="space-y-3">
+                      <div className="text-[13px] font-bold text-[#17324d]">
+                        Thông tin nhận hàng
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
                         <input
                           type="text"
-                          value={voucherCode}
-                          onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                          placeholder="Nhập PETHUB100K..."
-                          className="flex-1 h-10 px-3 text-[13px] rounded-xl border border-[#dfe6f0] bg-[#f8faff] font-bold text-[#0667d0] uppercase focus:outline-none"
+                          value={ownerName}
+                          onChange={(e) => setOwnerName(e.target.value)}
+                          placeholder="Họ và tên người nhận"
+                          aria-label="Họ và tên người nhận"
+                          className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (voucherCode.trim() === 'PETHUB100K') {
-                              setIsVoucherApplied(true);
-                              triggerToast('Đã áp dụng ưu đãi 100.000₫ cho đơn hàng.');
-                            } else {
-                              triggerToast('Mã chưa hợp lệ. Thử mã hội viên: PETHUB100K');
-                            }
-                          }}
-                          className="py-2.5 px-4 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold hover:bg-[#0558b5] transition cursor-pointer shrink-0"
-                        >
-                          {isVoucherApplied ? 'Đã áp dụng' : 'Áp dụng'}
-                        </button>
+                        <input
+                          type="tel"
+                          value={ownerPhone}
+                          onChange={(e) => setOwnerPhone(e.target.value)}
+                          placeholder="Số điện thoại liên hệ"
+                          aria-label="Số điện thoại liên hệ"
+                          className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
+                        />
                       </div>
+                      <input
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Địa chỉ giao hàng (Số nhà, đường, quận/huyện)"
+                        aria-label="Địa chỉ giao hàng"
+                        className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
+                      />
                     </div>
+
+                    {isLoggedIn && (
+                      <div className="space-y-1.5 pt-2 border-t border-[#dfe6f0]">
+                        <label className="text-[13px] font-bold text-[#17324d] block">
+                          Mã ưu đãi hội viên
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={voucherCode}
+                            onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                            placeholder="Nhập PETHUB100K..."
+                            className="flex-1 h-10 px-3 text-[13px] rounded-xl border border-[#dfe6f0] uppercase focus:outline-none bg-[#f8faff] font-bold text-[#0667d0]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (voucherCode.trim() === 'PETHUB100K') {
+                                setIsVoucherApplied(true);
+                                triggerToast('Đã áp dụng ưu đãi 100.000₫ cho đơn hàng.');
+                              } else {
+                                triggerToast('Mã chưa hợp lệ. Thử mã hội viên: PETHUB100K');
+                              }
+                            }}
+                            className="py-2.5 px-4 rounded-xl text-[13px] font-bold transition shrink-0 bg-[#0667d0] text-white hover:bg-[#0558b5] cursor-pointer"
+                          >
+                            {isVoucherApplied ? 'Đã áp dụng' : 'Áp dụng'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2.5 pt-2 border-t border-[#dfe6f0] text-[13px] tabular-nums">
                       <div className="flex justify-between text-[#52657a]">
@@ -1634,10 +1624,17 @@ export function App() {
                           {cartSubtotal.toLocaleString('vi-VN')}₫
                         </span>
                       </div>
-                      {isVoucherApplied && (
-                        <div className="flex justify-between text-[#c2410c]">
-                          <span>Ưu đãi hội viên:</span>
-                          <span className="font-bold">-100.000₫</span>
+                      {isLoggedIn ? (
+                        isVoucherApplied && (
+                          <div className="flex justify-between text-[#c2410c]">
+                            <span>Ưu đãi hội viên:</span>
+                            <span className="font-bold">-100.000₫</span>
+                          </div>
+                        )
+                      ) : (
+                        <div className="flex justify-between text-[#52657a]">
+                          <span>Mã giảm giá:</span>
+                          <span className="font-medium text-[#52657a]">Chỉ áp dụng cho hội viên</span>
                         </div>
                       )}
                       <div className="flex justify-between text-[#0667d0]">
@@ -1675,7 +1672,7 @@ export function App() {
           )}
 
           {/* ===================================================================
-           * 5. SERVICE BOOKING PAGE (Viewing Public, Booking Requires Login)
+           * 5. SERVICE BOOKING PAGE (Guest & Member Booking)
            * =================================================================== */}
           {currentPage === 'service' && (
             <motion.div
@@ -1695,13 +1692,13 @@ export function App() {
                   Trang chủ
                 </button>
                 <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
-                <span className="font-semibold text-[#0667d0]">Dịch vụ Spa &amp; Khách sạn 5 sao</span>
+                <span className="font-semibold text-[#0667d0]">Dịch vụ chăm sóc &amp; Khách sạn 5 sao</span>
               </div>
 
               {/* Hero Banner */}
               <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-8 lg:p-10 mb-8 space-y-2">
                 <h1 className="text-[28px] lg:text-[34px] font-extrabold text-[#17324d] tracking-[-0.02em]">
-                  Spa &amp; Khách sạn thú cưng chuẩn y khoa
+                  Dịch vụ chăm sóc &amp; Khách sạn thú cưng chuẩn y khoa
                 </h1>
                 <p className="text-[14px] text-[#52657a] max-w-[58ch] leading-relaxed">
                   Quy trình vệ sinh 7 bước nhẹ nhàng, phòng lưu trú riêng biệt và đội ngũ chăm sóc tận tâm.
@@ -1754,174 +1751,152 @@ export function App() {
                     </div>
                   </div>
 
-                  {/* Booking Form — Requires Auth */}
-                  {isLoggedIn ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        setBookingConfirmed(true);
-                        triggerToast(
-                          `Đã xác nhận lịch hẹn "${selectedSpaPackage.name}" lúc ${bookingTime} (${bookingDate}).`
-                        );
-                      }}
-                      className="bg-white rounded-2xl border border-[#dfe6f0] p-6 lg:p-8 space-y-6"
-                    >
-                      <h2 className="text-base font-bold text-[#17324d]">
-                        Thông tin đặt lịch hẹn
-                      </h2>
+                  {/* Booking Form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!ownerPhone.trim()) {
+                        triggerToast('Vui lòng nhập số điện thoại để PetHub liên hệ xác nhận lịch hẹn.');
+                        return;
+                      }
+                      setBookingConfirmed(true);
+                      triggerToast(
+                        `Đã xác nhận lịch hẹn "${selectedSpaPackage.name}" lúc ${bookingTime} (${bookingDate}).`
+                      );
+                    }}
+                    className="bg-white rounded-2xl border border-[#dfe6f0] p-6 lg:p-8 space-y-6"
+                  >
+                    <h2 className="text-base font-bold text-[#17324d]">
+                      Thông tin đặt lịch hẹn
+                    </h2>
 
-                      <div className="space-y-2.5">
-                        <label className="text-[13px] font-bold text-[#17324d] block">
-                          Phân loại thú cưng
+                    <div className="space-y-2.5">
+                      <label className="text-[13px] font-bold text-[#17324d] block">
+                        Phân loại thú cưng
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {[
+                          'Chó nhỏ (< 5kg)',
+                          'Chó vừa (5–10kg)',
+                          'Chó lớn (> 10kg)',
+                          'Mèo cưng',
+                        ].map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setBookingPetType(t)}
+                            className={`py-2.5 px-3 rounded-xl text-[13px] font-bold border transition cursor-pointer ${
+                              bookingPetType === t
+                                ? 'bg-[#eff5ff] border-[#0667d0] text-[#0667d0]'
+                                : 'bg-white border-[#dfe6f0] text-[#52657a] hover:border-[#0667d0]'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#0667d0]" />
+                          <span>Ngày hẹn</span>
                         </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                          {[
-                            'Chó nhỏ (< 5kg)',
-                            'Chó vừa (5–10kg)',
-                            'Chó lớn (> 10kg)',
-                            'Mèo cưng',
-                          ].map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => setBookingPetType(t)}
-                              className={`py-2.5 px-3 rounded-xl text-[13px] font-bold border transition cursor-pointer ${
-                                bookingPetType === t
-                                  ? 'bg-[#eff5ff] border-[#0667d0] text-[#0667d0]'
-                                  : 'bg-white border-[#dfe6f0] text-[#52657a] hover:border-[#0667d0]'
-                              }`}
-                            >
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#0667d0]" />
-                            <span>Ngày hẹn</span>
-                          </label>
-                          <select
-                            value={bookingDate}
-                            onChange={(e) => setBookingDate(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
-                          >
-                            <option value="Hôm nay, 25/10">Hôm nay, 25/10</option>
-                            <option value="Ngày mai, 26/10">Ngày mai, 26/10</option>
-                            <option value="Thứ Bảy, 27/10">Thứ Bảy, 27/10</option>
-                            <option value="Chủ Nhật, 28/10">Chủ Nhật, 28/10</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-[#0667d0]" />
-                            <span>Khung giờ</span>
-                          </label>
-                          <select
-                            value={bookingTime}
-                            onChange={(e) => setBookingTime(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
-                          >
-                            <option value="09:00 Sáng">09:00 Sáng</option>
-                            <option value="10:30 Sáng">10:30 Sáng</option>
-                            <option value="14:00 Chiều">14:00 Chiều</option>
-                            <option value="15:30 Chiều">15:30 Chiều</option>
-                            <option value="17:00 Chiều">17:00 Chiều</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[13px] font-semibold text-[#52657a]">Họ và tên</label>
-                          <input
-                            type="text"
-                            value={ownerName}
-                            onChange={(e) => setOwnerName(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[13px] font-semibold text-[#52657a]">Số điện thoại</label>
-                          <input
-                            type="text"
-                            value={ownerPhone}
-                            onChange={(e) => setOwnerPhone(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
-                          />
-                        </div>
+                        <select
+                          value={bookingDate}
+                          onChange={(e) => setBookingDate(e.target.value)}
+                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
+                        >
+                          <option value="Hôm nay, 25/10">Hôm nay, 25/10</option>
+                          <option value="Ngày mai, 26/10">Ngày mai, 26/10</option>
+                          <option value="Thứ Bảy, 27/10">Thứ Bảy, 27/10</option>
+                          <option value="Chủ Nhật, 28/10">Chủ Nhật, 28/10</option>
+                        </select>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[13px] font-semibold text-[#52657a]">
-                          Ghi chú về tình trạng thú cưng
+                        <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#0667d0]" />
+                          <span>Khung giờ</span>
                         </label>
-                        <textarea
-                          value={petNote}
-                          onChange={(e) => setPetNote(e.target.value)}
-                          placeholder="Ví dụ: Da nhạy cảm, cần tỉa gọn vùng mặt..."
-                          rows={2}
-                          className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] text-[#17324d] focus:outline-none"
+                        <select
+                          value={bookingTime}
+                          onChange={(e) => setBookingTime(e.target.value)}
+                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
+                        >
+                          <option value="09:00 Sáng">09:00 Sáng</option>
+                          <option value="10:30 Sáng">10:30 Sáng</option>
+                          <option value="14:00 Chiều">14:00 Chiều</option>
+                          <option value="15:30 Chiều">15:30 Chiều</option>
+                          <option value="17:00 Chiều">17:00 Chiều</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[13px] font-semibold text-[#52657a]">Họ và tên</label>
+                        <input
+                          type="text"
+                          value={ownerName}
+                          onChange={(e) => setOwnerName(e.target.value)}
+                          placeholder="Ví dụ: Nguyễn Văn A"
+                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
                         />
                       </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[13px] font-semibold text-[#52657a]">Số điện thoại</label>
+                        <input
+                          type="text"
+                          value={ownerPhone}
+                          onChange={(e) => setOwnerPhone(e.target.value)}
+                          placeholder="Ví dụ: 0909 123 456"
+                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
+                        />
+                      </div>
+                    </div>
 
-                      {bookingConfirmed && (
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-[13px] text-emerald-800 flex items-center gap-2.5">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-semibold text-[#52657a]">
+                        Ghi chú về tình trạng thú cưng
+                      </label>
+                      <textarea
+                        value={petNote}
+                        onChange={(e) => setPetNote(e.target.value)}
+                        placeholder="Ví dụ: Da nhạy cảm, cần tỉa gọn vùng mặt..."
+                        rows={2}
+                        className="w-full p-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] text-[#17324d] focus:outline-none"
+                      />
+                    </div>
+
+                    {bookingConfirmed && (
+                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-[13px] text-emerald-800 flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5">
                           <CheckCircle2 className="w-4 h-4 shrink-0" />
                           <span>
                             Đã ghi nhận lịch hẹn <strong>{selectedSpaPackage.name}</strong> ({bookingPetType}) lúc{' '}
                             <strong>{bookingTime}</strong> ngày <strong>{bookingDate}</strong>.
                           </span>
                         </div>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => setBookingConfirmed(false)}
+                          className="text-[12px] font-bold text-emerald-900 hover:underline cursor-pointer shrink-0"
+                        >
+                          Đặt thêm dịch vụ khác
+                        </button>
+                      </div>
+                    )}
 
-                      <button
-                        type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <span>Xác nhận đặt lịch hẹn</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="rounded-2xl bg-[#eff5ff] border border-[#dfe6f0] p-6 lg:p-8 space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white border border-[#dfe6f0] flex items-center justify-center text-[#0667d0] shrink-0">
-                          <Lock className="w-5 h-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <h2 className="text-base font-bold text-[#17324d]">
-                            Đăng nhập để đặt lịch dịch vụ
-                          </h2>
-                          <p className="text-[13px] text-[#52657a] leading-relaxed max-w-[58ch]">
-                            Bạn đã chọn gói <strong>{selectedSpaPackage.name}</strong> ({selectedSpaPackage.priceStr}). Vui lòng đăng nhập thành viên để giữ khung giờ hẹn.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          onClick={() =>
-                            requireLoginFor('service', 'Đăng nhập để đặt lịch dịch vụ Spa & Khách sạn.')
-                          }
-                          className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[13px] cursor-pointer transition-colors"
-                        >
-                          Đăng nhập để đặt lịch
-                        </button>
-                        <button
-                          onClick={() => {
-                            setReturnPage('service');
-                            navigateTo('register');
-                          }}
-                          className="py-3 px-6 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[13px] cursor-pointer transition-colors"
-                        >
-                          Đăng ký thành viên mới
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <span>Xác nhận đặt lịch hẹn</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
                 </div>
 
                 {/* Right Standards Column */}
@@ -1959,6 +1934,229 @@ export function App() {
                       <div className="text-[13px] text-[#52657a]">Phục vụ 8:00 – 21:00 mỗi ngày</div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===================================================================
+           * 5B. CONTACT PAGE
+           * =================================================================== */}
+          {currentPage === 'contact' && (
+            <motion.div
+              key="contact"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
+            >
+              <div className="py-6 border-b border-[#dfe6f0] space-y-2">
+                <div className="flex items-center gap-2 text-[12px] text-[#52657a]">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('home')}
+                    className="hover:text-[#0667d0] cursor-pointer"
+                  >
+                    Trang chủ
+                  </button>
+                  <span>&gt;</span>
+                  <span className="font-semibold text-[#0667d0]">Liên hệ</span>
+                </div>
+                <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#17324d] tracking-tight">
+                  Liên hệ PetHub
+                </h1>
+                <p className="text-[14px] text-[#52657a] max-w-[60ch]">
+                  Hỗ trợ tư vấn dinh dưỡng, đặt lịch dịch vụ chăm sóc và theo dõi đơn hàng trực tiếp.
+                </p>
+              </div>
+
+              <div className="pt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left Info Column */}
+                <div className="lg:col-span-5 bg-white rounded-2xl border border-[#dfe6f0] p-6 sm:p-7 space-y-5">
+                  <h2 className="text-lg font-extrabold text-[#17324d]">
+                    Hệ thống cửa hàng &amp; Tổng đài
+                  </h2>
+
+                  <div className="space-y-4 divide-y divide-[#eef2f7]">
+                    <div className="flex items-start gap-3.5 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center shrink-0">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[12px] font-semibold text-[#52657a]">Hotline 24/7</div>
+                        <div className="text-[18px] font-extrabold text-[#0667d0] tabular-nums">
+                          1900 6868
+                        </div>
+                        <div className="text-[12px] text-[#52657a]">
+                          Hỗ trợ trực tiếp đơn hàng &amp; bác sĩ thú y trực ca
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5 pt-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center shrink-0">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[12px] font-semibold text-[#52657a]">Email chăm sóc khách hàng</div>
+                        <div className="text-[14px] font-bold text-[#17324d]">hello@pethub.vn</div>
+                        <div className="text-[12px] text-[#52657a]">Phản hồi trong vòng 2 giờ làm việc</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5 pt-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center shrink-0">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-[12px] font-semibold text-[#52657a]">Cơ sở TP. Hồ Chí Minh</div>
+                        <div className="text-[13px] font-semibold text-[#17324d]">
+                          Quận 1: 128 Nguyễn Trãi, P. Bến Thành, TP.HCM
+                        </div>
+                        <div className="text-[13px] font-semibold text-[#17324d]">
+                          Quận 7: 45 Nguyễn Thị Thập, P. Tân Hưng, TP.HCM
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5 pt-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#fff2e9] text-[#c2410c] flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[12px] font-semibold text-[#52657a]">Giờ mở cửa</div>
+                        <div className="text-[14px] font-bold text-[#17324d]">08:00 – 21:00 mỗi ngày</div>
+                        <div className="text-[12px] text-[#52657a]">Mở cửa tất cả các ngày cuối tuần &amp; ngày lễ</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Contact Form Column */}
+                <div className="lg:col-span-7 bg-white rounded-2xl border border-[#dfe6f0] p-6 sm:p-8">
+                  {contactSent ? (
+                    <div className="py-8 text-center space-y-4 max-w-md mx-auto">
+                      <div className="w-14 h-14 rounded-2xl bg-[#eff5ff] text-[#0667d0] mx-auto flex items-center justify-center">
+                        <CheckCircle2 className="w-8 h-8" />
+                      </div>
+                      <h2 className="text-[22px] font-extrabold text-[#17324d]">
+                        Đã tiếp nhận yêu cầu hỗ trợ
+                      </h2>
+                      <p className="text-[14px] text-[#52657a] leading-relaxed">
+                        Cảm ơn <span className="font-bold text-[#17324d]">{contactName}</span>. Tư vấn viên PetHub sẽ liên hệ qua số{' '}
+                        <span className="font-bold text-[#0667d0] tabular-nums">{contactPhone}</span> trong thời gian sớm nhất.
+                      </p>
+                      <div className="pt-2 flex flex-wrap justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setContactSent(false);
+                            setContactMessage('');
+                          }}
+                          className="px-5 py-2.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors"
+                        >
+                          Gửi tin nhắn khác
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('home')}
+                          className="px-5 py-2.5 rounded-xl bg-[#f3f7ff] hover:bg-[#e3edff] text-[#17324d] text-[13px] font-bold cursor-pointer transition-colors"
+                        >
+                          Về trang chủ
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!contactName.trim() || !contactPhone.trim() || !contactMessage.trim()) {
+                          triggerToast('Vui lòng điền đầy đủ họ tên, số điện thoại và nội dung.');
+                          return;
+                        }
+                        setContactSent(true);
+                        triggerToast('Đã gửi tin nhắn liên hệ tới PetHub.');
+                      }}
+                      className="space-y-5"
+                    >
+                      <div>
+                        <h2 className="text-lg font-extrabold text-[#17324d]">
+                          Gửi lời nhắn cho PetHub
+                        </h2>
+                        <p className="text-[13px] text-[#52657a] mt-1">
+                          Không cần đăng nhập — điền thông tin bên dưới để được tư vấn viên phản hồi trực tiếp.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[12px] font-bold text-[#17324d] block">
+                            Họ và tên
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                            placeholder="VD: Nguyễn Minh Anh"
+                            className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[12px] font-bold text-[#17324d] block">
+                            Số điện thoại
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            value={contactPhone}
+                            onChange={(e) => setContactPhone(e.target.value)}
+                            placeholder="VD: 0901 234 567"
+                            className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[12px] font-bold text-[#17324d] block">
+                          Chủ đề hỗ trợ
+                        </label>
+                        <select
+                          value={contactTopic}
+                          onChange={(e) => setContactTopic(e.target.value)}
+                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none cursor-pointer"
+                        >
+                          <option value="Tư vấn sản phẩm & dinh dưỡng">Tư vấn sản phẩm &amp; dinh dưỡng</option>
+                          <option value="Đặt lịch dịch vụ chăm sóc">Đặt lịch dịch vụ chăm sóc</option>
+                          <option value="Theo dõi đơn hàng & giao nhận">Theo dõi đơn hàng &amp; giao nhận</option>
+                          <option value="Hỗ trợ bảo hành & đổi trả">Hỗ trợ bảo hành &amp; đổi trả</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[12px] font-bold text-[#17324d] block">
+                          Nội dung lời nhắn
+                        </label>
+                        <textarea
+                          rows={4}
+                          required
+                          value={contactMessage}
+                          onChange={(e) => setContactMessage(e.target.value)}
+                          placeholder="Mô tả nhu cầu của bé cưng hoặc mã đơn hàng bạn cần kiểm tra..."
+                          className="w-full rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] p-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none resize-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Gửi yêu cầu liên hệ</span>
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -2086,11 +2284,21 @@ export function App() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      const chosenName = regName.trim() || 'Thành viên mới';
+                      if (!regName.trim() || !regPhone.trim() || !regEmail.trim()) {
+                        setRegError('Vui lòng nhập đầy đủ họ tên, số điện thoại và email.');
+                        return;
+                      }
+                      if (regPassword.length < 6) {
+                        setRegError('Mật khẩu phải có ít nhất 6 ký tự.');
+                        return;
+                      }
+                      setRegError('');
+                      const chosenName = regName.trim();
                       setUserName(chosenName);
                       setOwnerName(chosenName);
-                      setOwnerPhone(regPhone);
+                      setOwnerPhone(regPhone.trim());
                       setIsLoggedIn(true);
+                      setRegPassword('');
                       triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
                       navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
                     }}
@@ -2101,9 +2309,15 @@ export function App() {
                         Đăng ký hội viên mới
                       </h1>
                       <p className="text-[13px] text-[#52657a] mt-1">
-                        Nhận mã giảm giá 100.000₫ (PETHUB100K) cho đơn hàng đầu tiên.
+                        Tạo tài khoản để nhận mã ưu đãi 100.000₫ (PETHUB100K) và lưu lịch sử đơn hàng.
                       </p>
                     </div>
+
+                    {regError && (
+                      <div className="px-3.5 py-2.5 rounded-xl bg-[#fff2e9] border border-[#ffddc7] text-[12px] font-semibold text-[#9a3412]">
+                        {regError}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div className="space-y-1">
@@ -2112,8 +2326,13 @@ export function App() {
                         </label>
                         <input
                           type="text"
+                          required
                           value={regName}
-                          onChange={(e) => setRegName(e.target.value)}
+                          onChange={(e) => {
+                            setRegName(e.target.value);
+                            if (regError) setRegError('');
+                          }}
+                          placeholder="VD: Nguyễn Minh Anh"
                           className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
@@ -2122,9 +2341,14 @@ export function App() {
                           Số điện thoại
                         </label>
                         <input
-                          type="text"
+                          type="tel"
+                          required
                           value={regPhone}
-                          onChange={(e) => setRegPhone(e.target.value)}
+                          onChange={(e) => {
+                            setRegPhone(e.target.value);
+                            if (regError) setRegError('');
+                          }}
+                          placeholder="VD: 0901 234 567"
                           className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
@@ -2136,17 +2360,51 @@ export function App() {
                       </label>
                       <input
                         type="email"
+                        required
                         value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
+                        onChange={(e) => {
+                          setRegEmail(e.target.value);
+                          if (regError) setRegError('');
+                        }}
+                        placeholder="VD: minhanh@email.com"
                         className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] px-3.5 text-[13px] font-medium text-[#17324d] focus:outline-none"
                       />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[12px] font-bold text-[#17324d] block">
+                        Mật khẩu
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-[#52657a] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type={showRegPass ? 'text' : 'password'}
+                          required
+                          minLength={6}
+                          value={regPassword}
+                          onChange={(e) => {
+                            setRegPassword(e.target.value);
+                            if (regError) setRegError('');
+                          }}
+                          placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                          className="w-full h-11 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] pl-10 pr-10 text-[13px] font-medium text-[#17324d] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegPass((p) => !p)}
+                          aria-label={showRegPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52657a] hover:text-[#17324d] cursor-pointer"
+                        >
+                          {showRegPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <button
                       type="submit"
                       className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                     >
-                      <span>Đăng ký &amp; Mở khóa mua sắm</span>
+                      <span>Đăng ký hội viên</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </form>
@@ -2165,7 +2423,7 @@ export function App() {
                   {
                     icon: Calendar,
                     color: 'text-[#c2410c]',
-                    title: 'Đặt lịch Spa 24/7',
+                    title: 'Đặt lịch chăm sóc 24/7',
                     desc: 'Chủ động chọn khung giờ & gói chăm sóc',
                   },
                   {
@@ -2196,9 +2454,9 @@ export function App() {
           )}
 
           {/* ===================================================================
-           * 7. CHECKOUT SUCCESS & FAIL PAGES (Auth Required)
+           * 7. CHECKOUT SUCCESS & FAIL PAGES
            * =================================================================== */}
-          {(currentPage === 'checkout-success' || currentPage === 'checkout-fail') && isLoggedIn && (
+          {(currentPage === 'checkout-success' || currentPage === 'checkout-fail') && (
             <motion.div
               key={currentPage}
               initial={{ opacity: 0, y: 12 }}
@@ -2231,7 +2489,7 @@ export function App() {
                       Đặt hàng thành công
                     </h1>
                     <p className="text-[14px] text-[#52657a]">
-                      Cảm ơn {userName}. Đơn hàng đang được chuẩn bị và xác nhận đã gửi qua email của bạn.
+                      Cảm ơn {isLoggedIn ? userName : (ownerName || 'Quý khách')}. Đơn hàng đang được chuẩn bị và xác nhận đã gửi qua email của bạn.
                     </p>
                   </div>
                 ) : (
