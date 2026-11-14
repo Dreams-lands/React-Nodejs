@@ -49,6 +49,7 @@ import {
   CompactHeader,
   CompactFooter,
 } from './components/HeadersAndFooters';
+import { PRODUCT_CATEGORIES } from './data/categories';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
 
@@ -126,7 +127,6 @@ export function App() {
   // Catalog & Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | ProductCategory>('all');
-  const [petSpeciesFilter, setPetSpeciesFilter] = useState<'all' | 'dog' | 'cat'>('all');
   const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
 
   // Product Detail & Reviews State
@@ -198,7 +198,6 @@ export function App() {
 
   const handleSelectCategory = (cat: 'all' | ProductCategory) => {
     setSelectedCategoryFilter(cat);
-    setPetSpeciesFilter('all');
     navigateTo('search');
   };
 
@@ -321,13 +320,6 @@ export function App() {
     return CATALOG_PRODUCTS.filter((item) => {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
-      const isSpeciesFilterableCategory =
-        selectedCategoryFilter === 'food' || selectedCategoryFilter === 'hygiene';
-      const matchesSpecies =
-        !isSpeciesFilterableCategory ||
-        petSpeciesFilter === 'all' ||
-        item.petType === petSpeciesFilter ||
-        item.petType === 'both';
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
         !q ||
@@ -335,9 +327,9 @@ export function App() {
         item.brand.toLowerCase().includes(q) ||
         item.shortDesc.toLowerCase().includes(q) ||
         item.packSize.toLowerCase().includes(q);
-      return matchesCat && matchesSpecies && matchesQ;
+      return matchesCat && matchesQ;
     });
-  }, [searchQuery, selectedCategoryFilter, petSpeciesFilter]);
+  }, [searchQuery, selectedCategoryFilter]);
 
   const featuredProducts = useMemo(() => {
     if (homeCategoryTab === 'all') {
@@ -444,79 +436,108 @@ export function App() {
                     </AnimatePresence>
                     <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/96 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
 
-                    <div className="relative z-10 max-w-[1320px] mx-auto px-6 sm:px-16 lg:px-20 pt-12 pb-16 sm:py-16 lg:py-20 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-center">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={activeBanner.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.25 }}
-                          className="max-w-[540px] space-y-5"
-                        >
-                          <h1 className="text-[28px] sm:text-[40px] lg:text-[46px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
-                            {activeBanner.titleTop}
-                            <br />
-                            <span className="text-[#0667d0]">{activeBanner.titleAccent}</span>
-                          </h1>
-
-                          <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
-                            {activeBanner.desc}
-                          </p>
-
-                          <div className="pt-1">
+                    <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-start gap-6 lg:gap-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
+                      {/* Docked Desktop Category Sidebar aligned flush under DANH MỤC SẢN PHẨM */}
+                      <aside
+                        aria-label="Danh mục sản phẩm"
+                        className="hidden lg:flex flex-col w-[260px] shrink-0 bg-white border-x border-b border-[#dfe6f0] rounded-b-xl shadow-[0_14px_32px_rgba(23,50,77,0.10)] divide-y divide-[#eef2f7] overflow-hidden self-start"
+                      >
+                        {PRODUCT_CATEGORIES.map((sub) => {
+                          const IconComp = sub.icon;
+                          return (
                             <button
+                              key={sub.id}
                               type="button"
-                              onClick={() =>
-                                activeBanner.ctaPage
-                                  ? navigateTo(activeBanner.ctaPage)
-                                  : handleSelectCategory(activeBanner.ctaCategory ?? 'all')
-                              }
-                              className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
+                              onClick={() => handleSelectCategory(sub.id)}
+                              className="w-full px-4 py-3.5 text-left flex items-center justify-between gap-2.5 hover:bg-[#eff5ff] transition-colors cursor-pointer group"
                             >
-                              <span>{activeBanner.ctaLabel}</span>
-                              <ArrowRight className="w-4 h-4" />
+                              <span className="flex items-center gap-3 min-w-0">
+                                <IconComp className="w-4 h-4 text-[#52657a] group-hover:text-[#0667d0] shrink-0 transition-colors" />
+                                <span className="text-[13px] font-semibold text-[#17324d] group-hover:text-[#0667d0] truncate transition-colors">
+                                  {sub.label}
+                                </span>
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-[#8c9dad] group-hover:text-[#0667d0] shrink-0 transition-colors" />
                             </button>
-                          </div>
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
+                          );
+                        })}
+                      </aside>
 
-                    {/* Slide Arrows */}
-                    <button
-                      type="button"
-                      aria-label="Banner trước"
-                      onClick={() =>
-                        setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
-                      }
-                      className="hidden sm:flex absolute left-3 lg:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Banner tiếp theo"
-                      onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
-                      className="hidden sm:flex absolute right-3 lg:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                      {/* Right Hero Content Column with internal Arrows & Dots */}
+                      <div className="flex-1 min-w-0 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] pt-10 pb-16 sm:py-16 px-3 sm:px-14 lg:px-16">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={activeBanner.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.25 }}
+                            className="max-w-[520px] space-y-5"
+                          >
+                            <h1 className="text-[28px] sm:text-[38px] lg:text-[44px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
+                              {activeBanner.titleTop}
+                              <br />
+                              <span className="text-[#0667d0]">{activeBanner.titleAccent}</span>
+                            </h1>
 
-                    {/* Slide Dots */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-                      {HERO_BANNERS.map((b, idx) => (
+                            <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
+                              {activeBanner.desc}
+                            </p>
+
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  activeBanner.ctaPage
+                                    ? navigateTo(activeBanner.ctaPage)
+                                    : handleSelectCategory(activeBanner.ctaCategory ?? 'all')
+                                }
+                                className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
+                              >
+                                <span>{activeBanner.ctaLabel}</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+
+                        {/* Slide Arrows */}
                         <button
-                          key={b.id}
                           type="button"
-                          aria-label={`Chuyển đến banner ${idx + 1}`}
-                          onClick={() => setHeroSlide(idx)}
-                          className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                            heroSlide === idx
-                              ? 'w-7 bg-[#0667d0]'
-                              : 'w-2.5 bg-[#17324d]/40 hover:bg-[#17324d]/65'
-                          }`}
-                        />
-                      ))}
+                          aria-label="Banner trước"
+                          onClick={() =>
+                            setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
+                          }
+                          className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Banner tiếp theo"
+                          onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
+                          className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+
+                        {/* Slide Dots */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                          {HERO_BANNERS.map((b, idx) => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              aria-label={`Chuyển đến banner ${idx + 1}`}
+                              onClick={() => setHeroSlide(idx)}
+                              className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                                heroSlide === idx
+                                  ? 'w-7 bg-[#0667d0]'
+                                  : 'w-2.5 bg-[#17324d]/40 hover:bg-[#17324d]/65'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </section>
                 );
@@ -978,10 +999,7 @@ export function App() {
                   ).map((pill) => (
                     <button
                       key={pill.id}
-                      onClick={() => {
-                        setSelectedCategoryFilter(pill.id);
-                        setPetSpeciesFilter('all');
-                      }}
+                      onClick={() => setSelectedCategoryFilter(pill.id)}
                       className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
                         selectedCategoryFilter === pill.id
                           ? 'bg-[#0667d0] text-white'
@@ -992,40 +1010,6 @@ export function App() {
                     </button>
                   ))}
                 </div>
-
-                {/* Compact Pet Species Filter (Chó / Mèo) for Dinh dưỡng & Thuốc */}
-                {(selectedCategoryFilter === 'food' || selectedCategoryFilter === 'hygiene') && (
-                  <div className="flex flex-wrap items-center gap-2 mt-3.5 pt-3.5 border-t border-[#dfe6f0]">
-                    <span className="text-[13px] font-semibold text-[#52657a] mr-1">
-                      Dành cho:
-                    </span>
-                    {(
-                      [
-                        { id: 'dog', label: 'Chó' },
-                        { id: 'cat', label: 'Mèo' },
-                      ] as const
-                    ).map((pet) => {
-                      const active = petSpeciesFilter === pet.id;
-                      return (
-                        <button
-                          key={pet.id}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() =>
-                            setPetSpeciesFilter((prev) => (prev === pet.id ? 'all' : pet.id))
-                          }
-                          className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold cursor-pointer transition-colors ${
-                            active
-                              ? 'bg-[#17324d] text-white border border-[#17324d]'
-                              : 'bg-white text-[#52657a] border border-[#dfe6f0] hover:border-[#0667d0] hover:text-[#17324d]'
-                          }`}
-                        >
-                          {pet.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Product Grid */}
@@ -1041,7 +1025,6 @@ export function App() {
                     onClick={() => {
                       setSearchQuery('');
                       setSelectedCategoryFilter('all');
-                      setPetSpeciesFilter('all');
                     }}
                     className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
                   >

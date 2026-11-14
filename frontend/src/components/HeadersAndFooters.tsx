@@ -12,12 +12,10 @@ import {
   LogIn,
   ChevronDown,
   ChevronRight,
-  Utensils,
-  Pill,
-  BedDouble,
-  ShoppingBag,
+  LayoutGrid,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
+import { PRODUCT_CATEGORIES } from '../data/categories';
 
 interface FullHeaderProps {
   currentPage: PageId;
@@ -75,17 +73,6 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
     setProductMenuOpen(false);
     onNavigate('contact');
   };
-
-  const productSubcategories: {
-    id: ProductCategory;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }[] = [
-    { id: 'food', label: 'Dinh dưỡng & Pate', icon: Utensils },
-    { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế', icon: Pill },
-    { id: 'bed', label: 'Nệm ngủ & Không gian', icon: BedDouble },
-    { id: 'backpack', label: 'Balo & Phụ kiện', icon: ShoppingBag },
-  ];
 
   return (
     <header className="w-full bg-white sticky top-0 z-40 border-b border-[#dfe6f0]">
@@ -224,54 +211,46 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
         </form>
       </div>
 
-      {/* 2. Clean 4-Item Navigation Bar with Product Dropdown */}
+      {/* 2. Navigation Bar with Pinned/Dropdown Product Categories */}
       <nav className="w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
-        <div className="max-w-[1320px] mx-auto h-full px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1 sm:gap-2 text-[13px]">
-            <button
-              onClick={() => {
-                setProductMenuOpen(false);
-                onNavigate('home');
-              }}
-              className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
-                currentPage === 'home' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
-              }`}
-            >
-              Trang chủ
-            </button>
-
+        <div className="max-w-[1320px] mx-auto h-full px-3 sm:px-8 lg:px-12 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-2 text-[12px] sm:text-[13px] h-full min-w-0">
             <div
               ref={menuRef}
-              className="sm:relative"
-              onMouseEnter={() => setProductMenuOpen(true)}
+              className="sm:relative h-full shrink-0"
+              onMouseEnter={() => {
+                if (currentPage !== 'home') setProductMenuOpen(true);
+              }}
               onMouseLeave={() => setProductMenuOpen(false)}
             >
               <button
                 type="button"
-                aria-expanded={productMenuOpen}
+                aria-expanded={currentPage === 'home' ? true : productMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setProductMenuOpen((prev) => !prev)}
-                className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 transition ${
-                  currentPage === 'search' || currentPage === 'product'
-                    ? 'bg-white/20 text-white'
-                    : 'hover:bg-white/10 text-white'
-                }`}
+                className="h-full px-2.5 sm:px-4 lg:w-[260px] bg-[#17324d] hover:bg-[#1e3d5c] text-white font-bold tracking-[0.02em] uppercase inline-flex items-center justify-between gap-2 cursor-pointer whitespace-nowrap transition-colors"
               >
-                <span>Sản phẩm</span>
+                <span className="inline-flex items-center gap-2">
+                  <LayoutGrid className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Danh mục sản phẩm</span>
+                  <span className="sm:hidden">Danh mục</span>
+                </span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    productMenuOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                    currentPage === 'home' ? 'lg:hidden' : ''
+                  } ${productMenuOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
               {productMenuOpen && (
                 <div
                   role="menu"
-                  className="absolute left-4 right-4 sm:left-0 sm:right-auto top-full pt-0.5 sm:w-[260px] z-50"
+                  className={`absolute left-3 right-3 sm:left-0 sm:right-auto top-full sm:w-[260px] z-50 ${
+                    currentPage === 'home' ? 'lg:hidden' : ''
+                  }`}
                 >
-                  <div className="rounded-b-xl sm:rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden divide-y divide-[#eef2f7] text-[#17324d]">
-                    {productSubcategories.map((sub) => {
+                  <div className="rounded-b-xl bg-white border border-t-0 border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden divide-y divide-[#eef2f7] text-[#17324d]">
+                    {PRODUCT_CATEGORIES.map((sub) => {
                       const isActive =
                         currentPage === 'search' && activeCatalogCategory === sub.id;
                       const IconComp = sub.icon;
@@ -311,9 +290,21 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               onClick={() => {
                 setProductMenuOpen(false);
+                onNavigate('home');
+              }}
+              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+                currentPage === 'home' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
+              }`}
+            >
+              Trang chủ
+            </button>
+
+            <button
+              onClick={() => {
+                setProductMenuOpen(false);
                 onNavigate('service');
               }}
-              className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'service' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -323,7 +314,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               type="button"
               onClick={handleContactClick}
-              className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'contact' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
