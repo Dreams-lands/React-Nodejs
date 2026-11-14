@@ -784,82 +784,65 @@ export function App() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6">
-                    {flashSaleProducts.map((item) => {
-                      const sold = item.soldCount || 0;
-                      const total = item.totalStock || 100;
-                      return (
-                        <div
-                          key={item.id}
-                          className="rounded-2xl bg-white border border-[#dfe6f0] p-4 flex flex-col justify-between hover:shadow-md transition-shadow"
-                        >
-                          <div>
-                            <div
-                              onClick={() => openProductDetail(item)}
-                              className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3 cursor-pointer"
-                            >
-                              {item.discountBadge && (
-                                <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
-                                  {item.discountBadge}
-                                </span>
-                              )}
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                              />
-                            </div>
-
-                            <div className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
-                              {item.brand}
-                            </div>
-                            <h3
-                              onClick={() => openProductDetail(item)}
-                              className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0] cursor-pointer"
-                            >
-                              {item.name}
-                            </h3>
-                            <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
-                            <div className="inline-flex items-center gap-1 text-[12px] text-[#52657a] mt-1 tabular-nums">
-                              <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
-                              <span>{item.rating.toFixed(1)} ({item.reviewCount})</span>
-                            </div>
+                    {flashSaleProducts.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-2xl bg-white border border-[#dfe6f0] p-4 flex flex-col justify-between hover:shadow-md transition-shadow"
+                      >
+                        <div>
+                          <div
+                            onClick={() => openProductDetail(item)}
+                            className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3 cursor-pointer"
+                          >
+                            {item.discountBadge && (
+                              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
+                                {item.discountBadge}
+                              </span>
+                            )}
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                            />
                           </div>
 
-                          <div className="pt-3 mt-3 border-t border-[#dfe6f0] space-y-2.5">
-                            <div className="flex items-baseline gap-2 tabular-nums">
-                              <span className="text-[17px] font-extrabold text-[#c2410c]">
-                                {item.price}
-                              </span>
-                              {item.originalPrice && (
-                                <span className="text-[12px] text-[#52657a] line-through">
-                                  {item.originalPrice}
-                                </span>
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="h-1.5 w-full bg-[#f0f3f6] rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-[#c2410c] rounded-full"
-                                  style={{ width: `${Math.min(100, (sold / total) * 100)}%` }}
-                                />
-                              </div>
-                              <div className="text-[12px] text-[#52657a] font-medium mt-1.5 flex justify-between tabular-nums">
-                                <span>Đã bán {sold}</span>
-                                <span>Còn {Math.max(0, total - sold)}</span>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => addProductToCart(item)}
-                              className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
-                            >
-                              Thêm vào giỏ
-                            </button>
+                          <div className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
+                            {item.brand}
+                          </div>
+                          <h3
+                            onClick={() => openProductDetail(item)}
+                            className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0] cursor-pointer"
+                          >
+                            {item.name}
+                          </h3>
+                          <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
+                          <div className="inline-flex items-center gap-1 text-[12px] text-[#52657a] mt-1 tabular-nums">
+                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
+                            <span>{item.rating.toFixed(1)} ({item.reviewCount})</span>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        <div className="pt-3 mt-3 border-t border-[#dfe6f0] space-y-2.5">
+                          <div className="flex items-baseline gap-2 tabular-nums">
+                            <span className="text-[17px] font-extrabold text-[#c2410c]">
+                              {item.price}
+                            </span>
+                            {item.originalPrice && (
+                              <span className="text-[12px] text-[#52657a] line-through">
+                                {item.originalPrice}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => addProductToCart(item)}
+                            className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
+                          >
+                            Thêm vào giỏ
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </section>
