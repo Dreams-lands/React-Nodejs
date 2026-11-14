@@ -221,9 +221,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <div
               ref={menuRef}
               className="sm:relative h-full flex items-center shrink-0"
-              onMouseEnter={() => {
-                if (currentPage !== 'home') setProductMenuOpen(true);
-              }}
+              onMouseEnter={() => setProductMenuOpen(true)}
               onMouseLeave={() => setProductMenuOpen(false)}
             >
               <button
@@ -240,17 +238,15 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 </span>
                 <ChevronDown
                   className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform duration-200 ${
-                    currentPage === 'home' ? 'lg:hidden' : ''
-                  } ${productMenuOpen ? 'rotate-180' : ''}`}
+                    productMenuOpen ? 'rotate-180' : ''
+                  }`}
                 />
               </button>
 
               {productMenuOpen && (
                 <div
                   role="menu"
-                  className={`absolute left-2 right-2 sm:left-0 sm:right-auto top-full mt-1 sm:w-[268px] z-50 ${
-                    currentPage === 'home' ? 'lg:hidden' : ''
-                  }`}
+                  className="absolute left-2 right-2 sm:left-0 sm:right-auto top-full pt-1.5 sm:w-[268px] z-50"
                 >
                   <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden">
                     <CategoryMenuList

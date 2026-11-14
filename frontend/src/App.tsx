@@ -30,7 +30,6 @@ import {
   MessageSquare,
   MapPin,
   Send,
-  LayoutGrid,
 } from 'lucide-react';
 import type {
   PageId,
@@ -50,7 +49,6 @@ import {
   CompactHeader,
   CompactFooter,
 } from './components/HeadersAndFooters';
-import { CategoryMenuList } from './components/CategoryMenuList';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
 
@@ -452,25 +450,8 @@ export function App() {
                     </AnimatePresence>
                     <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/96 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
 
-                    <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-center gap-6 lg:gap-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
-                      {/* Cohesive PetHub Category Card integrated cleanly beside Hero Copy */}
-                      <aside
-                        aria-label="Danh mục sản phẩm"
-                        className="hidden lg:flex flex-col w-[268px] shrink-0 bg-white/96 backdrop-blur-xs border border-[#dfe6f0] rounded-2xl shadow-[0_12px_32px_rgba(23,50,77,0.07)] overflow-hidden my-6"
-                      >
-                        <div className="px-4 py-3 bg-[#eff5ff] border-b border-[#dfe6f0] flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.04em] text-[#0667d0]">
-                          <LayoutGrid className="w-4 h-4 shrink-0" />
-                          <span>Danh mục sản phẩm</span>
-                        </div>
-                        <CategoryMenuList
-                          activeCategory={selectedCategoryFilter}
-                          activePetAudience={petScope}
-                          onSelectCategory={handleSelectCategory}
-                          onSelectPetAudience={handleSelectPetAudience}
-                        />
-                      </aside>
-
-                      {/* Right Hero Content Column with internal Arrows & Dots */}
+                    <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-center min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
+                      {/* Hero Content Column with internal Arrows & Dots */}
                       <div className="flex-1 min-w-0 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] pt-10 pb-16 sm:py-16 px-3 sm:px-14 lg:px-16">
                         <AnimatePresence mode="wait">
                           <motion.div
