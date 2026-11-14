@@ -30,6 +30,7 @@ import {
   MessageSquare,
   MapPin,
   Send,
+  LayoutGrid,
 } from 'lucide-react';
 import type {
   PageId,
@@ -49,7 +50,7 @@ import {
   CompactHeader,
   CompactFooter,
 } from './components/HeadersAndFooters';
-import { PRODUCT_CATEGORIES } from './data/categories';
+import { CategoryMenuList } from './components/CategoryMenuList';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
 
@@ -127,6 +128,7 @@ export function App() {
   // Catalog & Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | ProductCategory>('all');
+  const [petScope, setPetScope] = useState<'all' | 'dog' | 'cat'>('all');
   const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
 
   // Product Detail & Reviews State
@@ -198,6 +200,13 @@ export function App() {
 
   const handleSelectCategory = (cat: 'all' | ProductCategory) => {
     setSelectedCategoryFilter(cat);
+    setPetScope('all');
+    navigateTo('search');
+  };
+
+  const handleSelectPetAudience = (pet: 'dog' | 'cat') => {
+    setSelectedCategoryFilter('all');
+    setPetScope(pet);
     navigateTo('search');
   };
 
@@ -320,6 +329,11 @@ export function App() {
     return CATALOG_PRODUCTS.filter((item) => {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
+      const matchesPet =
+        petScope === 'all' ||
+        !item.petType ||
+        item.petType === 'both' ||
+        item.petType === petScope;
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
         !q ||
@@ -327,9 +341,9 @@ export function App() {
         item.brand.toLowerCase().includes(q) ||
         item.shortDesc.toLowerCase().includes(q) ||
         item.packSize.toLowerCase().includes(q);
-      return matchesCat && matchesQ;
+      return matchesCat && matchesPet && matchesQ;
     });
-  }, [searchQuery, selectedCategoryFilter]);
+  }, [searchQuery, selectedCategoryFilter, petScope]);
 
   const featuredProducts = useMemo(() => {
     if (homeCategoryTab === 'all') {
@@ -390,8 +404,10 @@ export function App() {
         <PetHubHeader
           currentPage={currentPage}
           activeCatalogCategory={selectedCategoryFilter}
+          activePetAudience={petScope}
           onNavigate={navigateTo}
           onSelectCategory={handleSelectCategory}
+          onSelectPetAudience={handleSelectPetAudience}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isLoggedIn={isLoggedIn}
@@ -436,31 +452,22 @@ export function App() {
                     </AnimatePresence>
                     <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/96 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
 
-                    <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-start gap-6 lg:gap-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
-                      {/* Docked Desktop Category Sidebar aligned flush under DANH MỤC SẢN PHẨM */}
+                    <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-center gap-6 lg:gap-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
+                      {/* Cohesive PetHub Category Card integrated cleanly beside Hero Copy */}
                       <aside
                         aria-label="Danh mục sản phẩm"
-                        className="hidden lg:flex flex-col w-[260px] shrink-0 bg-white border-x border-b border-[#dfe6f0] rounded-b-xl shadow-[0_14px_32px_rgba(23,50,77,0.10)] divide-y divide-[#eef2f7] overflow-hidden self-start"
+                        className="hidden lg:flex flex-col w-[268px] shrink-0 bg-white/96 backdrop-blur-xs border border-[#dfe6f0] rounded-2xl shadow-[0_12px_32px_rgba(23,50,77,0.07)] overflow-hidden my-6"
                       >
-                        {PRODUCT_CATEGORIES.map((sub) => {
-                          const IconComp = sub.icon;
-                          return (
-                            <button
-                              key={sub.id}
-                              type="button"
-                              onClick={() => handleSelectCategory(sub.id)}
-                              className="w-full px-4 py-3.5 text-left flex items-center justify-between gap-2.5 hover:bg-[#eff5ff] transition-colors cursor-pointer group"
-                            >
-                              <span className="flex items-center gap-3 min-w-0">
-                                <IconComp className="w-4 h-4 text-[#52657a] group-hover:text-[#0667d0] shrink-0 transition-colors" />
-                                <span className="text-[13px] font-semibold text-[#17324d] group-hover:text-[#0667d0] truncate transition-colors">
-                                  {sub.label}
-                                </span>
-                              </span>
-                              <ChevronRight className="w-4 h-4 text-[#8c9dad] group-hover:text-[#0667d0] shrink-0 transition-colors" />
-                            </button>
-                          );
-                        })}
+                        <div className="px-4 py-3 bg-[#eff5ff] border-b border-[#dfe6f0] flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.04em] text-[#0667d0]">
+                          <LayoutGrid className="w-4 h-4 shrink-0" />
+                          <span>Danh mục sản phẩm</span>
+                        </div>
+                        <CategoryMenuList
+                          activeCategory={selectedCategoryFilter}
+                          activePetAudience={petScope}
+                          onSelectCategory={handleSelectCategory}
+                          onSelectPetAudience={handleSelectPetAudience}
+                        />
                       </aside>
 
                       {/* Right Hero Content Column with internal Arrows & Dots */}
@@ -973,7 +980,11 @@ export function App() {
                 </button>
                 <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
                 <span className="font-semibold text-[#0667d0]">
-                  {CATEGORY_LABELS[selectedCategoryFilter]}
+                  {petScope === 'dog'
+                    ? 'Sản phẩm cho Chó'
+                    : petScope === 'cat'
+                      ? 'Sản phẩm cho Mèo'
+                      : CATEGORY_LABELS[selectedCategoryFilter]}
                 </span>
               </div>
 
@@ -983,7 +994,11 @@ export function App() {
                   <h1 className="text-[30px] lg:text-[36px] font-extrabold text-[#17324d] tracking-[-0.02em]">
                     {searchQuery
                       ? `Kết quả cho "${searchQuery}"`
-                      : 'Cửa hàng đồ dùng thú cưng'}
+                      : petScope === 'dog'
+                        ? 'Sản phẩm dành cho Chó'
+                        : petScope === 'cat'
+                          ? 'Sản phẩm dành cho Mèo'
+                          : 'Cửa hàng đồ dùng thú cưng'}
                   </h1>
                 </div>
 
@@ -993,13 +1008,16 @@ export function App() {
                     [
                       { id: 'food', label: 'Dinh dưỡng & Pate' },
                       { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế' },
-                      { id: 'bed', label: 'Nệm & Không gian' },
+                      { id: 'bed', label: 'Nệm & Không gian nghỉ' },
                       { id: 'backpack', label: 'Balo & Phụ kiện' },
                     ] as const
                   ).map((pill) => (
                     <button
                       key={pill.id}
-                      onClick={() => setSelectedCategoryFilter(pill.id)}
+                      onClick={() => {
+                        setSelectedCategoryFilter(pill.id);
+                        setPetScope('all');
+                      }}
                       className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
                         selectedCategoryFilter === pill.id
                           ? 'bg-[#0667d0] text-white'
@@ -1025,6 +1043,7 @@ export function App() {
                     onClick={() => {
                       setSearchQuery('');
                       setSelectedCategoryFilter('all');
+                      setPetScope('all');
                     }}
                     className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
                   >

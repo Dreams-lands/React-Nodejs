@@ -11,17 +11,18 @@ import {
   LogOut,
   LogIn,
   ChevronDown,
-  ChevronRight,
   LayoutGrid,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
-import { PRODUCT_CATEGORIES } from '../data/categories';
+import { CategoryMenuList } from './CategoryMenuList';
 
 interface FullHeaderProps {
   currentPage: PageId;
   activeCatalogCategory: 'all' | ProductCategory;
+  activePetAudience?: 'all' | 'dog' | 'cat';
   onNavigate: (page: PageId) => void;
   onSelectCategory: (cat: 'all' | ProductCategory) => void;
+  onSelectPetAudience?: (pet: 'dog' | 'cat') => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   isLoggedIn: boolean;
@@ -34,8 +35,10 @@ interface FullHeaderProps {
 export const PetHubHeader: React.FC<FullHeaderProps> = ({
   currentPage,
   activeCatalogCategory,
+  activePetAudience = 'all',
   onNavigate,
   onSelectCategory,
+  onSelectPetAudience,
   searchQuery,
   onSearchChange,
   isLoggedIn,
@@ -211,13 +214,13 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
         </form>
       </div>
 
-      {/* 2. Navigation Bar with Pinned/Dropdown Product Categories */}
+      {/* 2. Navigation Bar with Cohesive Category Dropdown Trigger */}
       <nav className="w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
         <div className="max-w-[1320px] mx-auto h-full px-2 sm:px-8 lg:px-12 flex items-center justify-between gap-1 sm:gap-4">
-          <div className="flex items-center gap-0.5 sm:gap-2 text-[11px] sm:text-[13px] h-full min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-[13px] h-full min-w-0">
             <div
               ref={menuRef}
-              className="sm:relative h-full shrink-0"
+              className="sm:relative h-full flex items-center shrink-0"
               onMouseEnter={() => {
                 if (currentPage !== 'home') setProductMenuOpen(true);
               }}
@@ -225,10 +228,10 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             >
               <button
                 type="button"
-                aria-expanded={currentPage === 'home' ? true : productMenuOpen}
+                aria-expanded={productMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setProductMenuOpen((prev) => !prev)}
-                className="h-full px-2 sm:px-4 lg:w-[260px] bg-[#17324d] hover:bg-[#1e3d5c] text-white font-bold sm:tracking-[0.02em] sm:uppercase inline-flex items-center justify-between gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap transition-colors"
+                className="h-8 px-2 sm:px-3.5 rounded-lg bg-[#044d9e] hover:bg-[#04428a] border border-white/20 text-white font-bold inline-flex items-center justify-between gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 sm:gap-2">
                   <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -245,43 +248,24 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               {productMenuOpen && (
                 <div
                   role="menu"
-                  className={`absolute left-3 right-3 sm:left-0 sm:right-auto top-full sm:w-[260px] z-50 ${
+                  className={`absolute left-2 right-2 sm:left-0 sm:right-auto top-full mt-1 sm:w-[268px] z-50 ${
                     currentPage === 'home' ? 'lg:hidden' : ''
                   }`}
                 >
-                  <div className="rounded-b-xl bg-white border border-t-0 border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden divide-y divide-[#eef2f7] text-[#17324d]">
-                    {PRODUCT_CATEGORIES.map((sub) => {
-                      const isActive =
-                        currentPage === 'search' && activeCatalogCategory === sub.id;
-                      const IconComp = sub.icon;
-                      return (
-                        <button
-                          key={sub.id}
-                          role="menuitem"
-                          onClick={() => {
-                            onSelectCategory(sub.id);
-                            setProductMenuOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
-                            isActive
-                              ? 'bg-[#eff5ff] text-[#0667d0]'
-                              : 'hover:bg-[#f8faff] text-[#17324d]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <IconComp
-                              className={`w-4 h-4 shrink-0 ${
-                                isActive ? 'text-[#0667d0]' : 'text-[#52657a]'
-                              }`}
-                            />
-                            <span className="text-[13px] font-semibold leading-snug truncate">
-                              {sub.label}
-                            </span>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 text-[#52657a] shrink-0" />
-                        </button>
-                      );
-                    })}
+                  <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden">
+                    <CategoryMenuList
+                      activeCategory={currentPage === 'search' ? activeCatalogCategory : 'all'}
+                      activePetAudience={currentPage === 'search' ? activePetAudience : 'all'}
+                      roleMode="menuitem"
+                      onSelectCategory={(cat) => {
+                        onSelectCategory(cat);
+                        setProductMenuOpen(false);
+                      }}
+                      onSelectPetAudience={(pet) => {
+                        onSelectPetAudience?.(pet);
+                        setProductMenuOpen(false);
+                      }}
+                    />
                   </div>
                 </div>
               )}
