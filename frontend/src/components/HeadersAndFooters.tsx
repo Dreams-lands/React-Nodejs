@@ -213,8 +213,8 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
 
       {/* 2. Navigation Bar with Pinned/Dropdown Product Categories */}
       <nav className="w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
-        <div className="max-w-[1320px] mx-auto h-full px-3 sm:px-8 lg:px-12 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-1 sm:gap-2 text-[12px] sm:text-[13px] h-full min-w-0">
+        <div className="max-w-[1320px] mx-auto h-full px-2 sm:px-8 lg:px-12 flex items-center justify-between gap-1 sm:gap-4">
+          <div className="flex items-center gap-0.5 sm:gap-2 text-[11px] sm:text-[13px] h-full min-w-0">
             <div
               ref={menuRef}
               className="sm:relative h-full shrink-0"
@@ -228,15 +228,15 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 aria-expanded={currentPage === 'home' ? true : productMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setProductMenuOpen((prev) => !prev)}
-                className="h-full px-2.5 sm:px-4 lg:w-[260px] bg-[#17324d] hover:bg-[#1e3d5c] text-white font-bold tracking-[0.02em] uppercase inline-flex items-center justify-between gap-2 cursor-pointer whitespace-nowrap transition-colors"
+                className="h-full px-2 sm:px-4 lg:w-[260px] bg-[#17324d] hover:bg-[#1e3d5c] text-white font-bold sm:tracking-[0.02em] sm:uppercase inline-flex items-center justify-between gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap transition-colors"
               >
-                <span className="inline-flex items-center gap-2">
-                  <LayoutGrid className="w-4 h-4 shrink-0" />
+                <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                  <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span className="hidden sm:inline">Danh mục sản phẩm</span>
                   <span className="sm:hidden">Danh mục</span>
                 </span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform duration-200 ${
                     currentPage === 'home' ? 'lg:hidden' : ''
                   } ${productMenuOpen ? 'rotate-180' : ''}`}
                 />
@@ -292,7 +292,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 setProductMenuOpen(false);
                 onNavigate('home');
               }}
-              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'home' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -304,7 +304,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 setProductMenuOpen(false);
                 onNavigate('service');
               }}
-              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'service' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -314,7 +314,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               type="button"
               onClick={handleContactClick}
-              className={`px-2 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'contact' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
