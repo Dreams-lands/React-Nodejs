@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ArrowRight, Star, ShoppingBag } from 'lucide-react';
+import { Heart, Star, ShoppingBag } from 'lucide-react';
 import type { ProductItem } from '../data/mockData';
 
 interface TiltCardProps {
   item: ProductItem;
   index: number;
   isLiked: boolean;
-  isLoggedIn: boolean;
+  isLoggedIn?: boolean;
   onToggleLike: (id: string) => void;
   onViewProduct: (item: ProductItem) => void;
   onAddToCart: (item: ProductItem) => void;
@@ -17,7 +17,6 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   item,
   index,
   isLiked,
-  isLoggedIn,
   onToggleLike,
   onViewProduct,
   onAddToCart,
@@ -150,27 +149,15 @@ export const TiltCard: React.FC<TiltCardProps> = ({
             )}
           </div>
 
-          {isLoggedIn ? (
-            <motion.button
-              type="button"
-              onClick={() => onAddToCart(item)}
-              whileTap={{ scale: 0.96 }}
-              className="py-2 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Thêm vào giỏ</span>
-            </motion.button>
-          ) : (
-            <motion.button
-              type="button"
-              onClick={() => onViewProduct(item)}
-              whileTap={{ scale: 0.96 }}
-              className="py-2 px-4 rounded-lg border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-semibold text-[13px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
-            >
-              <span>Xem chi tiết</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </motion.button>
-          )}
+          <motion.button
+            type="button"
+            onClick={() => onAddToCart(item)}
+            whileTap={{ scale: 0.96 }}
+            className="py-2 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>Thêm vào giỏ</span>
+          </motion.button>
         </div>
       </div>
     </motion.article>
