@@ -114,6 +114,8 @@ const HERO_BANNERS: Array<{
   },
 ];
 
+const TODAY_ISO = new Date().toISOString().slice(0, 10);
+
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [returnPage, setReturnPage] = useState<PageId>('home');
@@ -153,12 +155,17 @@ export function App() {
   // Service Booking State
   const [bookingPetType, setBookingPetType] = useState('Chó nhỏ (< 5kg)');
   const [selectedPackageId, setSelectedPackageId] = useState('pkg-3');
-  const [bookingDate, setBookingDate] = useState('Hôm nay, 25/10');
+  const [bookingDate, setBookingDate] = useState(TODAY_ISO);
   const [bookingTime, setBookingTime] = useState('10:30 Sáng');
   const [ownerName, setOwnerName] = useState('Trịnh Khoa');
   const [ownerPhone, setOwnerPhone] = useState('0909 686 868');
   const [petNote, setPetNote] = useState('');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+
+  const formatBookingDate = (val: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : val;
+  };
 
   // Auth Form State
   const [showPass, setShowPass] = useState(false);
@@ -328,10 +335,7 @@ export function App() {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
       const matchesPet =
-        petScope === 'all' ||
-        !item.petType ||
-        item.petType === 'both' ||
-        item.petType === petScope;
+        petScope === 'all' || item.petType === petScope;
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
         !q ||
@@ -952,7 +956,7 @@ export function App() {
               className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
             >
               {/* Breadcrumb */}
-              <div className="h-14 flex items-center gap-2.5 text-[13px]">
+              <div className="h-14 flex items-center gap-2.5 text-[13px] flex-wrap">
                 <button
                   onClick={() => navigateTo('home')}
                   className="text-[#52657a] hover:text-[#0667d0] cursor-pointer"
@@ -960,13 +964,33 @@ export function App() {
                   Trang chủ
                 </button>
                 <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
-                <span className="font-semibold text-[#0667d0]">
-                  {petScope === 'dog'
-                    ? 'Sản phẩm cho Chó'
-                    : petScope === 'cat'
-                      ? 'Sản phẩm cho Mèo'
-                      : CATEGORY_LABELS[selectedCategoryFilter]}
-                </span>
+                {petScope !== 'all' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryFilter('all')}
+                      className={`cursor-pointer ${
+                        selectedCategoryFilter === 'all'
+                          ? 'font-semibold text-[#0667d0]'
+                          : 'text-[#52657a] hover:text-[#0667d0]'
+                      }`}
+                    >
+                      {petScope === 'dog' ? 'Đồ dùng cho Chó' : 'Đồ dùng cho Mèo'}
+                    </button>
+                    {selectedCategoryFilter !== 'all' && (
+                      <>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#52657a]" />
+                        <span className="font-semibold text-[#0667d0]">
+                          {CATEGORY_LABELS[selectedCategoryFilter]}
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="font-semibold text-[#0667d0]">
+                    {CATEGORY_LABELS[selectedCategoryFilter]}
+                  </span>
+                )}
               </div>
 
               {/* Filter Header — flat editorial header without nested bordered cards */}
@@ -976,9 +1000,9 @@ export function App() {
                     {searchQuery
                       ? `Kết quả cho "${searchQuery}"`
                       : petScope === 'dog'
-                        ? 'Sản phẩm dành cho Chó'
+                        ? 'Đồ dùng dành cho Chó'
                         : petScope === 'cat'
-                          ? 'Sản phẩm dành cho Mèo'
+                          ? 'Đồ dùng dành cho Mèo'
                           : 'Cửa hàng đồ dùng thú cưng'}
                   </h1>
                 </div>
@@ -996,8 +1020,9 @@ export function App() {
                     <button
                       key={pill.id}
                       onClick={() => {
-                        setSelectedCategoryFilter(pill.id);
-                        setPetScope('all');
+                        setSelectedCategoryFilter((prev) =>
+                          prev === pill.id ? 'all' : pill.id
+                        );
                       }}
                       className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
                         selectedCategoryFilter === pill.id
@@ -1427,22 +1452,8 @@ export function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pb-16"
+              className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-10 pb-16"
             >
-              {/* Stepper */}
-              <div className="h-20 flex items-center justify-center gap-6 text-[13px] font-semibold">
-                <span className="text-[#0667d0] flex items-center gap-2 font-bold">
-                  <span className="w-6 h-6 rounded-full bg-[#0667d0] text-white text-xs flex items-center justify-center">
-                    1
-                  </span>
-                  <span>Giỏ hàng</span>
-                </span>
-                <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#52657a]">2. Thanh toán</span>
-                <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#52657a]">3. Hoàn tất</span>
-              </div>
-
               {cartItems.length === 0 ? (
                 <div className="max-w-[520px] mx-auto rounded-2xl border border-[#dfe6f0] bg-[#f8faff] text-center py-14 px-6 space-y-4">
                   <div className="w-16 h-16 rounded-2xl bg-[#eff5ff] text-[#0667d0] mx-auto flex items-center justify-center">
@@ -1744,7 +1755,7 @@ export function App() {
                       }
                       setBookingConfirmed(true);
                       triggerToast(
-                        `Đã xác nhận lịch hẹn "${selectedSpaPackage.name}" lúc ${bookingTime} (${bookingDate}).`
+                        `Đã xác nhận lịch hẹn "${selectedSpaPackage.name}" lúc ${bookingTime} (${formatBookingDate(bookingDate)}).`
                       );
                     }}
                     className="bg-white rounded-2xl border border-[#dfe6f0] p-6 lg:p-8 space-y-6"
@@ -1782,20 +1793,23 @@ export function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5">
+                        <label
+                          htmlFor="booking-date-input"
+                          className="text-[13px] font-semibold text-[#52657a] flex items-center gap-1.5"
+                        >
                           <Calendar className="w-3.5 h-3.5 text-[#0667d0]" />
                           <span>Ngày hẹn</span>
                         </label>
-                        <select
+                        <input
+                          id="booking-date-input"
+                          type="date"
+                          min={TODAY_ISO}
                           value={bookingDate}
                           onChange={(e) => setBookingDate(e.target.value)}
-                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-bold text-[#17324d] focus:outline-none"
-                        >
-                          <option value="Hôm nay, 25/10">Hôm nay, 25/10</option>
-                          <option value="Ngày mai, 26/10">Ngày mai, 26/10</option>
-                          <option value="Thứ Bảy, 27/10">Thứ Bảy, 27/10</option>
-                          <option value="Chủ Nhật, 28/10">Chủ Nhật, 28/10</option>
-                        </select>
+                          onClick={(e) => e.currentTarget.showPicker?.()}
+                          aria-label="Chọn ngày hẹn lịch chăm sóc"
+                          className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] focus:border-[#0667d0] text-[13px] font-bold text-[#17324d] focus:outline-none cursor-pointer"
+                        />
                       </div>
 
                       <div className="space-y-1.5">
@@ -1859,7 +1873,7 @@ export function App() {
                           <CheckCircle2 className="w-4 h-4 shrink-0" />
                           <span>
                             Đã ghi nhận lịch hẹn <strong>{selectedSpaPackage.name}</strong> ({bookingPetType}) lúc{' '}
-                            <strong>{bookingTime}</strong> ngày <strong>{bookingDate}</strong>.
+                            <strong>{bookingTime}</strong> ngày <strong>{formatBookingDate(bookingDate)}</strong>.
                           </span>
                         </div>
                         <button
@@ -2446,22 +2460,8 @@ export function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-[1320px] mx-auto px-5 pb-16"
+              className="max-w-[1320px] mx-auto px-5 pt-10 pb-16"
             >
-              <div className="h-20 flex items-center justify-center gap-6 text-[13px] font-semibold">
-                <span className="text-[#0667d0]">1. Giỏ hàng</span>
-                <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span className="text-[#0667d0]">2. Thanh toán</span>
-                <div className="w-12 h-px bg-[#dfe6f0]" />
-                <span
-                  className={`font-bold ${
-                    currentPage === 'checkout-success' ? 'text-[#0667d0]' : 'text-[#c2410c]'
-                  }`}
-                >
-                  3. Hoàn tất
-                </span>
-              </div>
-
               <div className="max-w-[600px] mx-auto pt-4 space-y-7 text-center">
                 {currentPage === 'checkout-success' ? (
                   <div className="space-y-3">

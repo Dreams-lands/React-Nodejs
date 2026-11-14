@@ -270,11 +270,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-vet-antifungal-spray',
     brand: 'VET CARE',
-    name: 'Xịt đặc trị nấm da & viêm da cho chó mèo (100ml)',
+    name: 'Xịt đặc trị nấm da & viêm da cho chó (100ml)',
     shortDesc: 'Công thức kháng nấm Chlorhexidine & Ketoconazole làm dịu ngứa và phục hồi vùng da tổn thương.',
     description:
-      'Dung dịch xịt ngoài da phổ rộng chuyên xử lý nấm vòng, ghẻ rụng lông, mẩn đỏ và viêm da tiết bã ở chó mèo. Khô nhanh, không gây nhờn rít và an toàn khi liếm nhẹ sau khi khô.',
-    packSize: 'Chó & Mèo • Chai xịt 100 ml',
+      'Dung dịch xịt ngoài da phổ rộng chuyên xử lý nấm vòng, ghẻ rụng lông, mẩn đỏ và viêm da tiết bã ở chó. Khô nhanh, không gây nhờn rít và an toàn khi liếm nhẹ sau khi khô.',
+    packSize: 'Dành cho Chó • Chai xịt 100 ml',
     sizes: ['100 ml', '250 ml'],
     rating: 4.9,
     reviewCount: 114,
@@ -284,7 +284,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'CHUẨN THÚ Y',
     category: 'hygiene',
-    petType: 'both',
+    petType: 'dog',
     image: '/images/prod-antifungal-spray.jpg',
     gallery: [
       '/images/prod-antifungal-spray.jpg',
@@ -302,7 +302,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       {
         id: 'rev-vs1',
         author: 'Minh Quân',
-        petTag: 'Nuôi mèo Anh 2 tuổi',
+        petTag: 'Nuôi Corgi 2 tuổi',
         rating: 5,
         date: '04/11/2026',
         verified: true,
@@ -322,11 +322,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-vetderm-cream',
     brand: 'VETDERM',
-    name: 'Kem bôi trị nấm kẽ chân & hắc lào chó mèo (20g)',
-    shortDesc: 'Miconazole Nitrate 2% dịu nhẹ, đặc trị nấm kẽ chân, tai và vùng da nhạy cảm.',
+    name: 'Kem bôi trị nấm kẽ chân & vành tai cho mèo (20g)',
+    shortDesc: 'Miconazole Nitrate 2% dịu nhẹ, đặc trị nấm kẽ chân, tai và vùng da nhạy cảm ở mèo.',
     description:
-      'Tuýp kem bôi da chuyên dụng thẩm thấu nhanh cho các vùng da khu trú như kẽ chân, vành tai, khóe mũi ở chó mèo. Hỗ trợ tái tạo biểu bì và ngăn nấm tái phát.',
-    packSize: 'Chó & Mèo • Tuýp 20 g',
+      'Tuýp kem bôi da chuyên dụng thẩm thấu nhanh cho các vùng da khu trú như kẽ chân, vành tai, khóe mũi ở mèo. Hỗ trợ tái tạo biểu bì và ngăn nấm tái phát.',
+    packSize: 'Dành cho Mèo • Tuýp 20 g',
     sizes: ['Tuýp 20 g', 'Combo 2 tuýp'],
     rating: 4.9,
     reviewCount: 92,
@@ -336,7 +336,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'ĐẶC TRỊ NẤM',
     category: 'hygiene',
-    petType: 'both',
+    petType: 'cat',
     image: '/images/prod-antifungal-cream.jpg',
     gallery: [
       '/images/prod-antifungal-cream.jpg',
@@ -347,28 +347,28 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     highlights: [
       'Hoạt chất Miconazole 2% chuẩn khuyến nghị thú y',
       'Chất kem mỏng nhẹ, không làm bết dính lông xung quanh',
-      'Hiệu quả rõ cho nấm kẽ chân do thời tiết ẩm ướt',
+      'Hiệu quả rõ cho nấm vành tai và kẽ chân ở mèo',
     ],
     reviews: [
       {
         id: 'rev-vc1',
         author: 'Bảo Ngọc',
-        petTag: 'Nuôi Corgi',
+        petTag: 'Nuôi mèo Anh lông ngắn',
         rating: 5,
         date: '02/11/2026',
         verified: true,
-        comment: 'Bôi vào kẽ chân cho bé trước khi đi ngủ rất nhanh thấm, hết đỏ hẳn sau 5 ngày.',
+        comment: 'Bôi vào vành tai cho bé trước khi đi ngủ rất nhanh thấm, hết đỏ hẳn sau 5 ngày.',
       },
     ],
   },
   {
     id: 'prod-petguard-flea',
     brand: 'PETGUARD',
-    name: 'Thuốc nhỏ gáy phòng ve rận & bọ chét cho chó mèo',
+    name: 'Thuốc nhỏ gáy phòng ve rận & bọ chét cho chó',
     shortDesc: 'Hộp 3 tuýp đơn liều bảo vệ liên tục 90 ngày, không thấm nước sau 24 giờ.',
     description:
       'Giải pháp nhỏ gáy tiện lợi giúp tiêu diệt và phòng ngừa ve chó, bọ chét, rận tai suốt 3 tháng. Chỉ cần rẽ lông vùng sau gáy và nhỏ trực tiếp một lần mỗi tháng.',
-    packSize: 'Hộp 3 tuýp • Bảo vệ 3 tháng',
+    packSize: 'Dành cho Chó • Hộp 3 tuýp',
     sizes: ['Dưới 10 kg (3 tuýp)', '10–25 kg (3 tuýp)'],
     rating: 4.8,
     reviewCount: 83,
@@ -376,7 +376,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '165.000₫',
     badge: 'PHÒNG KÝ SINH',
     category: 'hygiene',
-    petType: 'both',
+    petType: 'dog',
     image: '/images/prod-flea-drops.jpg',
     gallery: [
       '/images/prod-flea-drops.jpg',
@@ -386,7 +386,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     highlights: [
       'Phòng và diệt ve rận chỉ sau 24 giờ nhỏ gáy',
       'Chia sẵn 3 tuýp đơn liều tiện bảo quản',
-      'Phù hợp cho cả chó và mèo từ 8 tuần tuổi',
+      'Phù hợp cho mọi giống chó từ 8 tuần tuổi',
     ],
     reviews: [
       {
@@ -403,11 +403,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-gourmet-chicken-pate',
     brand: 'FELINE FEAST',
-    name: 'Pate tươi thịt gà xé & cá ngừ hấp (Lon 160g)',
+    name: 'Pate tươi cho mèo thịt gà xé & cá ngừ hấp (Lon 160g)',
     shortDesc: 'Thịt ức gà xé sợi hòa quyện cá ngừ tươi trong thạch giàu đạm, không ngũ cốc.',
     description:
-      'Chế biến từ ức gà tươi và thăn cá ngừ hấp chín chậm giữ trọn vị ngọt tự nhiên cùng nước súp thanh mát, bổ sung Vitamin E & Taurine cho bé biếng ăn.',
-    packSize: 'Chó & Mèo • Lon 160 g',
+      'Chế biến từ ức gà tươi và thăn cá ngừ hấp chín chậm giữ trọn vị ngọt tự nhiên cùng nước súp thanh mát, bổ sung Vitamin E & Taurine cho mèo biếng ăn.',
+    packSize: 'Dành cho Mèo • Lon 160 g',
     sizes: ['Lẻ 1 lon (160g)', 'Lốc 6 lon', 'Thùng 24 lon'],
     rating: 4.9,
     reviewCount: 105,
@@ -417,7 +417,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−16%',
     badge: 'PATE TƯƠI',
     category: 'food',
-    petType: 'both',
+    petType: 'cat',
     image: '/images/prod-chicken-pate.jpg',
     gallery: [
       '/images/prod-chicken-pate.jpg',
@@ -446,11 +446,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-cloud-bed',
     brand: 'PETHUB HOME',
-    name: 'Nệm tròn lông cừu Cloud Comfort',
+    name: 'Nệm tròn lông cừu Cloud Comfort cho chó',
     shortDesc: 'Vỏ cotton pha lông cừu mềm mại, ruột bông 3D giữ form êm ái quanh năm.',
     description:
-      'Thiết kế vành ôm 360 độ tạo cảm giác an toàn cho chó mèo khi cuộn tròn nghỉ ngơi. Vỏ ngoài trang bị khóa kéo ẩn, dễ dàng tháo rời giặt máy mà không bị xù lông.',
-    packSize: 'Size M • 60 × 50 cm',
+      'Thiết kế vành ôm 360 độ tạo cảm giác an toàn cho cún cưng khi cuộn tròn nghỉ ngơi. Vỏ ngoài trang bị khóa kéo ẩn, dễ dàng tháo rời giặt máy mà không bị xù lông.',
+    packSize: 'Dành cho Chó • Size M (60 × 50 cm)',
     sizes: ['Size S (50cm)', 'Size M (60cm)', 'Size L (75cm)'],
     rating: 4.9,
     reviewCount: 52,
@@ -458,6 +458,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '590.000₫',
     badge: 'THIẾT KẾ MỚI',
     category: 'bed',
+    petType: 'dog',
     image: 'https://images.unsplash.com/photo-1601758123927-4f7acc7da589?auto=format&fit=crop&w=800&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1601758123927-4f7acc7da589?auto=format&fit=crop&w=800&q=85',
@@ -476,11 +477,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       {
         id: 'rev-b1',
         author: 'Hải Yến',
-        petTag: 'Nuôi 2 bé mèo',
+        petTag: 'Nuôi Corgi',
         rating: 5,
         date: '21/10/2026',
         verified: true,
-        comment: 'Nệm rất dày dặn, đường may chắc chắn. Hai bé nhà mình nằm suốt từ ngày mang về.',
+        comment: 'Nệm rất dày dặn, đường may chắc chắn. Bé nhà mình nằm suốt từ ngày mang về.',
       },
       {
         id: 'rev-b2',
@@ -496,11 +497,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-travel-bag',
     brand: 'PET TRAVEL',
-    name: 'Balo vận chuyển thoáng khí chống sốc',
-    shortDesc: 'Khung cứng giữ dáng, lưới thoáng 3 mặt giúp thú cưng thoải mái khi ra ngoài.',
+    name: 'Balo phi hành gia vận chuyển mèo chống sốc',
+    shortDesc: 'Khung cứng giữ dáng, lưới thoáng 3 mặt giúp mèo cưng thoải mái khi ra ngoài.',
     description:
       'Chất liệu vải Oxford chống thấm nhẹ kết hợp khung nâng đỡ chắc chắn giúp balo không bị xẹp khi đeo. Trang bị dây cài an toàn bên trong và đệm lưng trợ lực êm ái.',
-    packSize: 'Thú cưng dưới 8 kg',
+    packSize: 'Dành cho Mèo • Dưới 8 kg',
     sizes: ['Tiêu chuẩn (< 6kg)', 'Mở rộng (< 8kg)'],
     rating: 4.8,
     reviewCount: 41,
@@ -510,6 +511,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−10%',
     badge: 'ƯU ĐÃI −10%',
     category: 'backpack',
+    petType: 'cat',
     image: 'https://images.unsplash.com/photo-1527150602-a98f7a6f2746?auto=format&fit=crop&w=800&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1527150602-a98f7a6f2746?auto=format&fit=crop&w=800&q=85',
@@ -711,11 +713,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-yu-shampoo',
     brand: 'YU CARE',
-    name: 'Sữa tắm thảo mộc dịu nhẹ dưỡng lông (400ml)',
-    shortDesc: 'Chiết xuất hoa anh đào & lô hội, cân bằng pH tự nhiên cho da nhạy cảm.',
+    name: 'Sữa tắm thảo mộc dịu nhẹ dưỡng lông cho mèo (400ml)',
+    shortDesc: 'Chiết xuất hoa anh đào & lô hội, cân bằng pH tự nhiên cho làn da nhạy cảm của mèo.',
     description:
-      'Công thức dịu nhẹ không chứa xà phòng công nghiệp, làm sạch bụi bẩn và khử mùi hôi hiệu quả mà vẫn giữ lớp dầu tự nhiên bảo vệ da chó mèo.',
-    packSize: 'Chó & Mèo • 400 ml',
+      'Công thức dịu nhẹ không chứa xà phòng công nghiệp, làm sạch bụi bẩn và khử mùi hôi hiệu quả mà vẫn giữ lớp dầu tự nhiên bảo vệ da mèo.',
+    packSize: 'Dành cho Mèo • 400 ml',
     sizes: ['400 ml', '1000 ml'],
     rating: 4.9,
     reviewCount: 59,
@@ -723,7 +725,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '265.000₫',
     badge: 'CHĂM SÓC DA LÔNG',
     category: 'hygiene',
-    petType: 'both',
+    petType: 'cat',
     image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
@@ -738,7 +740,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       {
         id: 'rev-y1',
         author: 'Thanh Tùng',
-        petTag: 'Nuôi Poodle trắng',
+        petTag: 'Nuôi mèo Ba Tư trắng',
         rating: 5,
         date: '17/10/2026',
         verified: true,
@@ -749,11 +751,11 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   {
     id: 'prod-rattan-bed',
     brand: 'PETHUB HOME',
-    name: 'Ổ nệm mây kháng khuẩn đế chống trượt',
+    name: 'Ổ nệm mây kháng khuẩn đế chống trượt cho mèo',
     shortDesc: 'Khung thoáng khí kết hợp đệm bông kháng khuẩn, phù hợp khí hậu nhiệt đới.',
     description:
-      'Đệm lót tháo rời dễ giặt giũ, phần thành nệm nâng đỡ cổ êm ái giúp thú cưng có giấc ngủ sâu và hạn chế hầm nóng.',
-    packSize: 'Size M/L • Thoáng khí',
+      'Đệm lót tháo rời dễ giặt giũ, phần thành nệm nâng đỡ cổ êm ái giúp mèo cưng có giấc ngủ sâu và hạn chế hầm nóng.',
+    packSize: 'Dành cho Mèo • Size M/L',
     sizes: ['Size M', 'Size L'],
     rating: 4.8,
     reviewCount: 38,
@@ -761,6 +763,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '550.000₫',
     badge: 'MỚI VỀ',
     category: 'bed',
+    petType: 'cat',
     image: 'https://images.unsplash.com/photo-1717416699412-76f7123494bd?auto=format&fit=crop&w=700&q=85',
     gallery: [
       'https://images.unsplash.com/photo-1717416699412-76f7123494bd?auto=format&fit=crop&w=700&q=85',
@@ -784,6 +787,44 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       },
     ],
   },
+  {
+    id: 'prod-dog-carrier',
+    brand: 'PET TRAVEL',
+    name: 'Balo & Đai vận chuyển chó dạo phố thoáng khí',
+    shortDesc: 'Đệm ngực êm ái kết hợp lưới chịu lực chống sốc, thuận tiện khi đưa chó đi dạo hoặc khám thú y.',
+    description:
+      'Thiết kế công thái học ôm sát cơ thể cún, phân bổ đều trọng lượng lên vai người đeo và trang bị móc khóa an toàn gắn trực tiếp vào vòng cổ.',
+    packSize: 'Dành cho Chó • Dưới 10 kg',
+    sizes: ['Size M (< 6kg)', 'Size L (6–10kg)'],
+    rating: 4.9,
+    reviewCount: 47,
+    priceNum: 540000,
+    price: '540.000₫',
+    badge: 'DÀNH CHO CHÓ',
+    category: 'backpack',
+    petType: 'dog',
+    image: 'https://images.unsplash.com/photo-1533413924355-a5797409980e?auto=format&fit=crop&w=800&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1533413924355-a5797409980e?auto=format&fit=crop&w=800&q=85',
+    ],
+    bgTone: '#eff5ff',
+    stockCount: 16,
+    highlights: [
+      'Khóa cài an toàn kép chống tuột khi di chuyển',
+      'Lưới 3D thoáng mát, dễ giặt nhanh khô',
+    ],
+    reviews: [
+      {
+        id: 'rev-dc1',
+        author: 'Quốc Khánh',
+        petTag: 'Nuôi Poodle 5kg',
+        rating: 5,
+        date: '05/11/2026',
+        verified: true,
+        comment: 'Đeo bé đi dạo cuối tuần rất chắc chắn, quai đeo êm không mỏi vai.',
+      },
+    ],
+  },
 ];
 
 export const SPA_PACKAGES: SpaPackage[] = [
@@ -797,7 +838,7 @@ export const SPA_PACKAGES: SpaPackage[] = [
   },
   {
     id: 'pkg-2',
-    name: 'Cắt tỉa tạo kiểu chuẩn Hàn',
+    name: 'Cắt tỉa & Tạo phom lông thẩm mỹ',
     desc: 'Tỉa gọn khuôn mặt, tạo phom lông bồng bềnh tự nhiên, vệ sinh vùng bàn chân và bụng gọn gàng.',
     price: 280000,
     priceStr: '280.000₫',

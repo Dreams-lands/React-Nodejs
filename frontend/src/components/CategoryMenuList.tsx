@@ -1,5 +1,4 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
 import type { ProductCategory } from '../data/mockData';
 import { PRODUCT_CATEGORIES, PET_AUDIENCES } from '../data/categories';
 
@@ -12,8 +11,7 @@ interface CategoryMenuListProps {
 }
 
 /**
- * Shared category & pet-audience navigation list used in both the docked
- * Desktop Home Hero sidebar and the responsive header dropdown menu.
+ * Shared category & pet-audience navigation list used in the header dropdown menu.
  */
 export const CategoryMenuList: React.FC<CategoryMenuListProps> = ({
   activeCategory = 'all',
@@ -37,31 +35,22 @@ export const CategoryMenuList: React.FC<CategoryMenuListProps> = ({
               type="button"
               role={itemRole}
               onClick={() => onSelectCategory(sub.id)}
-              className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2.5 cursor-pointer transition-colors group ${
+              className={`w-full text-left px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors group ${
                 isActive
                   ? 'bg-[#eff5ff] text-[#0667d0]'
                   : 'hover:bg-[#f5f9ff] text-[#17324d]'
               }`}
             >
-              <span className="flex items-center gap-3 min-w-0">
-                <IconComp
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isActive
-                      ? 'text-[#0667d0]'
-                      : 'text-[#52657a] group-hover:text-[#0667d0]'
-                  }`}
-                />
-                <span className="text-[13px] font-semibold leading-snug truncate">
-                  {sub.label}
-                </span>
-              </span>
-              <ChevronRight
-                className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+              <IconComp
+                className={`w-4 h-4 shrink-0 transition-colors ${
                   isActive
                     ? 'text-[#0667d0]'
-                    : 'text-[#8c9dad] group-hover:text-[#0667d0]'
+                    : 'text-[#52657a] group-hover:text-[#0667d0]'
                 }`}
               />
+              <span className="text-[13px] font-semibold leading-snug truncate">
+                {sub.label}
+              </span>
             </button>
           );
         })}
@@ -69,7 +58,7 @@ export const CategoryMenuList: React.FC<CategoryMenuListProps> = ({
 
       <div className="border-t border-[#dfe6f0] bg-[#f8faff]">
         <div className="px-4 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[#52657a]">
-          Theo thú cưng
+          Phân loại riêng theo thú cưng
         </div>
         <div className="divide-y divide-[#eef2f7]">
           {PET_AUDIENCES.map((pet) => {
@@ -81,31 +70,22 @@ export const CategoryMenuList: React.FC<CategoryMenuListProps> = ({
                 type="button"
                 role={itemRole}
                 onClick={() => onSelectPetAudience(pet.id)}
-                className={`w-full text-left px-4 py-2.5 flex items-center justify-between gap-2.5 cursor-pointer transition-colors group ${
+                className={`w-full text-left px-4 py-2.5 flex items-center gap-3 cursor-pointer transition-colors group ${
                   isActive
                     ? 'bg-[#eff5ff] text-[#0667d0]'
                     : 'hover:bg-white text-[#17324d]'
                 }`}
               >
-                <span className="flex items-center gap-3 min-w-0">
-                  <PetIcon
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isActive
-                        ? 'text-[#0667d0]'
-                        : 'text-[#52657a] group-hover:text-[#0667d0]'
-                    }`}
-                  />
-                  <span className="text-[13px] font-semibold leading-snug truncate">
-                    {pet.label}
-                  </span>
-                </span>
-                <ChevronRight
-                  className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                <PetIcon
+                  className={`w-4 h-4 shrink-0 transition-colors ${
                     isActive
                       ? 'text-[#0667d0]'
-                      : 'text-[#8c9dad] group-hover:text-[#0667d0]'
+                      : 'text-[#52657a] group-hover:text-[#0667d0]'
                   }`}
                 />
+                <span className="text-[13px] font-semibold leading-snug truncate">
+                  {pet.label}
+                </span>
               </button>
             );
           })}

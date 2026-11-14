@@ -18,6 +18,6 @@ export const PET_AUDIENCES: {
   label: string;
   icon: ComponentType<{ className?: string }>;
 }[] = [
-  { id: 'dog', label: 'Sản phẩm cho Chó', icon: Dog },
-  { id: 'cat', label: 'Sản phẩm cho Mèo', icon: Cat },
+  { id: 'dog', label: 'Đồ dùng cho Chó', icon: Dog },
+  { id: 'cat', label: 'Đồ dùng cho Mèo', icon: Cat },
 ];
