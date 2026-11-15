@@ -1,6 +1,10 @@
+import type { ProductSubType } from './categories';
+
 export type PageId =
   | 'home'
   | 'search'
+  | 'promotions'
+  | 'account'
   | 'product'
   | 'service'
   | 'contact'
@@ -11,6 +15,49 @@ export type PageId =
   | 'checkout-fail';
 
 export type ProductCategory = 'food' | 'bed' | 'backpack' | 'hygiene' | 'spa';
+
+export type OrderStatus = 'pending' | 'shipping' | 'completed';
+
+export interface AddressRecord {
+  id: string;
+  label: string;
+  recipient: string;
+  phone: string;
+  address: string;
+  isDefault: boolean;
+}
+
+export interface OrderRecord {
+  id: string;
+  createdAt: string;
+  status: OrderStatus;
+  totalAmount: number;
+  shippingAddress: string;
+  paymentMethod: string;
+  items: {
+    id: string;
+    name: string;
+    image: string;
+    price: number;
+    quantity: number;
+    variant?: string;
+  }[];
+}
+
+export interface ServiceBookingRecord {
+  id: string;
+  serviceName: string;
+  petName: string;
+  date: string;
+  timeSlot: string;
+  price: number;
+  status: 'upcoming' | 'completed';
+  note?: string;
+}
+
+export function formatCurrency(amount: number): string {
+  return `${amount.toLocaleString('vi-VN')}₫`;
+}
 
 export interface ProductReview {
   id: string;
@@ -38,6 +85,7 @@ export interface ProductItem {
   discountBadge?: string;
   badge: string;
   category: ProductCategory;
+  subType: ProductSubType;
   petType?: 'dog' | 'cat' | 'both';
   image: string;
   gallery: string[];
@@ -85,8 +133,8 @@ export const STOREFRONT_SUPPLIES = [
   {
     id: 'sup-hygiene',
     filterCategory: 'hygiene' as const,
-    title: 'Thuốc & Chăm sóc y tế',
-    desc: 'Thuốc trị nấm da, nhỏ gáy ve rận và sữa tắm dịu lành chuẩn phòng khám.',
+    title: 'Thuốc & Làm đẹp',
+    desc: 'Thuốc trị nấm da, nhỏ gáy ve rận và sữa tắm dưỡng lông dịu nhẹ cho chó mèo.',
     meta: 'Kiểm định an toàn cho chó mèo',
     image: '/images/prod-antifungal-cream.jpg',
   },
@@ -126,6 +174,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−20%',
     badge: 'ƯU ĐÃI −20%',
     category: 'food',
+    subType: 'Dinh dưỡng & Hạt khô',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
     gallery: [
@@ -189,6 +238,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '465.000₫',
     badge: 'BÁN CHẠY',
     category: 'food',
+    subType: 'Dinh dưỡng & Hạt khô',
     petType: 'cat',
     image: 'https://images.unsplash.com/photo-1734655154254-69d1d67f6a4e?auto=format&fit=crop&w=800&q=85',
     gallery: [
@@ -202,7 +252,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       'Giàu chất xơ hòa tan giúp tiêu hóa ổn định',
       'Hạt tam giác nhỏ phù hợp hàm răng mèo con',
     ],
-    isFeatured: false,
+    isFeatured: true,
     reviews: [
       {
         id: 'rev-k1',
@@ -241,6 +291,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−11%',
     badge: 'ƯU ĐÃI −11%',
     category: 'food',
+    subType: 'Dinh dưỡng & Hạt khô',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1764249453891-84799ed79e9e?auto=format&fit=crop&w=800&q=85',
     gallery: [
@@ -284,6 +335,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'CHUẨN THÚ Y',
     category: 'hygiene',
+    subType: 'Thuốc & Điều trị',
     petType: 'dog',
     image: '/images/prod-antifungal-spray.jpg',
     gallery: [
@@ -297,7 +349,8 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       'Không chứa cồn gây xót trên vùng da đang trầy nhẹ',
       'Đầu xịt phun sương mịn dễ len vào kẽ lông dày',
     ],
-    isFeatured: true,
+    isFeatured: false,
+    isFlashSale: true,
     reviews: [
       {
         id: 'rev-vs1',
@@ -336,6 +389,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−17%',
     badge: 'ĐẶC TRỊ NẤM',
     category: 'hygiene',
+    subType: 'Thuốc & Điều trị',
     petType: 'cat',
     image: '/images/prod-antifungal-cream.jpg',
     gallery: [
@@ -376,6 +430,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '165.000₫',
     badge: 'PHÒNG KÝ SINH',
     category: 'hygiene',
+    subType: 'Thuốc & Điều trị',
     petType: 'dog',
     image: '/images/prod-flea-drops.jpg',
     gallery: [
@@ -417,6 +472,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−16%',
     badge: 'PATE TƯƠI',
     category: 'food',
+    subType: 'Pate & Bánh thưởng',
     petType: 'cat',
     image: '/images/prod-chicken-pate.jpg',
     gallery: [
@@ -430,7 +486,8 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       'Giúp cấp nước tự nhiên cho mèo lười uống nước',
       'Trộn hạt khô kích thích ăn ngon miệng rõ rệt',
     ],
-    isFeatured: true,
+    isFeatured: false,
+    isFlashSale: true,
     reviews: [
       {
         id: 'rev-gp1',
@@ -458,6 +515,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '590.000₫',
     badge: 'THIẾT KẾ MỚI',
     category: 'bed',
+    subType: 'Giường - Nệm - Thảm',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1601758123927-4f7acc7da589?auto=format&fit=crop&w=800&q=85',
     gallery: [
@@ -511,6 +569,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−10%',
     badge: 'ƯU ĐÃI −10%',
     category: 'backpack',
+    subType: 'Địu - Balo - Túi xách',
     petType: 'cat',
     image: 'https://images.unsplash.com/photo-1527150602-a98f7a6f2746?auto=format&fit=crop&w=800&q=85',
     gallery: [
@@ -524,7 +583,8 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
       'Trọng lượng siêu nhẹ chỉ 1,1 kg',
       'Đệm đáy tháo rời vệ sinh nhanh chóng',
     ],
-    isFeatured: true,
+    isFeatured: false,
+    isFlashSale: true,
     reviews: [
       {
         id: 'rev-t1',
@@ -554,6 +614,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−23%',
     badge: 'ƯU ĐÃI −23%',
     category: 'food',
+    subType: 'Dinh dưỡng & Hạt khô',
     petType: 'cat',
     image: 'https://images.unsplash.com/photo-1633761971690-ee5f3aca8415?auto=format&fit=crop&w=700&q=85',
     gallery: [
@@ -598,6 +659,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−20%',
     badge: 'ƯU ĐÃI −20%',
     category: 'food',
+    subType: 'Dinh dưỡng & Hạt khô',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1714068691210-073dc52c6c1d?auto=format&fit=crop&w=700&q=85',
     gallery: [
@@ -642,6 +704,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−26%',
     badge: 'ƯU ĐÃI −26%',
     category: 'food',
+    subType: 'Pate & Bánh thưởng',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&w=700&q=85',
     gallery: [
@@ -686,6 +749,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     discountBadge: '−15%',
     badge: 'ƯU ĐÃI −15%',
     category: 'food',
+    subType: 'Pate & Bánh thưởng',
     petType: 'cat',
     image: '/images/prod-tuna-pate.jpg',
     gallery: [
@@ -725,6 +789,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '265.000₫',
     badge: 'CHĂM SÓC DA LÔNG',
     category: 'hygiene',
+    subType: 'Sữa tắm & Dưỡng lông',
     petType: 'cat',
     image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
     gallery: [
@@ -763,6 +828,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '550.000₫',
     badge: 'MỚI VỀ',
     category: 'bed',
+    subType: 'Giường - Nệm - Thảm',
     petType: 'cat',
     image: 'https://images.unsplash.com/photo-1717416699412-76f7123494bd?auto=format&fit=crop&w=700&q=85',
     gallery: [
@@ -802,6 +868,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
     price: '540.000₫',
     badge: 'DÀNH CHO CHÓ',
     category: 'backpack',
+    subType: 'Địu - Balo - Túi xách',
     petType: 'dog',
     image: 'https://images.unsplash.com/photo-1533413924355-a5797409980e?auto=format&fit=crop&w=800&q=85',
     gallery: [
@@ -824,6 +891,397 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
         comment: 'Đeo bé đi dạo cuối tuần rất chắc chắn, quai đeo êm không mỏi vai.',
       },
     ],
+  },
+  {
+    id: 'prod-dog-shampoo',
+    brand: 'BOTANICAL PAW',
+    name: 'Sữa tắm yến mạch & lô hội dịu nhẹ cho chó (500ml)',
+    shortDesc: 'Chiết xuất yến mạch colloidal và nha đam giúp làm dịu da nhạy cảm, giảm rụng lông hiệu quả.',
+    description:
+      'Công thức pH 7.0 cân bằng riêng cho làn da cún, không sulfate và paraben, giữ mùi hương thảo mộc thanh mát suốt 7 ngày.',
+    packSize: 'Dành cho Chó • Chai 500ml',
+    sizes: ['Chai 500ml', 'Chai 1 Lít'],
+    rating: 4.9,
+    reviewCount: 74,
+    priceNum: 245000,
+    price: '245.000₫',
+    badge: 'LÀM ĐẸP & DƯỠNG LÔNG',
+    category: 'hygiene',
+    subType: 'Sữa tắm & Dưỡng lông',
+    petType: 'dog',
+    image: '/images/prod-dog-shampoo.jpg',
+    gallery: ['/images/prod-dog-shampoo.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 38,
+    highlights: [
+      'Làm dịu ngứa rát, cấp ẩm lớp biểu bì da nhạy cảm',
+      'Tạo bọt mịn dễ xả sạch, giúp lông tơi bồng bềnh',
+    ],
+    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-ds1',
+        author: 'Hoàng Nam',
+        petTag: 'Nuôi Samoyed',
+        rating: 5,
+        date: '11/11/2026',
+        verified: true,
+        comment: 'Tắm xong lông bé trắng xốp và rất ít rụng, mùi nhẹ dễ chịu.',
+      },
+    ],
+  },
+  {
+    id: 'prod-collar-leash-dog',
+    brand: 'PAW WALK',
+    name: 'Dây xích & Vòng cổ dù bọc da êm cho chó đi dạo',
+    shortDesc: 'Bộ dây dắt và vòng cổ khóa kim loại chắc chắn, có lớp đệm lót cổ chống hằn da cho cún.',
+    description:
+      'Dây dù dệt mật độ cao kết hợp da mềm và móc xoay 360 độ chống xoắn rối khi thú cưng chạy nhảy.',
+    packSize: 'Dành cho Chó • Dài 1.5m',
+    sizes: ['Size S (< 8kg)', 'Size M (8–18kg)', 'Size L (> 18kg)'],
+    rating: 4.8,
+    reviewCount: 62,
+    priceNum: 195000,
+    price: '195.000₫',
+    badge: 'BÁN CHẠY',
+    category: 'backpack',
+    subType: 'Dây xích & Vòng cổ',
+    petType: 'dog',
+    image: '/images/prod-collar-leash.jpg',
+    gallery: ['/images/prod-collar-leash.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 45,
+    highlights: [
+      'Đệm cổ thoáng khí bảo vệ vùng khí quản thú cưng',
+      'Khóa hợp kim không gỉ chịu lực kéo lớn',
+    ],
+    isFeatured: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-collar-cat',
+    brand: 'PAW WALK',
+    name: 'Vòng cổ lục lạc & Dây dắt mềm an toàn cho mèo',
+    shortDesc: 'Trọng lượng siêu nhẹ với khóa thoát hiểm an toàn, phù hợp cho mèo làm quen đi dạo sân vườn.',
+    description:
+      'Chất liệu sợi dệt mềm mại không làm gãy lông cổ mèo, kèm dây dắt mảnh linh hoạt.',
+    packSize: 'Dành cho Mèo • Điều chỉnh 18–30cm',
+    sizes: ['Free Size (Mèo < 8kg)'],
+    rating: 4.8,
+    reviewCount: 39,
+    priceNum: 135000,
+    price: '135.000₫',
+    originalPrice: '165.000₫',
+    discountBadge: '−18%',
+    badge: 'ƯU ĐÃI −18%',
+    category: 'backpack',
+    subType: 'Dây xích & Vòng cổ',
+    petType: 'cat',
+    image: '/images/prod-collar-leash.jpg',
+    gallery: ['/images/prod-collar-leash.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 34,
+    highlights: [
+      'Thiết kế khóa bấm nhẹ tay chống mắc kẹt cho mèo',
+      'Màu xanh trang nhã, dễ vệ sinh lau sạch',
+    ],
+    isFeatured: false,
+    isFlashSale: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-cat-litter-box',
+    brand: 'PETHUB HOME',
+    name: 'Hộp cát vệ sinh khử mùi có nắp & xẻng xúc cho mèo',
+    shortDesc: 'Nhà vệ sinh kín chống văng cát, cửa lật một chiều ngăn mùi hôi và kèm xẻng gài hông tiện lợi.',
+    description:
+      'Nhựa PP nguyên sinh dày dặn an toàn, khay đáy sâu chứa được lượng cát lớn cho mèo đi vệ sinh thoải mái.',
+    packSize: 'Dành cho Mèo • 52 × 40 × 39 cm',
+    sizes: ['Size Tiêu chuẩn (< 7kg)', 'Size XL (> 7kg)'],
+    rating: 4.9,
+    reviewCount: 91,
+    priceNum: 440000,
+    price: '440.000₫',
+    badge: 'CHỐNG VĂNG CÁT',
+    category: 'backpack',
+    subType: 'Hộp cát & Vệ sinh',
+    petType: 'cat',
+    image: '/images/prod-cat-litter-box.jpg',
+    gallery: ['/images/prod-cat-litter-box.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 24,
+    highlights: [
+      'Bậc cửa rũ cát giúp giữ sàn nhà luôn sạch sẽ',
+      'Nắp trên tháo mở nhanh trong 3 giây khi dọn cát',
+    ],
+    isFeatured: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-dog-cage',
+    brand: 'PETHUB HOME',
+    name: 'Lồng chuồng chó sơn tĩnh điện gấp gọn khay nhựa',
+    shortDesc: 'Khung thép nan dày phủ sơn tĩnh điện chống gỉ, hai cửa ra vào kèm khay đáy rút vệ sinh dễ dàng.',
+    description:
+      'Cấu trúc chắc chắn, dễ gấp phẳng cất giữ hoặc mang theo trên ô tô khi gia đình đi du lịch.',
+    packSize: 'Dành cho Chó • Size M (76 × 52 × 60 cm)',
+    sizes: ['Size M (76cm)', 'Size L (92cm)', 'Size XL (108cm)'],
+    rating: 4.9,
+    reviewCount: 53,
+    priceNum: 680000,
+    price: '680.000₫',
+    badge: 'CHỐNG GỈ SÉT',
+    category: 'bed',
+    subType: 'Lồng - Chuồng',
+    petType: 'dog',
+    image: '/images/prod-pet-cage.jpg',
+    gallery: ['/images/prod-pet-cage.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 19,
+    highlights: [
+      'Chốt khóa kép an toàn, nan thép bo tròn không sắc cạnh',
+      'Khay nhựa ABS chịu lực tháo rút vệ sinh nhanh chóng',
+    ],
+    isFeatured: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-cat-cage',
+    brand: 'PETHUB HOME',
+    name: 'Chuồng mèo biệt thự nhiều tầng sơn tĩnh điện kèm võng',
+    shortDesc: 'Không gian 3 tầng rộng rãi có sàn gỗ và võng ngủ treo êm ái cho từ 1–3 bé mèo.',
+    description:
+      'Lý tưởng khi cần cách ly chăm sóc hậu phẫu, nuôi mèo con hoặc tạo góc vận động riêng gọn gàng.',
+    packSize: 'Dành cho Mèo • 78 × 54 × 115 cm',
+    sizes: ['2 Tầng (90cm)', '3 Tầng Villa (115cm)'],
+    rating: 4.9,
+    reviewCount: 44,
+    priceNum: 1250000,
+    price: '1.250.000₫',
+    originalPrice: '1.490.000₫',
+    discountBadge: '−16%',
+    badge: 'ƯU ĐÃI −16%',
+    category: 'bed',
+    subType: 'Lồng - Chuồng',
+    petType: 'cat',
+    image: '/images/prod-cat-cage.jpg',
+    gallery: ['/images/prod-cat-cage.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 11,
+    highlights: [
+      'Tặng kèm võng nỉ hai mặt và thang leo gỗ chắc chắn',
+      'Bánh xe xoay 360 độ có khóa hãm cố định an toàn',
+    ],
+    isFeatured: false,
+    isFlashSale: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-dog-orthopedic-bed',
+    brand: 'PETHUB HOME',
+    name: 'Giường nệm chữ nhật memory foam nâng đỡ xương cho chó',
+    shortDesc: 'Lõi foam đàn hồi cao hỗ trợ khớp hông cho chó trung và lớn, bọc vải nhung gân thoáng khí.',
+    description:
+      'Thành nệm cao 3 cạnh làm gối tựa đầu thoải mái, phần đáy phủ hạt cao su chống xê dịch trên sàn gạch.',
+    packSize: 'Dành cho Chó • Size L (90 × 70 cm)',
+    sizes: ['Size M (75 × 55cm)', 'Size L (90 × 70cm)'],
+    rating: 4.9,
+    reviewCount: 58,
+    priceNum: 790000,
+    price: '790.000₫',
+    originalPrice: '890.000₫',
+    discountBadge: '−11%',
+    badge: 'ƯU ĐÃI −11%',
+    category: 'bed',
+    subType: 'Giường - Nệm - Thảm',
+    petType: 'dog',
+    image: '/images/prod-dog-bed.jpg',
+    gallery: ['/images/prod-dog-bed.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 15,
+    highlights: [
+      'Vỏ nệm kéo khóa tháo rời giặt máy tiện lợi',
+      'Lõi memory foam mật độ cao không xẹp lún',
+    ],
+    isFeatured: false,
+    isFlashSale: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-cat-plush-bed',
+    brand: 'PETHUB HOME',
+    name: 'Giường nệm tròn lông cừu ấm áp cho mèo',
+    shortDesc: 'Lòng nệm sâu ôm trọn cơ thể mèo, mang lại cảm giác an toàn và giữ ấm tuyệt đối.',
+    description:
+      'Sợi bông PP siêu mịn đàn hồi tốt kết hợp lớp lông cừu nhân tạo mềm mượt giúp mèo ngủ sâu giấc.',
+    packSize: 'Dành cho Mèo • Đường kính 50 cm',
+    sizes: ['Size S (45cm)', 'Size M (55cm)'],
+    rating: 4.8,
+    reviewCount: 66,
+    priceNum: 420000,
+    price: '420.000₫',
+    badge: 'ÊM ÁI',
+    category: 'bed',
+    subType: 'Giường - Nệm - Thảm',
+    petType: 'cat',
+    image: '/images/prod-cat-plush-bed.jpg',
+    gallery: ['/images/prod-cat-plush-bed.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 27,
+    highlights: [
+      'Thiết kế bo tròn nâng cổ giảm áp lực cột sống',
+      'Chống bám bụi và dễ giặt sạch định kỳ',
+    ],
+    isFeatured: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-ceramic-bowl-dog',
+    brand: 'PETHUB HOME',
+    name: 'Bộ bát ăn đôi gốm sứ kệ gỗ sồi chống trượt cho chó',
+    shortDesc: 'Hai chén sứ nung an toàn kết hợp giá gỗ nâng chiều cao vừa tầm, bảo vệ đốt sống cổ cho cún.',
+    description:
+      'Bề mặt gốm tráng men láng mịn hạn chế tích tụ vi khuẩn gây mụn cằm và dễ rửa sạch dầu mỡ thức ăn.',
+    packSize: 'Dành cho Chó • 2 × 450ml',
+    sizes: ['Bộ 2 bát (2×450ml)'],
+    rating: 4.9,
+    reviewCount: 41,
+    priceNum: 290000,
+    price: '290.000₫',
+    badge: 'AN TOÀN VỆ SINH',
+    category: 'backpack',
+    subType: 'Dụng cụ ăn uống',
+    petType: 'dog',
+    image: '/images/prod-ceramic-bowl.jpg',
+    gallery: ['/images/prod-ceramic-bowl.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 31,
+    highlights: [
+      'Khung gỗ sồi tự nhiên phủ chống ẩm bền đẹp',
+      'Bát sứ tháo rời rửa máy rửa chén thoải mái',
+    ],
+    isFeatured: true,
+    reviews: [],
+  },
+  {
+    id: 'prod-ceramic-bowl-cat',
+    brand: 'PETHUB HOME',
+    name: 'Bộ bát ăn đôi sứ trắng nâng cổ chống nghẹn cho mèo',
+    shortDesc: 'Độ cao 11cm giúp mèo ăn uống đúng tư thế sinh lý, hạn chế nôn trớ thức ăn sau bữa.',
+    description:
+      'Chén miệng rộng tránh chạm ria mép mèo nhạy cảm, phối kệ gỗ tối giản phù hợp mọi góc bếp.',
+    packSize: 'Dành cho Mèo • 2 × 300ml',
+    sizes: ['Bộ 2 bát (2×300ml)'],
+    rating: 4.9,
+    reviewCount: 59,
+    priceNum: 255000,
+    price: '255.000₫',
+    originalPrice: '295.000₫',
+    discountBadge: '−14%',
+    badge: 'ƯU ĐÃI −14%',
+    category: 'backpack',
+    subType: 'Dụng cụ ăn uống',
+    petType: 'cat',
+    image: '/images/prod-ceramic-bowl.jpg',
+    gallery: ['/images/prod-ceramic-bowl.jpg'],
+    bgTone: '#eff5ff',
+    stockCount: 29,
+    highlights: [
+      'Thiết kế lòng bát nông giúp ria mèo không bị tì cấn',
+      'Kệ gỗ nặng vững chắc không bị mèo đẩy đổ',
+    ],
+    isFeatured: false,
+    isFlashSale: true,
+    reviews: [],
+  },
+];
+
+export const INITIAL_ADDRESSES: AddressRecord[] = [
+  {
+    id: 'addr-1',
+    label: 'Nhà riêng',
+    recipient: 'Trịnh Anh Khoa',
+    phone: '0909 123 456',
+    address: '128 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+    isDefault: true,
+  },
+  {
+    id: 'addr-2',
+    label: 'Văn phòng',
+    recipient: 'Trịnh Anh Khoa',
+    phone: '0909 123 456',
+    address: 'Tầng 6, Tòa nhà PetHub Tech, Q. Phú Nhuận, TP. Hồ Chí Minh',
+    isDefault: false,
+  },
+];
+
+export const INITIAL_ORDERS: OrderRecord[] = [
+  {
+    id: 'PH261108',
+    createdAt: '12/11/2026 • 14:20',
+    status: 'shipping',
+    totalAmount: 584000,
+    shippingAddress: '128 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+    paymentMethod: 'Thanh toán khi nhận hàng (COD)',
+    items: [
+      {
+        id: 'prod-rc-mini',
+        name: 'Hạt dinh dưỡng cho chó giống nhỏ Mini Adult',
+        image:
+          'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
+        price: 389000,
+        quantity: 1,
+        variant: 'Túi 2kg',
+      },
+      {
+        id: 'prod-collar-leash-dog',
+        name: 'Dây xích & Vòng cổ dù bọc da êm cho chó đi dạo',
+        image: '/images/prod-collar-leash.jpg',
+        price: 195000,
+        quantity: 1,
+        variant: 'Size M (8–18kg)',
+      },
+    ],
+  },
+  {
+    id: 'PH261029',
+    createdAt: '04/11/2026 • 09:45',
+    status: 'completed',
+    totalAmount: 705000,
+    shippingAddress: '128 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+    paymentMethod: 'Chuyển khoản QR / Napas',
+    items: [
+      {
+        id: 'prod-cat-litter-box',
+        name: 'Hộp cát vệ sinh khử mùi có nắp & xẻng xúc cho mèo',
+        image: '/images/prod-cat-litter-box.jpg',
+        price: 440000,
+        quantity: 1,
+        variant: 'Size Tiêu chuẩn (< 7kg)',
+      },
+      {
+        id: 'prod-yu-shampoo',
+        name: 'Sữa tắm thảo mộc dịu nhẹ dưỡng lông cho mèo (400ml)',
+        image:
+          'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=700&q=85',
+        price: 265000,
+        quantity: 1,
+        variant: 'Chai 400ml',
+      },
+    ],
+  },
+];
+
+export const INITIAL_BOOKINGS: ServiceBookingRecord[] = [
+  {
+    id: 'BK261115',
+    serviceName: 'Chăm sóc Toàn diện 7 Bước',
+    petName: 'Milo (Corgi 2 tuổi)',
+    date: '2026-11-18',
+    timeSlot: '10:30 Sáng',
+    price: 390000,
+    status: 'upcoming',
+    note: 'Tỉa gọn lông bàn chân và bụng, bé hiền.',
   },
 ];
 

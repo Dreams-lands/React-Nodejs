@@ -12,6 +12,7 @@ import {
   LogIn,
   ChevronDown,
   LayoutGrid,
+  PackageSearch,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
 import { CategoryMenuList } from './CategoryMenuList';
@@ -28,6 +29,7 @@ interface FullHeaderProps {
   isLoggedIn: boolean;
   userName: string;
   onLogout: () => void;
+  onOpenOrderLookup?: () => void;
   cartCount: number;
   cartTotal: string;
 }
@@ -44,6 +46,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   isLoggedIn,
   userName,
   onLogout,
+  onOpenOrderLookup,
   cartCount,
   cartTotal,
 }) => {
@@ -147,15 +150,20 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
 
             {isLoggedIn ? (
               <>
-                <div className="flex items-center gap-2 pr-1">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('account')}
+                  title="Quản lý tài khoản"
+                  className="flex items-center gap-2 pr-1.5 py-1 pl-1 rounded-xl hover:bg-[#eff5ff] transition cursor-pointer text-left"
+                >
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#eff5ff] flex items-center justify-center text-[#0667d0]">
                     <User className="w-4 h-4" />
                   </div>
                   <div className="hidden sm:block">
-                    <div className="text-[11px] text-[#52657a]">Hội viên PetHub</div>
+                    <div className="text-[11px] text-[#52657a]">Tài khoản của tôi</div>
                     <div className="text-[13px] font-bold text-[#17324d]">{userName}</div>
                   </div>
-                </div>
+                </button>
 
                 <button
                   onClick={onLogout}
@@ -169,16 +177,27 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               </>
             ) : (
               <>
+                {onOpenOrderLookup && (
+                  <button
+                    type="button"
+                    onClick={onOpenOrderLookup}
+                    className="py-2 px-2.5 sm:px-3.5 rounded-xl border border-[#c8ddf8] bg-[#eff5ff] hover:bg-[#e1eeff] text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                  >
+                    <PackageSearch className="w-4 h-4 shrink-0" />
+                    <span className="hidden md:inline">Tra cứu đơn hàng</span>
+                    <span className="md:hidden">Tra cứu</span>
+                  </button>
+                )}
                 <button
                   onClick={() => onNavigate('login')}
-                  className="py-2 px-3.5 sm:px-4 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="py-2 px-2.5 sm:px-4 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-4 h-4 shrink-0" />
                   <span>Đăng nhập</span>
                 </button>
                 <button
                   onClick={() => onNavigate('register')}
-                  className="hidden sm:flex py-2 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-semibold items-center justify-center cursor-pointer transition-colors"
+                  className="hidden sm:flex py-2 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-semibold items-center justify-center cursor-pointer transition-colors whitespace-nowrap"
                 >
                   Đăng ký
                 </button>
@@ -282,13 +301,25 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               onClick={() => {
                 setProductMenuOpen(false);
+                onNavigate('promotions');
+              }}
+              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+                currentPage === 'promotions' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
+              }`}
+            >
+              Khuyến mãi
+            </button>
+
+            <button
+              onClick={() => {
+                setProductMenuOpen(false);
                 onNavigate('service');
               }}
               className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
                 currentPage === 'service' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
-              Dịch vụ chăm sóc
+              Dịch vụ
             </button>
 
             <button
@@ -390,7 +421,7 @@ export const PetHubFooter: React.FC<{
             </li>
             <li>
               <button onClick={() => onSelectCategory('hygiene')} className="hover:text-[#0667d0] cursor-pointer">
-                Thuốc &amp; Chăm sóc y tế
+                Thuốc &amp; Làm đẹp
               </button>
             </li>
             <li>
@@ -400,7 +431,12 @@ export const PetHubFooter: React.FC<{
             </li>
             <li>
               <button onClick={() => onSelectCategory('backpack')} className="hover:text-[#0667d0] cursor-pointer">
-                Túi &amp; Balo di chuyển
+                Balo &amp; Phụ kiện
+              </button>
+            </li>
+            <li>
+              <button onClick={() => onNavigate('promotions')} className="hover:text-[#0667d0] cursor-pointer">
+                Khuyến mãi hôm nay
               </button>
             </li>
             <li>
@@ -416,6 +452,11 @@ export const PetHubFooter: React.FC<{
             Hỗ trợ hội viên
           </h3>
           <ul className="space-y-2.5 text-[13px] text-[#52657a]">
+            <li>
+              <button onClick={() => onNavigate('account')} className="hover:text-[#0667d0] cursor-pointer">
+                Quản lý tài khoản
+              </button>
+            </li>
             <li>
               <button onClick={() => onNavigate('login')} className="hover:text-[#0667d0] cursor-pointer">
                 Đăng nhập tài khoản
@@ -519,8 +560,11 @@ export const CompactHeader: React.FC<{
           <button onClick={() => onNavigate('search')} className="hover:text-[#0667d0] transition cursor-pointer">
             Sản phẩm
           </button>
+          <button onClick={() => onNavigate('promotions')} className="hover:text-[#0667d0] transition cursor-pointer">
+            Khuyến mãi
+          </button>
           <button onClick={() => onNavigate('service')} className="hover:text-[#0667d0] transition cursor-pointer">
-            Dịch vụ chăm sóc
+            Dịch vụ
           </button>
           <button
             type="button"

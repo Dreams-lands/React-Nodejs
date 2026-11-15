@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -15,7 +15,6 @@ import {
   Phone,
   PawPrint,
   Star,
-  Gift,
   Headphones,
   AlertTriangle,
   Sparkles,
@@ -30,6 +29,14 @@ import {
   MessageSquare,
   MapPin,
   Send,
+  SlidersHorizontal,
+  Tag,
+  X,
+  QrCode,
+  Wallet,
+  Banknote,
+  Store,
+  PackageSearch,
 } from 'lucide-react';
 import type {
   PageId,
@@ -37,20 +44,53 @@ import type {
   ProductItem,
   ProductReview,
   CartItem,
+  AddressRecord,
+  OrderRecord,
+  ServiceBookingRecord,
 } from './data/mockData';
 import {
   CATALOG_PRODUCTS,
   SPA_PACKAGES,
   STOREFRONT_SUPPLIES,
+  INITIAL_ADDRESSES,
+  INITIAL_ORDERS,
+  INITIAL_BOOKINGS,
 } from './data/mockData';
+import {
+  PRODUCT_CATEGORIES,
+  PET_AUDIENCES,
+  PRODUCT_SUBTYPES,
+  PRICE_RANGES,
+  type ProductSubType,
+  type PriceRangeId,
+} from './data/categories';
 import {
   PetHubHeader,
   PetHubFooter,
   CompactHeader,
   CompactFooter,
 } from './components/HeadersAndFooters';
+import { AccountPage, type AccountTab } from './components/AccountPage';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
+import { ConfirmDialog, type ConfirmDialogState } from './components/ConfirmDialog';
+
+type PaymentMethodId = 'vnpay' | 'momo' | 'cod';
+type DeliveryMethodId = 'delivery' | 'pickup';
+
+interface LookupOrderEntry {
+  id: string;
+  createdAt: string;
+  status: OrderRecord['status'];
+  totalAmount: number;
+  shippingAddress: string;
+  paymentMethod: string;
+  deliveryMethod: DeliveryMethodId;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  items: OrderRecord['items'];
+}
 
 interface OrderSnapshot {
   code: string;
@@ -59,15 +99,60 @@ interface OrderSnapshot {
   total: number;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
+  shippingAddress?: string;
+  deliveryMethod?: DeliveryMethodId;
+  paymentMethod?: string;
+  failReason?: string;
   isGuest?: boolean;
 }
+
+const STORE_PICKUP_INFO = {
+  name: 'PetHub Flagship — Chi nhánh Quận 1',
+  address: '128 Nguyễn Trãi, P. Bến Thành, Quận 1, TP. Hồ Chí Minh',
+  hours: '08:00 – 21:00 mỗi ngày',
+};
+
+const PAYMENT_TIMEOUT_SECONDS = 45;
+
+const PAYMENT_OPTIONS: Array<{
+  id: PaymentMethodId;
+  label: string;
+  desc: string;
+  badge: string;
+}> = [
+  {
+    id: 'vnpay',
+    label: 'VNPay',
+    desc: 'Thanh toán qua cổng VNPay QR / thẻ ngân hàng nội địa',
+    badge: 'QR / ATM',
+  },
+  {
+    id: 'momo',
+    label: 'MoMo',
+    desc: 'Thanh toán nhanh qua ví điện tử MoMo',
+    badge: 'Ví điện tử',
+  },
+  {
+    id: 'cod',
+    label: 'Thanh toán khi nhận hàng',
+    desc: 'Kiểm tra hàng và thanh toán trực tiếp khi giao nhận',
+    badge: 'COD',
+  },
+];
+
+const ORDER_STATUS_META: Record<OrderRecord['status'], { label: string; cls: string }> = {
+  pending: { label: 'Chờ xác nhận', cls: 'bg-[#fff2e9] text-[#c2410c]' },
+  shipping: { label: 'Đang giao hàng', cls: 'bg-[#eff5ff] text-[#0667d0]' },
+  completed: { label: 'Hoàn thành', cls: 'bg-emerald-50 text-emerald-700' },
+};
 
 const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   all: 'Sản phẩm',
   food: 'Dinh dưỡng & Pate',
-  bed: 'Nệm & Không gian',
+  bed: 'Nệm & Không gian nghỉ',
   backpack: 'Balo & Phụ kiện',
-  hygiene: 'Thuốc & Chăm sóc y tế',
+  hygiene: 'Thuốc & Làm đẹp',
   spa: 'Dịch vụ chăm sóc',
 };
 
@@ -84,13 +169,13 @@ const HERO_BANNERS: Array<{
 }> = [
   {
     id: 'vet-care',
-    titleTop: 'CHĂM SÓC Y KHOA',
+    titleTop: 'THUỐC & LÀM ĐẸP',
     titleAccent: 'Dịu lành & An tâm.',
-    desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dịu nhẹ cho chó mèo.',
-    ctaLabel: 'Xem thuốc & chăm sóc',
+    desc: 'Thuốc đặc trị nấm da, nhỏ gáy phòng ve rận và sữa tắm dưỡng lông dịu nhẹ cho chó mèo.',
+    ctaLabel: 'Xem thuốc & làm đẹp',
     ctaCategory: 'hygiene',
     image: '/images/hero-vet-banner.jpg',
-    imageAlt: 'Bộ sản phẩm thuốc trị nấm và chăm sóc da lông cho thú cưng',
+    imageAlt: 'Bộ sản phẩm thuốc trị nấm và sữa tắm chăm sóc da lông cho thú cưng',
   },
   {
     id: 'gourmet-food',
@@ -121,15 +206,37 @@ export function App() {
   const [returnPage, setReturnPage] = useState<PageId>('home');
   const [heroSlide, setHeroSlide] = useState(0);
 
-  // Auth State (Guests can purchase & book; discount voucher codes require login)
+  // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('Trịnh Khoa');
+  const [userName, setUserName] = useState('Trịnh Anh Khoa');
+  const [userEmail, setUserEmail] = useState('khoa.trinh@pethub.vn');
+  const [userPhone, setUserPhone] = useState('0909 123 456');
+  const [userGender, setUserGender] = useState('Nam');
+  const [accountTab, setAccountTab] = useState<AccountTab>('profile');
+  const [addresses, setAddresses] = useState<AddressRecord[]>(INITIAL_ADDRESSES);
+  const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS);
+  const [lookupEntries, setLookupEntries] = useState<LookupOrderEntry[]>(() =>
+    INITIAL_ORDERS.map((o) => ({
+      ...o,
+      deliveryMethod: 'delivery',
+      customerName: 'Trịnh Anh Khoa',
+      customerPhone: '0909 123 456',
+      customerEmail: 'khoa.trinh@pethub.vn',
+    }))
+  );
+  const [bookings, setBookings] = useState<ServiceBookingRecord[]>(INITIAL_BOOKINGS);
 
-  // Catalog & Search State
+  // Catalog, Promotions & Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | ProductCategory>('all');
   const [petScope, setPetScope] = useState<'all' | 'dog' | 'cat'>('all');
+  const [selectedSubTypes, setSelectedSubTypes] = useState<ProductSubType[]>([]);
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<PriceRangeId[]>([]);
+  const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc' | 'rating'>('popular');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [homeCategoryTab, setHomeCategoryTab] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
+  const [promoCatFilter, setPromoCatFilter] = useState<'all' | 'food' | 'hygiene' | 'bed' | 'backpack'>('all');
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   // Product Detail & Reviews State
   const [selectedProductId, setSelectedProductId] = useState<string>(CATALOG_PRODUCTS[0].id);
@@ -147,9 +254,22 @@ export function App() {
 
   // Cart & Order State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [voucherCode, setVoucherCode] = useState('');
-  const [isVoucherApplied, setIsVoucherApplied] = useState(false);
-  const [shippingAddress, setShippingAddress] = useState('128 Nguyễn Trãi, Quận 1, TP.HCM');
+  const [shippingAddress, setShippingAddress] = useState(
+    INITIAL_ADDRESSES.find((a) => a.isDefault)?.address || '128 Nguyễn Huệ, Quận 1, TP.HCM'
+  );
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethodId>('delivery');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>('vnpay');
+  const [checkoutName, setCheckoutName] = useState('');
+  const [checkoutPhone, setCheckoutPhone] = useState('');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
+  const [checkoutAddress, setCheckoutAddress] = useState('');
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [paymentSecondsLeft, setPaymentSecondsLeft] = useState(PAYMENT_TIMEOUT_SECONDS);
+  const [lookupOpen, setLookupOpen] = useState(false);
+  const [lookupPhone, setLookupPhone] = useState('');
+  const [lookupCode, setLookupCode] = useState('');
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupResult, setLookupResult] = useState<LookupOrderEntry | null>(null);
   const [lastOrder, setLastOrder] = useState<OrderSnapshot | null>(null);
 
   // Service Booking State
@@ -192,6 +312,10 @@ export function App() {
   };
 
   const navigateTo = (page: PageId) => {
+    if (page === 'cart') {
+      setPaymentSecondsLeft(PAYMENT_TIMEOUT_SECONDS);
+      setCheckoutError(null);
+    }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -206,13 +330,36 @@ export function App() {
   const handleSelectCategory = (cat: 'all' | ProductCategory) => {
     setSelectedCategoryFilter(cat);
     setPetScope('all');
+    setSelectedSubTypes([]);
     navigateTo('search');
   };
 
   const handleSelectPetAudience = (pet: 'dog' | 'cat') => {
     setSelectedCategoryFilter('all');
     setPetScope(pet);
+    setSelectedSubTypes([]);
     navigateTo('search');
+  };
+
+  const toggleSubTypeFilter = (subType: ProductSubType) => {
+    setSelectedSubTypes((prev) =>
+      prev.includes(subType) ? prev.filter((item) => item !== subType) : [...prev, subType]
+    );
+  };
+
+  const togglePriceRangeFilter = (rangeId: PriceRangeId) => {
+    setSelectedPriceRanges((prev) =>
+      prev.includes(rangeId) ? prev.filter((item) => item !== rangeId) : [...prev, rangeId]
+    );
+  };
+
+  const resetCatalogFilters = () => {
+    setSearchQuery('');
+    setSelectedCategoryFilter('all');
+    setPetScope('all');
+    setSelectedSubTypes([]);
+    setSelectedPriceRanges([]);
+    setSortBy('popular');
   };
 
   const openProductDetail = (item: ProductItem) => {
@@ -224,14 +371,26 @@ export function App() {
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCartItems([]);
-    setVoucherCode('');
-    setIsVoucherApplied(false);
-    setBookingConfirmed(false);
-    setCurrentPage('home');
-    triggerToast('Đã đăng xuất khỏi tài khoản thành viên.');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setConfirmDialog({
+      title: 'Xác nhận đăng xuất',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản thành viên PetHub không?',
+      confirmLabel: 'Đăng xuất',
+      tone: 'danger',
+      onConfirm: () => {
+        setIsLoggedIn(false);
+        setCartItems([]);
+        setCheckoutName('');
+        setCheckoutPhone('');
+        setCheckoutEmail('');
+        setCheckoutAddress('');
+        setDeliveryMethod('delivery');
+        setCheckoutError(null);
+        setBookingConfirmed(false);
+        setCurrentPage('home');
+        triggerToast('Đã đăng xuất khỏi tài khoản thành viên.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    });
   };
 
   const toggleLike = (id: string) => {
@@ -257,8 +416,7 @@ export function App() {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cartItems]);
 
-  const discountAmount = isLoggedIn && isVoucherApplied && cartSubtotal > 0 ? 100000 : 0;
-  const cartFinalTotal = Math.max(0, cartSubtotal - discountAmount);
+  const cartFinalTotal = cartSubtotal;
   const totalCartCount = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
@@ -307,56 +465,252 @@ export function App() {
   };
 
   const removeCartItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-    triggerToast('Đã xóa sản phẩm khỏi giỏ hàng.');
+    const targetItem = cartItems.find((item) => item.id === id);
+    setConfirmDialog({
+      title: 'Xóa sản phẩm khỏi giỏ hàng',
+      message: `Bạn có chắc chắn muốn xóa "${targetItem?.name || 'sản phẩm này'}" khỏi giỏ hàng không?`,
+      confirmLabel: 'Xóa sản phẩm',
+      tone: 'danger',
+      onConfirm: () => {
+        setCartItems((prev) => prev.filter((item) => item.id !== id));
+        triggerToast('Đã xóa sản phẩm khỏi giỏ hàng.');
+      },
+    });
   };
 
-  const handleCheckout = (simulateFail = false) => {
+  const timeoutHandlerRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    timeoutHandlerRef.current = () => {
+      if (currentPage !== 'cart' || cartItems.length === 0) return;
+      const orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
+      const nowLabel = new Date().toLocaleDateString('vi-VN');
+      const selectedPaymentLabel =
+        PAYMENT_OPTIONS.find((opt) => opt.id === paymentMethod)?.label || 'VNPay';
+      const resolvedAddress =
+        deliveryMethod === 'pickup'
+          ? `Nhận tại cửa hàng: ${STORE_PICKUP_INFO.address}`
+          : (isLoggedIn ? shippingAddress : checkoutAddress).trim();
+
+      setLastOrder({
+        code: `#${orderNum}`,
+        date: nowLabel,
+        items: [...cartItems],
+        total: cartFinalTotal,
+        customerName: checkoutName.trim() || (isLoggedIn ? userName : 'Quý khách'),
+        customerPhone: checkoutPhone.trim() || (isLoggedIn ? userPhone : ''),
+        customerEmail: checkoutEmail.trim() || (isLoggedIn ? userEmail : ''),
+        shippingAddress: resolvedAddress,
+        deliveryMethod,
+        paymentMethod: selectedPaymentLabel,
+        failReason: 'Hết thời gian thanh toán',
+        isGuest: !isLoggedIn,
+      });
+      navigateTo('checkout-fail');
+    };
+  });
+
+  useEffect(() => {
+    if (currentPage !== 'cart' || cartItems.length === 0) return;
+    const intervalId = window.setInterval(() => {
+      setPaymentSecondsLeft((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(intervalId);
+          window.setTimeout(() => timeoutHandlerRef.current(), 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [currentPage, cartItems.length]);
+
+  const openOrderLookupModal = () => {
+    setLookupError(null);
+    setLookupResult(null);
+    setLookupOpen(true);
+  };
+
+  const handleOrderLookupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = lookupPhone.replace(/\D/g, '');
+    const cleanCode = lookupCode.trim().replace(/^#/, '').toUpperCase();
+    if (!cleanPhone || !cleanCode) {
+      setLookupError('Vui lòng nhập đầy đủ số điện thoại và mã đơn hàng để tra cứu.');
+      setLookupResult(null);
+      return;
+    }
+    const matched = lookupEntries.find(
+      (entry) =>
+        entry.customerPhone.replace(/\D/g, '') === cleanPhone &&
+        entry.id.replace(/^#/, '').toUpperCase() === cleanCode
+    );
+    if (!matched) {
+      setLookupError('Không tìm thấy đơn hàng khớp với Số điện thoại và Mã đơn hàng này.');
+      setLookupResult(null);
+      return;
+    }
+    setLookupError(null);
+    setLookupResult(matched);
+  };
+
+  const handleCheckout = () => {
+    const activeName = checkoutName.trim();
+    const activePhone = checkoutPhone.trim();
+    const activeEmail = checkoutEmail.trim();
+    const activeAddress = (isLoggedIn ? shippingAddress : checkoutAddress).trim();
+
+    if (!isLoggedIn && !activeName) {
+      const msg = 'Vui lòng nhập đầy đủ họ tên, số điện thoại, Gmail và địa chỉ nhận hàng để thanh toán.';
+      setCheckoutError(msg);
+      triggerToast('Vui lòng điền họ và tên để tiếp tục thanh toán.');
+      return;
+    }
+    if (!activePhone) {
+      const msg =
+        deliveryMethod === 'delivery'
+          ? 'Vui lòng nhập đầy đủ số điện thoại liên hệ và địa chỉ giao hàng trước khi thanh toán.'
+          : 'Vui lòng nhập số điện thoại liên hệ trước khi xác nhận đơn hàng.';
+      setCheckoutError(msg);
+      triggerToast('Thiếu số điện thoại liên hệ! Vui lòng điền đầy đủ thông tin.');
+      return;
+    }
+    if (!isLoggedIn && !activeEmail) {
+      const msg = 'Vui lòng nhập địa chỉ Gmail để nhận thông tin xác nhận đơn hàng.';
+      setCheckoutError(msg);
+      triggerToast('Vui lòng nhập Gmail để hoàn tất thanh toán.');
+      return;
+    }
+    if (deliveryMethod === 'delivery' && !activeAddress) {
+      const msg = 'Vui lòng nhập đầy đủ địa chỉ giao hàng và số điện thoại liên hệ trước khi thanh toán.';
+      setCheckoutError(msg);
+      triggerToast('Thiếu địa chỉ giao hàng! Vui lòng điền đầy đủ thông tin.');
+      return;
+    }
+
+    setCheckoutError(null);
+    const orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
+    const nowLabel = new Date().toLocaleDateString('vi-VN');
+    const selectedPaymentLabel =
+      PAYMENT_OPTIONS.find((opt) => opt.id === paymentMethod)?.label || 'VNPay';
+    const resolvedAddress =
+      deliveryMethod === 'pickup'
+        ? `Nhận tại cửa hàng: ${STORE_PICKUP_INFO.address}`
+        : activeAddress;
+    const customerLabel = activeName || (isLoggedIn ? userName : 'Quý khách');
+
     const snapshot: OrderSnapshot = {
-      code: `#PET${Math.floor(1000 + Math.random() * 9000)}`,
-      date: '25/10/2026',
+      code: `#${orderNum}`,
+      date: nowLabel,
       items: [...cartItems],
       total: cartFinalTotal,
-      customerName: isLoggedIn ? userName : (ownerName || 'Quý khách'),
-      customerPhone: ownerPhone || '',
-      isGuest: isLoggedIn ? false : true,
+      customerName: customerLabel,
+      customerPhone: activePhone,
+      customerEmail: activeEmail || (isLoggedIn ? userEmail : ''),
+      shippingAddress: resolvedAddress,
+      deliveryMethod,
+      paymentMethod: selectedPaymentLabel,
+      isGuest: !isLoggedIn,
     };
     setLastOrder(snapshot);
-    if (!simulateFail) {
-      setCartItems([]);
-      setIsVoucherApplied(false);
+
+    if (cartItems.length > 0) {
+      const mappedItems = cartItems.map((c) => ({
+        id: c.productId,
+        name: c.name,
+        image: c.image,
+        price: c.price,
+        quantity: c.quantity,
+        variant: c.desc,
+      }));
+      const newOrder: OrderRecord = {
+        id: orderNum,
+        createdAt: `${nowLabel} • Vừa đặt`,
+        status: 'pending',
+        totalAmount: cartFinalTotal,
+        shippingAddress: resolvedAddress,
+        paymentMethod: selectedPaymentLabel,
+        items: mappedItems,
+      };
+      setOrders((prev) => [newOrder, ...prev]);
+      setLookupEntries((prev) => [
+        {
+          ...newOrder,
+          deliveryMethod,
+          customerName: customerLabel,
+          customerPhone: activePhone,
+          customerEmail: activeEmail || (isLoggedIn ? userEmail : ''),
+        },
+        ...prev,
+      ]);
     }
-    navigateTo(simulateFail ? 'checkout-fail' : 'checkout-success');
+    setCartItems([]);
+    navigateTo('checkout-success');
   };
 
-  // Catalog Filters
+  // Catalog Filters & Sorting
   const filteredSearchList = useMemo(() => {
-    return CATALOG_PRODUCTS.filter((item) => {
+    const filtered = CATALOG_PRODUCTS.filter((item) => {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
       const matchesPet =
         petScope === 'all' || item.petType === petScope;
+      const matchesSubType =
+        selectedSubTypes.length === 0 || selectedSubTypes.includes(item.subType);
+      const matchesPrice =
+        selectedPriceRanges.length === 0 ||
+        selectedPriceRanges.some((rangeId) => {
+          const range = PRICE_RANGES.find((r) => r.id === rangeId);
+          return range ? item.priceNum >= range.min && item.priceNum <= range.max : true;
+        });
       const q = searchQuery.trim().toLowerCase();
       const matchesQ =
         !q ||
         item.name.toLowerCase().includes(q) ||
         item.brand.toLowerCase().includes(q) ||
         item.shortDesc.toLowerCase().includes(q) ||
+        item.subType.toLowerCase().includes(q) ||
         item.packSize.toLowerCase().includes(q);
-      return matchesCat && matchesPet && matchesQ;
+      return matchesCat && matchesPet && matchesSubType && matchesPrice && matchesQ;
     });
-  }, [searchQuery, selectedCategoryFilter, petScope]);
 
-  const featuredProducts = useMemo(() => {
-    if (homeCategoryTab === 'all') {
-      return CATALOG_PRODUCTS.filter((p) => p.isFeatured).slice(0, 4);
+    if (sortBy === 'price-asc') {
+      return [...filtered].sort((a, b) => a.priceNum - b.priceNum);
     }
-    return CATALOG_PRODUCTS.filter((p) => p.category === homeCategoryTab).slice(0, 4);
+    if (sortBy === 'price-desc') {
+      return [...filtered].sort((a, b) => b.priceNum - a.priceNum);
+    }
+    if (sortBy === 'rating') {
+      return [...filtered].sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
+    }
+    return filtered;
+  }, [searchQuery, selectedCategoryFilter, petScope, selectedSubTypes, selectedPriceRanges, sortBy]);
+
+  // Featured Products: ONLY normal (non-discounted) items on Home
+  const featuredProducts = useMemo(() => {
+    const nonDiscounted = CATALOG_PRODUCTS.filter(
+      (p) => !p.discountBadge && !p.originalPrice
+    );
+    if (homeCategoryTab === 'all') {
+      const highlighted = nonDiscounted.filter((p) => p.isFeatured);
+      return (highlighted.length >= 4 ? highlighted : nonDiscounted).slice(0, 4);
+    }
+    return nonDiscounted.filter((p) => p.category === homeCategoryTab).slice(0, 4);
   }, [homeCategoryTab]);
 
-  const flashSaleProducts = useMemo(() => {
-    return CATALOG_PRODUCTS.filter((p) => p.isFlashSale);
+  // Discounted Products: ALL items with % discount / originalPrice
+  const allDiscountedProducts = useMemo(() => {
+    return CATALOG_PRODUCTS.filter((p) => Boolean(p.discountBadge || p.originalPrice));
   }, []);
+
+  const flashSaleProducts = useMemo(() => {
+    return allDiscountedProducts.slice(0, 8);
+  }, [allDiscountedProducts]);
+
+  const filteredPromotionsList = useMemo(() => {
+    return allDiscountedProducts.filter((item) => {
+      return promoCatFilter === 'all' || item.category === promoCatFilter;
+    });
+  }, [allDiscountedProducts, promoCatFilter]);
 
   const selectedSpaPackage = useMemo(() => {
     return SPA_PACKAGES.find((p) => p.id === selectedPackageId) || SPA_PACKAGES[0];
@@ -415,6 +769,7 @@ export function App() {
           isLoggedIn={isLoggedIn}
           userName={userName}
           onLogout={handleLogout}
+          onOpenOrderLookup={openOrderLookupModal}
           cartCount={totalCartCount}
           cartTotal={cartFinalTotal.toLocaleString('vi-VN') + '₫'}
         />
@@ -669,9 +1024,9 @@ export function App() {
                     {[
                       { id: 'all', label: 'Tất cả' },
                       { id: 'food', label: 'Dinh dưỡng & Pate' },
-                      { id: 'hygiene', label: 'Thuốc & Y tế' },
+                      { id: 'hygiene', label: 'Thuốc & Làm đẹp' },
                       { id: 'bed', label: 'Nệm ngủ' },
-                      { id: 'backpack', label: 'Balo' },
+                      { id: 'backpack', label: 'Balo & Phụ kiện' },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -763,23 +1118,23 @@ export function App() {
                       </div>
                       <div>
                         <h2 className="text-[22px] font-extrabold text-[#17324d] tracking-[-0.02em]">
-                          Ưu đãi giới hạn hôm nay
+                          Ưu đãi hôm nay
                         </h2>
                         <p className="text-[13px] text-[#52657a]">
-                          Mức giá đặc quyền áp dụng đến hết khung giờ.
+                          Tổng hợp sản phẩm đang giảm giá đặc quyền trong hôm nay.
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 tabular-nums">
-                      <span className="text-[13px] font-semibold text-[#52657a]">Kết thúc sau</span>
-                      <div className="flex items-center gap-1 text-[13px] font-bold text-white">
-                        <span className="px-2.5 py-1.5 rounded-lg bg-[#17324d]">08</span>
-                        <span className="text-[#17324d]">:</span>
-                        <span className="px-2.5 py-1.5 rounded-lg bg-[#17324d]">45</span>
-                        <span className="text-[#17324d]">:</span>
-                        <span className="px-2.5 py-1.5 rounded-lg bg-[#c2410c]">22</span>
-                      </div>
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => navigateTo('promotions')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[13px] font-bold text-[#0667d0] cursor-pointer transition"
+                      >
+                        <span>Xem tất cả khuyến mãi</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -976,72 +1331,387 @@ export function App() {
                 )}
               </div>
 
-              {/* Filter Header — flat editorial header without nested bordered cards */}
-              <div className="pb-8 mb-8 border-b border-[#dfe6f0]">
-                <div>
-                  <h1 className="text-[30px] lg:text-[36px] font-extrabold text-[#17324d] tracking-[-0.02em]">
-                    {searchQuery
-                      ? `Kết quả cho "${searchQuery}"`
-                      : petScope === 'dog'
-                        ? 'Đồ dùng dành cho Chó'
-                        : petScope === 'cat'
-                          ? 'Đồ dùng dành cho Mèo'
-                          : 'Cửa hàng đồ dùng thú cưng'}
-                  </h1>
+              {/* Two-Column Catalog Sidebar + Grid (No Brand Filter) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+                {/* Mobile Filter Trigger */}
+                <div className="lg:hidden flex items-center justify-between gap-3 pb-3 border-b border-[#dfe6f0]">
+                  <button
+                    type="button"
+                    onClick={() => setMobileFilterOpen((v) => !v)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#dfe6f0] bg-white text-[13px] font-bold text-[#17324d] cursor-pointer"
+                  >
+                    <SlidersHorizontal className="w-4 h-4 text-[#0667d0]" />
+                    <span>{mobileFilterOpen ? 'Ẩn bộ lọc' : 'Danh mục & Bộ lọc'}</span>
+                  </button>
+                  <select
+                    aria-label="Sắp xếp sản phẩm"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    className="px-3 py-2.5 rounded-xl border border-[#dfe6f0] bg-white text-[13px] font-semibold text-[#17324d] focus:outline-none focus:border-[#0667d0]"
+                  >
+                    <option value="popular">Mặc định: Nổi bật</option>
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                    <option value="rating">Đánh giá cao nhất</option>
+                  </select>
                 </div>
 
-                {/* Category Filter Pills */}
-                <div className="flex flex-wrap gap-2 mt-6">
-                  {(
-                    [
-                      { id: 'food', label: 'Dinh dưỡng & Pate' },
-                      { id: 'hygiene', label: 'Thuốc & Chăm sóc y tế' },
-                      { id: 'bed', label: 'Nệm & Không gian nghỉ' },
-                      { id: 'backpack', label: 'Balo & Phụ kiện' },
-                    ] as const
-                  ).map((pill) => (
-                    <button
-                      key={pill.id}
-                      onClick={() => {
-                        setSelectedCategoryFilter((prev) =>
-                          prev === pill.id ? 'all' : pill.id
+                {/* Left Filter Sidebar */}
+                <aside
+                  className={`${
+                    mobileFilterOpen ? 'block' : 'hidden'
+                  } lg:block lg:col-span-3 space-y-5`}
+                >
+                  {/* DANH MỤC */}
+                  <div className="rounded-2xl border border-[#dfe6f0] bg-white overflow-hidden">
+                    <div className="px-4 py-3 bg-[#f6f8fb] border-b border-[#dfe6f0] border-l-4 border-l-[#0667d0]">
+                      <h2 className="text-[13px] font-extrabold text-[#17324d] uppercase tracking-wider">
+                        DANH MỤC
+                      </h2>
+                    </div>
+                    <div className="p-2.5 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategoryFilter('all');
+                          setSelectedSubTypes([]);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-[13.5px] font-semibold transition cursor-pointer ${
+                          selectedCategoryFilter === 'all'
+                            ? 'bg-[#eff5ff] text-[#0667d0]'
+                            : 'text-[#334155] hover:bg-[#f6f8fb]'
+                        }`}
+                      >
+                        Tất cả sản phẩm
+                      </button>
+                      {PRODUCT_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategoryFilter(cat.id);
+                            setSelectedSubTypes([]);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-[13.5px] font-semibold transition cursor-pointer ${
+                            selectedCategoryFilter === cat.id
+                              ? 'bg-[#eff5ff] text-[#0667d0]'
+                              : 'text-[#334155] hover:bg-[#f6f8fb]'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+
+                      <div className="pt-2 mt-2 border-t border-[#eef2f7]">
+                        <div className="px-3 py-1 text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
+                          THEO THÚ CƯNG
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPetScope('all')}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-medium transition cursor-pointer ${
+                            petScope === 'all'
+                              ? 'bg-[#eff5ff] text-[#0667d0] font-semibold'
+                              : 'text-[#334155] hover:bg-[#f6f8fb]'
+                          }`}
+                        >
+                          Tất cả Chó &amp; Mèo
+                        </button>
+                        {PET_AUDIENCES.map((aud) => (
+                          <button
+                            key={aud.id}
+                            type="button"
+                            onClick={() => setPetScope(aud.id)}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-medium transition cursor-pointer ${
+                              petScope === aud.id
+                                ? 'bg-[#eff5ff] text-[#0667d0] font-semibold'
+                                : 'text-[#334155] hover:bg-[#f6f8fb]'
+                            }`}
+                          >
+                            {aud.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BỘ LỌC (LOẠI SẢN PHẨM + GIÁ SẢN PHẨM, không có THƯƠNG HIỆU) */}
+                  <div className="rounded-2xl border border-[#dfe6f0] bg-white overflow-hidden">
+                    <div className="px-4 py-3 bg-[#f6f8fb] border-b border-[#dfe6f0] border-l-4 border-l-[#0667d0] flex items-center justify-between">
+                      <h2 className="text-[13px] font-extrabold text-[#17324d] uppercase tracking-wider">
+                        BỘ LỌC
+                      </h2>
+                      {(selectedSubTypes.length > 0 ||
+                        selectedPriceRanges.length > 0 ||
+                        selectedCategoryFilter !== 'all' ||
+                        petScope !== 'all' ||
+                        searchQuery) && (
+                        <button
+                          type="button"
+                          onClick={resetCatalogFilters}
+                          className="text-[12px] font-semibold text-[#0667d0] hover:underline cursor-pointer"
+                        >
+                          Xóa lọc
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="p-4 space-y-5">
+                      {/* LOẠI SẢN PHẨM */}
+                      <div>
+                        <h3 className="text-[12.5px] font-bold text-[#17324d] uppercase tracking-wide mb-3">
+                          LOẠI SẢN PHẨM
+                        </h3>
+                        <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
+                          {(selectedCategoryFilter === 'all'
+                            ? PRODUCT_SUBTYPES
+                            : PRODUCT_SUBTYPES.filter(
+                                (st) => st.category === selectedCategoryFilter
+                              )
+                          ).map((st) => {
+                            const checked = selectedSubTypes.includes(st.id);
+                            return (
+                              <label
+                                key={st.id}
+                                className="flex items-center gap-2.5 text-[13.5px] text-[#334155] hover:text-[#17324d] cursor-pointer select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleSubTypeFilter(st.id)}
+                                  className="w-4 h-4 rounded border-[#cbd5e1] accent-[#0667d0] cursor-pointer"
+                                />
+                                <span className={checked ? 'font-semibold text-[#0667d0]' : ''}>
+                                  {st.id}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* GIÁ SẢN PHẨM */}
+                      <div className="pt-4 border-t border-[#eef2f7]">
+                        <h3 className="text-[12.5px] font-bold text-[#17324d] uppercase tracking-wide mb-3">
+                          GIÁ SẢN PHẨM
+                        </h3>
+                        <div className="space-y-2.5">
+                          {PRICE_RANGES.map((range) => {
+                            const checked = selectedPriceRanges.includes(range.id);
+                            return (
+                              <label
+                                key={range.id}
+                                className="flex items-center gap-2.5 text-[13.5px] text-[#334155] hover:text-[#17324d] cursor-pointer select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => togglePriceRangeFilter(range.id)}
+                                  className="w-4 h-4 rounded border-[#cbd5e1] accent-[#0667d0] cursor-pointer"
+                                />
+                                <span className={checked ? 'font-semibold text-[#0667d0]' : ''}>
+                                  {range.label}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Right Results Area */}
+                <div className="lg:col-span-9 space-y-6 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#dfe6f0]">
+                    <div>
+                      <h1 className="text-[26px] lg:text-[30px] font-extrabold text-[#17324d] tracking-[-0.02em]">
+                        {searchQuery
+                          ? `Kết quả cho "${searchQuery}"`
+                          : selectedCategoryFilter !== 'all'
+                            ? CATEGORY_LABELS[selectedCategoryFilter]
+                            : petScope === 'dog'
+                              ? 'Đồ dùng dành cho Chó'
+                              : petScope === 'cat'
+                                ? 'Đồ dùng dành cho Mèo'
+                                : 'Tất cả đồ dùng thú cưng'}
+                      </h1>
+                      <p className="text-[13px] text-[#52657a] mt-1">
+                        Hiển thị <strong className="text-[#17324d]">{filteredSearchList.length}</strong> sản phẩm phù hợp
+                      </p>
+                    </div>
+
+                    <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+                      <span className="text-[13px] font-medium text-[#52657a]">Sắp xếp:</span>
+                      <select
+                        aria-label="Sắp xếp sản phẩm"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                        className="px-3.5 py-2 rounded-xl border border-[#dfe6f0] bg-white text-[13px] font-semibold text-[#17324d] focus:outline-none focus:border-[#0667d0] cursor-pointer"
+                      >
+                        <option value="popular">Mặc định: Nổi bật</option>
+                        <option value="price-asc">Giá: Thấp đến Cao</option>
+                        <option value="price-desc">Giá: Cao đến Thấp</option>
+                        <option value="rating">Đánh giá cao nhất</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Active Filter Chips */}
+                  {(selectedSubTypes.length > 0 || selectedPriceRanges.length > 0 || petScope !== 'all') && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {petScope !== 'all' && (
+                        <button
+                          type="button"
+                          onClick={() => setPetScope('all')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eff5ff] border border-[#b9d7ff] text-xs font-semibold text-[#0667d0] cursor-pointer"
+                        >
+                          <span>{petScope === 'dog' ? 'Dành cho Chó' : 'Dành cho Mèo'}</span>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {selectedSubTypes.map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => toggleSubTypeFilter(st)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eff5ff] border border-[#b9d7ff] text-xs font-semibold text-[#0667d0] cursor-pointer"
+                        >
+                          <span>{st}</span>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      ))}
+                      {selectedPriceRanges.map((rid) => {
+                        const rLabel = PRICE_RANGES.find((r) => r.id === rid)?.label;
+                        return (
+                          <button
+                            key={rid}
+                            type="button"
+                            onClick={() => togglePriceRangeFilter(rid)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eff5ff] border border-[#b9d7ff] text-xs font-semibold text-[#0667d0] cursor-pointer"
+                          >
+                            <span>{rLabel}</span>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         );
-                      }}
-                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors ${
-                        selectedCategoryFilter === pill.id
-                          ? 'bg-[#0667d0] text-white'
-                          : 'bg-[#f8faff] text-[#52657a] border border-[#dfe6f0] hover:border-[#0667d0] hover:text-[#17324d]'
+                      })}
+                    </div>
+                  )}
+
+                  {/* Product Grid */}
+                  {filteredSearchList.length === 0 ? (
+                    <div className="rounded-2xl border border-[#dfe6f0] bg-[#f8faff] p-12 text-center space-y-3">
+                      <h2 className="text-lg font-bold text-[#17324d]">
+                        Không tìm thấy sản phẩm phù hợp
+                      </h2>
+                      <p className="text-sm text-[#52657a]">
+                        Thử bỏ bớt điều kiện lọc hoặc tìm kiếm bằng từ khóa khác.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resetCatalogFilters}
+                        className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
+                      >
+                        Đặt lại bộ lọc
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                      {filteredSearchList.map((item, idx) => (
+                        <TiltCard
+                          key={item.id}
+                          item={item}
+                          index={idx}
+                          isLiked={!!likedIds[item.id]}
+                          isLoggedIn={isLoggedIn}
+                          onToggleLike={toggleLike}
+                          onViewProduct={openProductDetail}
+                          onAddToCart={(prod) => addProductToCart(prod)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===================================================================
+           * 2B. PROMOTIONS PAGE (TỔNG HỢP SẢN PHẨM ĐANG GIẢM GIÁ)
+           * =================================================================== */}
+          {currentPage === 'promotions' && (
+            <motion.div
+              key="promotions"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 py-8 pb-16 space-y-8"
+            >
+              {/* Promo Header + Home-style Category Filter */}
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 pb-6 border-b border-[#dfe6f0]">
+                <div className="space-y-2 max-w-2xl">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('home')}
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#52657a] hover:text-[#0667d0] transition cursor-pointer"
+                  >
+                    <span>Trang chủ</span>
+                    <span>/</span>
+                    <span className="text-[#0667d0]">Khuyến mãi</span>
+                  </button>
+                  <h1 className="text-[26px] lg:text-[32px] font-extrabold text-[#17324d] tracking-[-0.02em]">
+                    Sản phẩm đang giảm giá hôm nay
+                  </h1>
+                  <p className="text-[14px] text-[#52657a]">
+                    Tổng hợp tất cả sản phẩm thức ăn, thuốc &amp; làm đẹp, chuồng nệm và phụ kiện đang áp dụng mức giá ưu đãi trực tiếp.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar max-w-full shrink-0">
+                  {[
+                    { id: 'all', label: 'Tất cả' },
+                    { id: 'food', label: 'Dinh dưỡng & Pate' },
+                    { id: 'hygiene', label: 'Thuốc & Làm đẹp' },
+                    { id: 'bed', label: 'Nệm ngủ' },
+                    { id: 'backpack', label: 'Balo & Phụ kiện' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() =>
+                        setPromoCatFilter(tab.id as typeof promoCatFilter)
+                      }
+                      className={`px-4 py-2 rounded-lg text-[13px] font-bold transition cursor-pointer whitespace-nowrap ${
+                        promoCatFilter === tab.id
+                          ? 'bg-[#0667d0] text-white shadow-xs'
+                          : 'text-[#52657a] hover:text-[#17324d]'
                       }`}
                     >
-                      {pill.label}
+                      {tab.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Product Grid */}
-              {filteredSearchList.length === 0 ? (
-                <div className="rounded-2xl border border-[#dfe6f0] bg-[#f8faff] p-12 text-center space-y-3">
-                  <h2 className="text-lg font-bold text-[#17324d]">
-                    Không tìm thấy sản phẩm phù hợp
-                  </h2>
+              {filteredPromotionsList.length === 0 ? (
+                <div className="rounded-2xl border border-[#dfe6f0] bg-[#f8faff] p-10 text-center space-y-3">
                   <p className="text-sm text-[#52657a]">
-                    Thử tìm với từ khóa khác hoặc đặt lại bộ lọc danh mục.
+                    Không có sản phẩm giảm giá trong nhóm lọc này.
                   </p>
                   <button
+                    type="button"
                     onClick={() => {
-                      setSearchQuery('');
-                      setSelectedCategoryFilter('all');
-                      setPetScope('all');
+                      setPromoCatFilter('all');
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#0667d0] text-white text-[13px] font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#0667d0] text-white text-xs font-bold cursor-pointer"
                   >
-                    Đặt lại bộ lọc
+                    Xem tất cả ưu đãi
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredSearchList.map((item, idx) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {filteredPromotionsList.map((item, idx) => (
                     <TiltCard
                       key={item.id}
                       item={item}
@@ -1055,6 +1725,105 @@ export function App() {
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* ===================================================================
+           * 2C. CUSTOMER ACCOUNT MANAGEMENT PAGE (SHOPEE-ADAPTED)
+           * =================================================================== */}
+          {currentPage === 'account' && (
+            <motion.div
+              key="account"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="pb-14"
+            >
+              <AccountPage
+                isLoggedIn={isLoggedIn}
+                userName={userName}
+                userEmail={userEmail}
+                userPhone={userPhone}
+                userGender={userGender}
+                activeTab={accountTab}
+                onTabChange={setAccountTab}
+                onUpdateProfile={({ name, email, phone, gender }) => {
+                  setUserName(name);
+                  setUserEmail(email);
+                  setUserPhone(phone);
+                  setUserGender(gender);
+                  setOwnerName(name);
+                  setOwnerPhone(phone);
+                  setCheckoutName(name);
+                  setCheckoutPhone(phone);
+                  setCheckoutEmail(email);
+                  triggerToast('Đã cập nhật thông tin tài khoản.');
+                }}
+                addresses={addresses}
+                onAddAddress={(addr) => {
+                  const newId = `addr-${Date.now()}`;
+                  setAddresses((prev) => {
+                    const base = addr.isDefault
+                      ? prev.map((a) => ({ ...a, isDefault: false }))
+                      : prev;
+                    return [...base, { ...addr, id: newId }];
+                  });
+                  if (addr.isDefault) {
+                    setShippingAddress(addr.address);
+                  }
+                  triggerToast('Đã thêm địa chỉ nhận hàng mới.');
+                }}
+                onUpdateAddress={(updated) => {
+                  setAddresses((prev) =>
+                    prev.map((a) => {
+                      if (a.id === updated.id) return updated;
+                      return updated.isDefault ? { ...a, isDefault: false } : a;
+                    })
+                  );
+                  if (updated.isDefault) {
+                    setShippingAddress(updated.address);
+                  }
+                  triggerToast('Đã cập nhật địa chỉ giao hàng.');
+                }}
+                onSetDefaultAddress={(id) => {
+                  setAddresses((prev) =>
+                    prev.map((a) => {
+                      const nextDefault = a.id === id;
+                      if (nextDefault) {
+                        setShippingAddress(a.address);
+                      }
+                      return { ...a, isDefault: nextDefault };
+                    })
+                  );
+                  triggerToast('Đã cập nhật địa chỉ nhận hàng mặc định.');
+                }}
+                onDeleteAddress={(id) => {
+                  setAddresses((prev) => prev.filter((a) => a.id !== id));
+                  triggerToast('Đã xóa địa chỉ nhận hàng.');
+                }}
+                onRequestConfirm={(dialog) => setConfirmDialog(dialog)}
+                orders={orders}
+                bookings={bookings}
+                likedProducts={CATALOG_PRODUCTS.filter((p) => likedIds[p.id])}
+                onToggleLike={toggleLike}
+                onAddToCart={(prod, qty) => addProductToCart(prod, qty)}
+                onBuyAgain={(order) => {
+                  order.items.forEach((ordItem) => {
+                    const matched = CATALOG_PRODUCTS.find((p) => p.id === ordItem.id);
+                    if (matched) {
+                      addProductToCart(matched, ordItem.quantity);
+                    }
+                  });
+                  navigateTo('cart');
+                }}
+                onOpenProduct={(id) => {
+                  const found = CATALOG_PRODUCTS.find((p) => p.id === id);
+                  if (found) openProductDetail(found);
+                }}
+                onNavigate={navigateTo}
+                onLogout={handleLogout}
+              />
             </motion.div>
           )}
 
@@ -1448,12 +2217,24 @@ export function App() {
                   <p className="text-sm text-[#52657a]">
                     Chọn thêm thức ăn dinh dưỡng hoặc phụ kiện chăm sóc cho thú cưng của bạn.
                   </p>
-                  <button
-                    onClick={() => handleSelectCategory('all')}
-                    className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm cursor-pointer transition-colors"
-                  >
-                    Khám phá sản phẩm
-                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                    <button
+                      onClick={() => handleSelectCategory('all')}
+                      className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-sm cursor-pointer transition-colors"
+                    >
+                      Khám phá sản phẩm
+                    </button>
+                    {!isLoggedIn && (
+                      <button
+                        type="button"
+                        onClick={openOrderLookupModal}
+                        className="py-3 px-5 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] bg-white text-[#17324d] hover:text-[#0667d0] font-bold text-sm inline-flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <PackageSearch className="w-4 h-4" />
+                        <span>Tra cứu đơn hàng</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -1464,9 +2245,19 @@ export function App() {
                         Giỏ hàng ({totalCartCount} sản phẩm)
                       </h2>
                       <button
+                        type="button"
                         onClick={() => {
-                          setCartItems([]);
-                          triggerToast('Đã xóa toàn bộ sản phẩm trong giỏ.');
+                          setConfirmDialog({
+                            title: 'Xóa toàn bộ giỏ hàng',
+                            message:
+                              'Bạn có chắc chắn muốn xóa tất cả sản phẩm hiện có trong giỏ hàng không?',
+                            confirmLabel: 'Xóa giỏ hàng',
+                            tone: 'danger',
+                            onConfirm: () => {
+                              setCartItems([]);
+                              triggerToast('Đã xóa toàn bộ sản phẩm trong giỏ.');
+                            },
+                          });
                         }}
                         className="text-[13px] font-semibold text-[#c2410c] hover:underline cursor-pointer"
                       >
@@ -1528,69 +2319,233 @@ export function App() {
 
                   {/* Right Summary Column */}
                   <div className="lg:col-span-4 bg-white rounded-2xl border border-[#dfe6f0] p-6 space-y-5">
-                    <h2 className="text-base font-bold text-[#17324d]">Tóm tắt đơn hàng</h2>
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-base font-bold text-[#17324d]">Tóm tắt &amp; Thanh toán</h2>
+                      {!isLoggedIn && (
+                        <button
+                          type="button"
+                          onClick={openOrderLookupModal}
+                          className="text-[12px] font-semibold text-[#0667d0] hover:underline cursor-pointer"
+                        >
+                          Tra cứu đơn
+                        </button>
+                      )}
+                    </div>
 
-                    {/* Delivery Contact Details (works for both guests and logged-in members) */}
-                    <div className="space-y-3">
-                      <div className="text-[13px] font-bold text-[#17324d]">
-                        Thông tin nhận hàng
+                    {/* Payment Session Countdown Timer (45s) */}
+                    <div
+                      className={`rounded-xl px-3.5 py-2.5 border flex items-center justify-between gap-3 transition-colors ${
+                        paymentSecondsLeft <= 15
+                          ? 'bg-[#fff2e9] border-[#ffddc7] text-[#c2410c]'
+                          : 'bg-[#eff5ff] border-[#c8ddf8] text-[#0667d0]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-[12px] font-semibold">
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <span>Thời gian hoàn tất thanh toán</span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
+                      <span className="text-[14px] font-extrabold tabular-nums">
+                        00:{String(paymentSecondsLeft).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    {/* Contact Info (Guest form requires Name, Phone, Gmail; Logged-in pre-fills) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[13px] font-bold text-[#17324d]">
+                          {isLoggedIn
+                            ? 'Thông tin người nhận'
+                            : 'Thông tin khách hàng (Không cần đăng nhập)'}
+                        </div>
+                        {!isLoggedIn && (
+                          <span className="text-[11px] font-semibold text-[#c2410c]">* Bắt buộc</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2.5">
                         <input
                           type="text"
-                          value={ownerName}
-                          onChange={(e) => setOwnerName(e.target.value)}
-                          placeholder="Họ và tên người nhận"
+                          value={checkoutName}
+                          onChange={(e) => {
+                            setCheckoutName(e.target.value);
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          placeholder="Họ và tên người nhận *"
                           aria-label="Họ và tên người nhận"
-                          className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
+                          className={`w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border text-[#17324d] focus:outline-none ${
+                            checkoutError && !checkoutName.trim() && !isLoggedIn
+                              ? 'border-[#c2410c]'
+                              : 'border-[#dfe6f0] focus:border-[#0667d0]'
+                          }`}
                         />
                         <input
                           type="tel"
-                          value={ownerPhone}
-                          onChange={(e) => setOwnerPhone(e.target.value)}
-                          placeholder="Số điện thoại liên hệ"
+                          value={checkoutPhone}
+                          onChange={(e) => {
+                            setCheckoutPhone(e.target.value);
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          placeholder="Số điện thoại liên hệ *"
                           aria-label="Số điện thoại liên hệ"
-                          className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
+                          className={`w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border text-[#17324d] focus:outline-none ${
+                            checkoutError && !checkoutPhone.trim()
+                              ? 'border-[#c2410c]'
+                              : 'border-[#dfe6f0] focus:border-[#0667d0]'
+                          }`}
+                        />
+                        <input
+                          type="email"
+                          value={checkoutEmail}
+                          onChange={(e) => {
+                            setCheckoutEmail(e.target.value);
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          placeholder="Gmail / Email nhận xác nhận *"
+                          aria-label="Gmail nhận xác nhận đơn hàng"
+                          className={`w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border text-[#17324d] focus:outline-none ${
+                            checkoutError && !checkoutEmail.trim() && !isLoggedIn
+                              ? 'border-[#c2410c]'
+                              : 'border-[#dfe6f0] focus:border-[#0667d0]'
+                          }`}
                         />
                       </div>
-                      <input
-                        type="text"
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder="Địa chỉ giao hàng (Số nhà, đường, quận/huyện)"
-                        aria-label="Địa chỉ giao hàng"
-                        className="w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[#17324d] focus:outline-none"
-                      />
                     </div>
 
-                    {isLoggedIn && (
-                      <div className="space-y-1.5 pt-2 border-t border-[#dfe6f0]">
-                        <label className="text-[13px] font-bold text-[#17324d] block">
-                          Mã ưu đãi hội viên
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={voucherCode}
-                            onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                            placeholder="Nhập PETHUB100K..."
-                            className="flex-1 h-10 px-3 text-[13px] rounded-xl border border-[#dfe6f0] uppercase focus:outline-none bg-[#f8faff] font-bold text-[#0667d0]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (voucherCode.trim() === 'PETHUB100K') {
-                                setIsVoucherApplied(true);
-                                triggerToast('Đã áp dụng ưu đãi 100.000₫ cho đơn hàng.');
-                              } else {
-                                triggerToast('Mã chưa hợp lệ. Thử mã hội viên: PETHUB100K');
-                              }
-                            }}
-                            className="py-2.5 px-4 rounded-xl text-[13px] font-bold transition shrink-0 bg-[#0667d0] text-white hover:bg-[#0558b5] cursor-pointer"
-                          >
-                            {isVoucherApplied ? 'Đã áp dụng' : 'Áp dụng'}
-                          </button>
+                    {/* Delivery Method Selector */}
+                    <div className="space-y-2.5 pt-2 border-t border-[#dfe6f0]">
+                      <div className="text-[13px] font-bold text-[#17324d]">
+                        Hình thức nhận hàng
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryMethod('delivery');
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          className={`py-2.5 px-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2 ${
+                            deliveryMethod === 'delivery'
+                              ? 'border-[#0667d0] bg-[#eff5ff] text-[#0667d0]'
+                              : 'border-[#dfe6f0] bg-white text-[#52657a] hover:border-[#0667d0]'
+                          }`}
+                        >
+                          <Truck className="w-4 h-4 shrink-0" />
+                          <span className="text-[12px] font-bold">Giao tận nơi</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryMethod('pickup');
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          className={`py-2.5 px-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2 ${
+                            deliveryMethod === 'pickup'
+                              ? 'border-[#0667d0] bg-[#eff5ff] text-[#0667d0]'
+                              : 'border-[#dfe6f0] bg-white text-[#52657a] hover:border-[#0667d0]'
+                          }`}
+                        >
+                          <Store className="w-4 h-4 shrink-0" />
+                          <span className="text-[12px] font-bold">Nhận tại cửa hàng</span>
+                        </button>
+                      </div>
+
+                      {deliveryMethod === 'delivery' ? (
+                        <input
+                          type="text"
+                          value={isLoggedIn ? shippingAddress : checkoutAddress}
+                          onChange={(e) => {
+                            if (isLoggedIn) {
+                              setShippingAddress(e.target.value);
+                            } else {
+                              setCheckoutAddress(e.target.value);
+                            }
+                            if (checkoutError) setCheckoutError(null);
+                          }}
+                          placeholder="Địa chỉ giao hàng (Số nhà, đường, quận/huyện) *"
+                          aria-label="Địa chỉ giao hàng"
+                          className={`w-full h-10 px-3 text-[13px] rounded-xl bg-[#f8faff] border text-[#17324d] focus:outline-none ${
+                            checkoutError &&
+                            !(isLoggedIn ? shippingAddress : checkoutAddress).trim()
+                              ? 'border-[#c2410c]'
+                              : 'border-[#dfe6f0] focus:border-[#0667d0]'
+                          }`}
+                        />
+                      ) : (
+                        <div className="rounded-xl bg-[#f8faff] border border-[#c8ddf8] p-3 space-y-1">
+                          <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#0667d0]">
+                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <span>{STORE_PICKUP_INFO.name}</span>
+                          </div>
+                          <p className="text-[12px] text-[#17324d] font-medium leading-snug">
+                            {STORE_PICKUP_INFO.address}
+                          </p>
+                          <p className="text-[11px] text-[#52657a]">
+                            Giờ nhận hàng: {STORE_PICKUP_INFO.hours} · Giữ đơn miễn phí 48 giờ
+                          </p>
                         </div>
+                      )}
+                    </div>
+
+                    {/* Payment Method Options */}
+                    <div className="space-y-2.5 pt-2 border-t border-[#dfe6f0]">
+                      <div className="text-[13px] font-bold text-[#17324d]">
+                        Phương thức thanh toán
+                      </div>
+                      <div className="space-y-2">
+                        {PAYMENT_OPTIONS.map((opt) => {
+                          const isSelected = paymentMethod === opt.id;
+                          const IconComp =
+                            opt.id === 'vnpay'
+                              ? QrCode
+                              : opt.id === 'momo'
+                                ? Wallet
+                                : Banknote;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setPaymentMethod(opt.id)}
+                              className={`w-full p-3 rounded-xl border text-left transition cursor-pointer flex items-start gap-3 ${
+                                isSelected
+                                  ? 'border-[#0667d0] bg-[#eff5ff]'
+                                  : 'border-[#dfe6f0] bg-white hover:border-[#0667d0]'
+                              }`}
+                            >
+                              <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                  isSelected
+                                    ? 'bg-[#0667d0] text-white'
+                                    : 'bg-[#f3f7ff] text-[#0667d0]'
+                                }`}
+                              >
+                                <IconComp className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[13px] font-bold text-[#17324d]">
+                                    {opt.label}
+                                  </span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#dfe6f0] text-[#52657a]">
+                                    {opt.badge}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[#52657a] mt-0.5 leading-snug">
+                                  {opt.desc}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {checkoutError && (
+                      <div
+                        role="alert"
+                        className="rounded-xl bg-[#fff2e9] border border-[#ffddc7] px-3.5 py-2.5 flex items-start gap-2 text-[12px] font-semibold text-[#9a3412]"
+                      >
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#c2410c]" />
+                        <span>{checkoutError}</span>
                       </div>
                     )}
 
@@ -1601,22 +2556,11 @@ export function App() {
                           {cartSubtotal.toLocaleString('vi-VN')}₫
                         </span>
                       </div>
-                      {isLoggedIn ? (
-                        isVoucherApplied && (
-                          <div className="flex justify-between text-[#c2410c]">
-                            <span>Ưu đãi hội viên:</span>
-                            <span className="font-bold">-100.000₫</span>
-                          </div>
-                        )
-                      ) : (
-                        <div className="flex justify-between text-[#52657a]">
-                          <span>Mã giảm giá:</span>
-                          <span className="font-medium text-[#52657a]">Chỉ áp dụng cho hội viên</span>
-                        </div>
-                      )}
                       <div className="flex justify-between text-[#0667d0]">
-                        <span>Vận chuyển:</span>
-                        <span className="font-bold">Miễn phí</span>
+                        <span>{deliveryMethod === 'pickup' ? 'Nhận hàng:' : 'Vận chuyển:'}</span>
+                        <span className="font-bold">
+                          {deliveryMethod === 'pickup' ? 'Tại cửa hàng (Miễn phí)' : 'Miễn phí'}
+                        </span>
                       </div>
                     </div>
 
@@ -1627,21 +2571,14 @@ export function App() {
                       </span>
                     </div>
 
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleCheckout(false)}
-                        className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <span>Xác nhận thanh toán</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleCheckout(true)}
-                        className="w-full py-2 text-[12px] font-semibold text-[#52657a] hover:text-[#17324d] cursor-pointer"
-                      >
-                        Kiểm tra trạng thái giao dịch gián đoạn
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCheckout}
+                      className="w-full py-3 px-4 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <span>Xác nhận thanh toán</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -1736,6 +2673,17 @@ export function App() {
                         triggerToast('Vui lòng nhập số điện thoại để PetHub liên hệ xác nhận lịch hẹn.');
                         return;
                       }
+                      const newBooking: ServiceBookingRecord = {
+                        id: `BK${Math.floor(100000 + Math.random() * 899999)}`,
+                        serviceName: selectedSpaPackage.name,
+                        petName: bookingPetType,
+                        date: bookingDate,
+                        timeSlot: bookingTime,
+                        price: selectedSpaPackage.price,
+                        status: 'upcoming',
+                        note: petNote.trim() || undefined,
+                      };
+                      setBookings((prev) => [newBooking, ...prev]);
                       setBookingConfirmed(true);
                       triggerToast(
                         `Đã xác nhận lịch hẹn "${selectedSpaPackage.name}" lúc ${bookingTime} (${formatBookingDate(bookingDate)}).`
@@ -2187,8 +3135,14 @@ export function App() {
                       e.preventDefault();
                       const nameFromEmail = loginEmail.includes('@')
                         ? ownerName
-                        : loginEmail.trim() || 'Trịnh Khoa';
+                        : loginEmail.trim() || 'Trịnh Anh Khoa';
                       setUserName(nameFromEmail);
+                      if (loginEmail.includes('@')) {
+                        setUserEmail(loginEmail.trim());
+                      }
+                      setCheckoutName(nameFromEmail);
+                      setCheckoutPhone(userPhone);
+                      setCheckoutEmail(loginEmail.includes('@') ? loginEmail.trim() : userEmail);
                       setIsLoggedIn(true);
                       triggerToast(`Đăng nhập thành công. Xin chào ${nameFromEmail}.`);
                       navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
@@ -2275,8 +3229,13 @@ export function App() {
                       setRegError('');
                       const chosenName = regName.trim();
                       setUserName(chosenName);
+                      setUserEmail(regEmail.trim());
+                      setUserPhone(regPhone.trim());
                       setOwnerName(chosenName);
                       setOwnerPhone(regPhone.trim());
+                      setCheckoutName(chosenName);
+                      setCheckoutPhone(regPhone.trim());
+                      setCheckoutEmail(regEmail.trim());
                       setIsLoggedIn(true);
                       setRegPassword('');
                       triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
@@ -2289,7 +3248,7 @@ export function App() {
                         Đăng ký hội viên mới
                       </h1>
                       <p className="text-[13px] text-[#52657a] mt-1">
-                        Tạo tài khoản để nhận mã ưu đãi 100.000₫ (PETHUB100K) và lưu lịch sử đơn hàng.
+                        Tạo tài khoản để quản lý đơn hàng, lưu địa chỉ và theo dõi lịch hẹn chăm sóc thú cưng.
                       </p>
                     </div>
 
@@ -2407,10 +3366,10 @@ export function App() {
                     desc: 'Chủ động chọn khung giờ & gói chăm sóc',
                   },
                   {
-                    icon: Gift,
+                    icon: Tag,
                     color: 'text-[#0667d0]',
-                    title: 'Ưu đãi 100.000₫',
-                    desc: 'Dùng mã PETHUB100K cho hội viên mới',
+                    title: 'Khuyến mãi hội viên',
+                    desc: 'Theo dõi sản phẩm giảm giá & lưu lịch sử đơn hàng',
                   },
                 ].map((feat, i) => {
                   const IconComp = feat.icon;
@@ -2452,10 +3411,12 @@ export function App() {
                       <Check className="w-8 h-8 stroke-[2.5]" />
                     </div>
                     <h1 className="text-[28px] font-extrabold text-[#17324d]">
-                      Đặt hàng thành công
+                      Thanh toán thành công
                     </h1>
                     <p className="text-[14px] text-[#52657a]">
-                      Cảm ơn {isLoggedIn ? userName : (ownerName || 'Quý khách')}. Đơn hàng đang được chuẩn bị và xác nhận đã gửi qua email của bạn.
+                      Cảm ơn {lastOrder?.customerName || (isLoggedIn ? userName : 'Quý khách')}. Đơn hàng{' '}
+                      <span className="font-bold text-[#0667d0]">{lastOrder?.code || '#PH8899'}</span>{' '}
+                      đã được xác nhận qua <span className="font-semibold text-[#17324d]">{lastOrder?.paymentMethod || 'VNPay'}</span>.
                     </p>
                   </div>
                 ) : (
@@ -2464,21 +3425,43 @@ export function App() {
                       <AlertTriangle className="w-8 h-8 stroke-[2.2]" />
                     </div>
                     <h1 className="text-[28px] font-extrabold text-[#c2410c]">
-                      Thanh toán chưa hoàn tất
+                      Thanh toán không thành công
                     </h1>
                     <p className="text-[14px] text-[#52657a]">
-                      Giao dịch bị gián đoạn. Sản phẩm vẫn được giữ trong giỏ hàng để bạn thanh toán lại.
+                      Lý do: <span className="font-bold text-[#c2410c]">{lastOrder?.failReason || 'Hết thời gian thanh toán'}</span>. Phiên giao dịch đã hết hạn, sản phẩm vẫn được giữ trong giỏ hàng để bạn thanh toán lại.
                     </p>
                   </div>
                 )}
 
                 <div className="rounded-2xl border border-[#dfe6f0] overflow-hidden text-left bg-white">
-                  <div className="px-6 py-4 bg-[#f8faff] flex items-center justify-between text-[13px] tabular-nums">
+                  <div className="px-6 py-4 bg-[#f8faff] flex flex-wrap items-center justify-between gap-2 text-[13px] tabular-nums">
                     <span className="font-bold text-[#0667d0]">
-                      Mã đơn hàng: {lastOrder?.code || '#PET8899'}
+                      Mã đơn hàng: {lastOrder?.code || '#PH8899'}
                     </span>
                     <span className="text-[#52657a]">Ngày: {lastOrder?.date || '25/10/2026'}</span>
                   </div>
+
+                  {(lastOrder?.customerPhone || lastOrder?.shippingAddress || lastOrder?.paymentMethod) && (
+                    <div className="px-6 py-3.5 border-b border-[#dfe6f0] bg-[#fcfdff] grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12px] text-[#52657a]">
+                      <div>
+                        <span className="font-semibold text-[#17324d]">Người nhận: </span>
+                        {lastOrder.customerName || 'Quý khách'}
+                        {lastOrder.customerPhone ? ` · ${lastOrder.customerPhone}` : ''}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#17324d]">Thanh toán: </span>
+                        {lastOrder.paymentMethod || 'VNPay'}
+                      </div>
+                      {lastOrder.shippingAddress && (
+                        <div className="sm:col-span-2">
+                          <span className="font-semibold text-[#17324d]">
+                            {lastOrder.deliveryMethod === 'pickup' ? 'Điểm nhận hàng: ' : 'Địa chỉ giao hàng: '}
+                          </span>
+                          {lastOrder.shippingAddress}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="p-6 divide-y divide-[#dfe6f0]">
                     {(lastOrder?.items.length ? lastOrder.items : [
@@ -2523,7 +3506,7 @@ export function App() {
                         currentPage === 'checkout-success' ? 'text-[#0667d0]' : 'text-[#c2410c]'
                       }`}
                     >
-                      {currentPage === 'checkout-success' ? 'Đã xác nhận' : 'Chờ thanh toán'}
+                      {currentPage === 'checkout-success' ? 'Đã xác nhận' : 'Hết thời gian thanh toán'}
                     </span>
                   </div>
                 </div>
@@ -2536,12 +3519,23 @@ export function App() {
                     <span>Tiếp tục mua sắm</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => navigateTo('cart')}
-                    className="py-3 px-5 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[14px] cursor-pointer transition-colors"
-                  >
-                    {currentPage === 'checkout-fail' ? 'Thử thanh toán lại' : 'Xem giỏ hàng'}
-                  </button>
+                  {currentPage === 'checkout-success' && !isLoggedIn ? (
+                    <button
+                      type="button"
+                      onClick={openOrderLookupModal}
+                      className="py-3 px-5 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] font-bold text-[14px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <PackageSearch className="w-4 h-4" />
+                      <span>Tra cứu đơn hàng</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigateTo('cart')}
+                      className="py-3 px-5 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] font-bold text-[14px] cursor-pointer transition-colors"
+                    >
+                      {currentPage === 'checkout-fail' ? 'Thử thanh toán lại' : 'Xem giỏ hàng'}
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -2559,6 +3553,184 @@ export function App() {
           isLoggedIn={isLoggedIn}
           onQuickToast={triggerToast}
         />
+      )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog dialog={confirmDialog} onClose={() => setConfirmDialog(null)} />
+
+      {/* Guest Order Lookup Modal */}
+      {lookupOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-[#17324d]/45 backdrop-blur-[2px] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="order-lookup-title"
+          onClick={() => setLookupOpen(false)}
+        >
+          <div
+            className="w-full max-w-[520px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_24px_60px_rgba(23,50,77,0.22)] p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center shrink-0">
+                  <PackageSearch className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 id="order-lookup-title" className="text-[17px] font-bold text-[#17324d]">
+                    Tra cứu đơn hàng
+                  </h3>
+                  <p className="text-[13px] text-[#52657a] mt-0.5">
+                    Nhập số điện thoại và mã đơn hàng để kiểm tra trạng thái đơn vừa đặt.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLookupOpen(false)}
+                aria-label="Đóng tra cứu"
+                className="p-1.5 rounded-lg text-[#52657a] hover:bg-[#f3f7ff] hover:text-[#17324d] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleOrderLookupSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                    Số điện thoại *
+                  </label>
+                  <input
+                    type="tel"
+                    value={lookupPhone}
+                    onChange={(e) => {
+                      setLookupPhone(e.target.value);
+                      if (lookupError) setLookupError(null);
+                    }}
+                    placeholder="VD: 0909 123 456"
+                    aria-label="Số điện thoại tra cứu"
+                    className="w-full h-10 px-3 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[13px] text-[#17324d] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                    Mã đơn hàng *
+                  </label>
+                  <input
+                    type="text"
+                    value={lookupCode}
+                    onChange={(e) => {
+                      setLookupCode(e.target.value);
+                      if (lookupError) setLookupError(null);
+                    }}
+                    placeholder="VD: PH123456"
+                    aria-label="Mã đơn hàng tra cứu"
+                    className="w-full h-10 px-3 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[13px] text-[#17324d] focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+
+              {lookupError && (
+                <div className="rounded-xl bg-[#fff2e9] border border-[#ffddc7] px-3.5 py-2.5 text-[12px] font-semibold text-[#9a3412]">
+                  {lookupError}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                {lastOrder?.customerPhone && lastOrder.code && !lastOrder.failReason ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLookupPhone(lastOrder.customerPhone || '');
+                      setLookupCode(lastOrder.code.replace(/^#/, ''));
+                      setLookupError(null);
+                    }}
+                    className="text-[12px] font-semibold text-[#0667d0] hover:underline cursor-pointer"
+                  >
+                    Dùng đơn vừa đặt ({lastOrder.code})
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-[#52657a]">
+                    Mã mẫu: PH261108 · SĐT: 0909 123 456
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors"
+                >
+                  Kiểm tra đơn hàng
+                </button>
+              </div>
+            </form>
+
+            {lookupResult && (
+              <div className="rounded-2xl border border-[#dfe6f0] bg-[#f8faff] p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#dfe6f0]">
+                  <div>
+                    <div className="text-[14px] font-extrabold text-[#17324d]">
+                      Đơn hàng #{lookupResult.id}
+                    </div>
+                    <div className="text-[12px] text-[#52657a]">{lookupResult.createdAt}</div>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                      ORDER_STATUS_META[lookupResult.status].cls
+                    }`}
+                  >
+                    {ORDER_STATUS_META[lookupResult.status].label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[12px] text-[#52657a]">
+                  <div>
+                    <span className="font-semibold text-[#17324d]">Khách hàng: </span>
+                    {lookupResult.customerName} · {lookupResult.customerPhone}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#17324d]">Thanh toán: </span>
+                    {lookupResult.paymentMethod}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="font-semibold text-[#17324d]">
+                      {lookupResult.deliveryMethod === 'pickup'
+                        ? 'Nhận tại cửa hàng: '
+                        : 'Giao tận nơi: '}
+                    </span>
+                    {lookupResult.shippingAddress}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  {lookupResult.items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 text-[12px]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-9 h-9 rounded-lg object-cover bg-white shrink-0"
+                        />
+                        <span className="font-semibold text-[#17324d] truncate">
+                          {item.quantity}x {item.name}
+                        </span>
+                      </div>
+                      <span className="font-bold text-[#17324d] tabular-nums shrink-0">
+                        {(item.price * item.quantity).toLocaleString('vi-VN')}₫
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2.5 border-t border-[#dfe6f0] flex items-center justify-between text-[13px] tabular-nums">
+                  <span className="font-bold text-[#17324d]">Tổng thanh toán:</span>
+                  <span className="text-[16px] font-extrabold text-[#0667d0]">
+                    {lookupResult.totalAmount.toLocaleString('vi-VN')}₫
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Floating Contact Stack */}
