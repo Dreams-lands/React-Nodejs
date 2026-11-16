@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   User,
@@ -15,7 +15,9 @@ import {
   PackageSearch,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
+import type { ThemeMode } from '../lib/useThemeDroplet';
 import { CategoryMenuList } from './CategoryMenuList';
+import { ThemeToggleButton } from './ThemeToggleButton';
 
 interface FullHeaderProps {
   currentPage: PageId;
@@ -28,10 +30,13 @@ interface FullHeaderProps {
   onSearchChange: (q: string) => void;
   isLoggedIn: boolean;
   userName: string;
+  workspaceRole?: 'admin' | 'staff' | null;
   onLogout: () => void;
   onOpenOrderLookup?: () => void;
   cartCount: number;
   cartTotal: string;
+  theme?: ThemeMode;
+  onToggleTheme?: (el: HTMLElement) => void;
 }
 
 export const PetHubHeader: React.FC<FullHeaderProps> = ({
@@ -45,10 +50,13 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   onSearchChange,
   isLoggedIn,
   userName,
+  workspaceRole = null,
   onLogout,
   onOpenOrderLookup,
   cartCount,
   cartTotal,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const [productMenuOpen, setProductMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,19 +89,21 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-white sticky top-0 z-40 border-b border-[#dfe6f0]">
+    <header className="w-full backdrop-surface sticky top-0 z-40 border-b border-[#dfe6f0]">
       {/* 1. Main Header */}
       <div className="max-w-[1320px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="h-16 md:h-20 flex items-center justify-between gap-3 md:gap-6">
           {/* Brand Logo */}
           <motion.button
+            type="button"
             onClick={() => onNavigate('home')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            aria-label="PetHub — Về trang chủ"
             className="flex items-center gap-2.5 text-left cursor-pointer shrink-0 group"
           >
             <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center text-[#0667d0] group-hover:bg-[#0667d0] group-hover:text-white transition-colors">
-              <PawPrint className="w-5 h-5" />
+              <PawPrint className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <div className="text-[22px] sm:text-[26px] font-extrabold text-[#0667d0] leading-none tracking-tight">
@@ -108,6 +118,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
           {/* Desktop Search Box */}
           <form
             onSubmit={handleSearchSubmit}
+            role="search"
             className="hidden md:flex flex-1 min-w-0 max-w-[520px] h-11 rounded-xl border border-[#dfe6f0] bg-[#f8faff] items-center overflow-hidden focus-within:bg-white focus-within:border-[#0667d0] focus-within:shadow-[0_0_0_3px_rgba(6,103,208,0.12)] transition-all"
           >
             <input
@@ -117,28 +128,31 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 onSearchChange(e.target.value);
                 if (currentPage !== 'search') onNavigate('search');
               }}
+              aria-label="Tìm kiếm sản phẩm và dịch vụ"
               placeholder="Tìm thức ăn, nệm ngủ, balo, dịch vụ chăm sóc..."
               className="flex-1 min-w-0 px-4 bg-transparent text-[13px] text-[#17324d] placeholder-[#52657a] focus:outline-none"
             />
             <button
               type="submit"
-              className="w-10 h-9 mr-1 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              className="w-10 h-9 mr-1 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white flex items-center justify-center cursor-pointer transition-colors shrink-0 press-tactile"
               aria-label="Tìm kiếm"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4" aria-hidden="true" />
             </button>
           </form>
 
-          {/* Account & Cart */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Account & Cart & Theme */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
             {/* Shopping Cart Button — accessible to both guests and members */}
             <button
+              type="button"
               onClick={() => onNavigate('cart')}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#eff5ff] hover:bg-[#0667d0] text-[#17324d] hover:text-white transition-colors cursor-pointer group"
-              aria-label="Giỏ hàng"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#eff5ff] hover:bg-[#0667d0] text-[#17324d] hover:text-white transition-colors cursor-pointer group press-tactile"
+              aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
             >
               <div className="relative flex items-center justify-center">
-                <ShoppingCart className="w-4 h-4 text-[#0667d0] group-hover:text-white transition-colors" />
+                <ShoppingCart className="w-4 h-4 text-[#0667d0] group-hover:text-white transition-colors" aria-hidden="true" />
                 <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-[#c2410c] text-white text-[11px] font-bold leading-none tabular-nums">
                   {cartCount}
                 </span>
@@ -150,14 +164,24 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
 
             {isLoggedIn ? (
               <>
+                {workspaceRole && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('admin')}
+                    className="py-2 px-3 rounded-xl bg-[#eff5ff] hover:bg-[#e1eeff] border border-[#c8ddf8] text-[#0667d0] text-[12px] font-bold cursor-pointer transition-colors whitespace-nowrap press-tactile"
+                  >
+                    {workspaceRole === 'staff' ? 'Bảng công việc' : 'Quản trị cửa hàng'}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => onNavigate('account')}
                   title="Quản lý tài khoản"
-                  className="flex items-center gap-2 pr-1.5 py-1 pl-1 rounded-xl hover:bg-[#eff5ff] transition cursor-pointer text-left"
+                  className="flex items-center gap-2 pr-1.5 py-1 pl-1 rounded-xl hover:bg-[#eff5ff] transition cursor-pointer text-left press-tactile"
                 >
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#eff5ff] flex items-center justify-center text-[#0667d0]">
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div className="hidden sm:block">
                     <div className="text-[11px] text-[#52657a]">Tài khoản của tôi</div>
@@ -166,12 +190,13 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={onLogout}
-                  className="py-2 px-3 rounded-lg border border-[#dfe6f0] hover:border-[#c2410c] text-[#52657a] hover:text-[#c2410c] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="py-2 px-3 rounded-lg border border-[#dfe6f0] hover:border-[#c2410c] text-[#52657a] hover:text-[#c2410c] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors press-tactile"
                   title="Đăng xuất"
                   aria-label="Đăng xuất"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                   <span className="hidden lg:inline">Đăng xuất</span>
                 </button>
               </>
@@ -181,23 +206,25 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                   <button
                     type="button"
                     onClick={onOpenOrderLookup}
-                    className="py-2 px-2.5 sm:px-3.5 rounded-xl border border-[#c8ddf8] bg-[#eff5ff] hover:bg-[#e1eeff] text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                    className="py-2 px-2.5 sm:px-3.5 rounded-xl border border-[#c8ddf8] bg-[#eff5ff] hover:bg-[#e1eeff] text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap press-tactile"
                   >
-                    <PackageSearch className="w-4 h-4 shrink-0" />
+                    <PackageSearch className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span className="hidden md:inline">Tra cứu đơn hàng</span>
                     <span className="md:hidden">Tra cứu</span>
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => onNavigate('login')}
-                  className="py-2 px-2.5 sm:px-4 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                  className="py-2 px-2.5 sm:px-4 rounded-xl border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap press-tactile"
                 >
-                  <LogIn className="w-4 h-4 shrink-0" />
+                  <LogIn className="w-4 h-4 shrink-0" aria-hidden="true" />
                   <span>Đăng nhập</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => onNavigate('register')}
-                  className="hidden sm:flex py-2 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-semibold items-center justify-center cursor-pointer transition-colors whitespace-nowrap"
+                  className="hidden sm:flex py-2 px-4 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-semibold items-center justify-center cursor-pointer transition-colors whitespace-nowrap press-tactile"
                 >
                   Đăng ký
                 </button>
@@ -209,6 +236,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
         {/* Mobile Search Box */}
         <form
           onSubmit={handleSearchSubmit}
+          role="search"
           className="md:hidden pb-3"
         >
           <div className="h-10 rounded-xl border border-[#dfe6f0] bg-[#f8faff] flex items-center overflow-hidden focus-within:bg-white focus-within:border-[#0667d0]">
@@ -219,15 +247,16 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 onSearchChange(e.target.value);
                 if (currentPage !== 'search') onNavigate('search');
               }}
+              aria-label="Tìm kiếm sản phẩm và dịch vụ"
               placeholder="Tìm thức ăn, nệm ngủ, balo, dịch vụ chăm sóc..."
               className="flex-1 min-w-0 px-3.5 bg-transparent text-[13px] text-[#17324d] placeholder-[#52657a] focus:outline-none"
             />
             <button
               type="submit"
-              className="w-9 h-8 mr-1 rounded-lg bg-[#0667d0] text-white flex items-center justify-center cursor-pointer shrink-0"
+              className="w-9 h-8 mr-1 rounded-lg bg-[#0667d0] text-white flex items-center justify-center cursor-pointer shrink-0 press-tactile"
               aria-label="Tìm kiếm"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </form>
@@ -262,28 +291,35 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 />
               </button>
 
-              {productMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute left-2 right-2 sm:left-0 sm:right-auto top-full pt-1.5 sm:w-[268px] z-50"
-                >
-                  <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden">
-                    <CategoryMenuList
-                      activeCategory={currentPage === 'search' ? activeCatalogCategory : 'all'}
-                      activePetAudience={currentPage === 'search' ? activePetAudience : 'all'}
-                      roleMode="menuitem"
-                      onSelectCategory={(cat) => {
-                        onSelectCategory(cat);
-                        setProductMenuOpen(false);
-                      }}
-                      onSelectPetAudience={(pet) => {
-                        onSelectPetAudience?.(pet);
-                        setProductMenuOpen(false);
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {productMenuOpen && (
+                  <motion.div
+                    role="menu"
+                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: -4 }}
+                    transition={{ type: 'spring', bounce: 0, duration: 0.24 }}
+                    style={{ transformOrigin: 'top left' }}
+                    className="absolute left-2 right-2 sm:left-0 sm:right-auto top-full pt-1.5 sm:w-[268px] z-50"
+                  >
+                    <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden">
+                      <CategoryMenuList
+                        activeCategory={currentPage === 'search' ? activeCatalogCategory : 'all'}
+                        activePetAudience={currentPage === 'search' ? activePetAudience : 'all'}
+                        roleMode="menuitem"
+                        onSelectCategory={(cat) => {
+                          onSelectCategory(cat);
+                          setProductMenuOpen(false);
+                        }}
+                        onSelectPetAudience={(pet) => {
+                          onSelectPetAudience?.(pet);
+                          setProductMenuOpen(false);
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <button
@@ -528,9 +564,11 @@ export const PetHubFooter: React.FC<{
 export const CompactHeader: React.FC<{
   onNavigate: (p: PageId) => void;
   isLoggedIn: boolean;
-}> = ({ onNavigate }) => {
+  theme?: ThemeMode;
+  onToggleTheme?: (el: HTMLElement) => void;
+}> = ({ onNavigate, theme = 'light', onToggleTheme }) => {
   return (
-    <header className="w-full bg-white border-b border-[#dfe6f0]">
+    <header className="w-full backdrop-surface border-b border-[#dfe6f0]">
       <div className="w-full h-8 bg-[#0667d0] text-white flex items-center justify-center text-[12px] font-medium">
         Chăm sóc đúng cách. An tâm mỗi ngày.
       </div>
@@ -575,7 +613,8 @@ export const CompactHeader: React.FC<{
           </button>
         </nav>
 
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
           <button
             onClick={() => onNavigate('cart')}
             className="flex items-center gap-2 text-[#0667d0] font-bold text-[13px] cursor-pointer hover:underline"

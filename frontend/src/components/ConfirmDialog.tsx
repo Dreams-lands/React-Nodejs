@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import { useModalFocusTrap } from '../lib/useModalFocusTrap';
 
 export interface ConfirmDialogState {
   title: string;
@@ -21,14 +22,8 @@ interface ConfirmDialogProps {
  * (clearing cart, deleting saved address, changing password, signing out).
  */
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose }) => {
-  useEffect(() => {
-    if (!dialog) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dialog, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalFocusTrap(Boolean(dialog), onClose, panelRef);
 
   const isDanger = (dialog?.tone ?? 'danger') === 'danger';
 
@@ -41,18 +36,21 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
           exit={{ opacity: 0 }}
           transition={{ duration: 0.16 }}
           onClick={onClose}
-          className="fixed inset-0 z-[70] bg-[#0f172a]/45 backdrop-blur-[2px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-xs flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="pethub-confirm-title"
+          aria-describedby="pethub-confirm-desc"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            ref={panelRef}
+            tabIndex={-1}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[420px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_24px_56px_rgba(15,23,42,0.22)] overflow-hidden"
+            className="w-full max-w-[420px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_24px_56px_rgba(15,23,42,0.22)] overflow-hidden focus:outline-none"
           >
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
@@ -65,9 +63,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
                     }`}
                   >
                     {isDanger ? (
-                      <AlertTriangle className="w-5 h-5" />
+                      <AlertTriangle className="w-5 h-5" aria-hidden="true" />
                     ) : (
-                      <ShieldCheck className="w-5 h-5" />
+                      <ShieldCheck className="w-5 h-5" aria-hidden="true" />
                     )}
                   </div>
                   <div>
@@ -77,7 +75,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
                     >
                       {dialog.title}
                     </h2>
-                    <p className="text-[13.5px] text-[#52657a] mt-1.5 leading-relaxed">
+                    <p
+                      id="pethub-confirm-desc"
+                      className="text-[13.5px] text-[#52657a] mt-1.5 leading-relaxed"
+                    >
                       {dialog.message}
                     </p>
                   </div>
@@ -86,9 +87,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
                   type="button"
                   onClick={onClose}
                   aria-label="Đóng hộp thoại"
-                  className="p-1.5 rounded-lg text-[#52657a] hover:bg-[#f3f7ff] hover:text-[#17324d] transition cursor-pointer shrink-0"
+                  className="p-1.5 rounded-lg text-[#52657a] hover:bg-[#f3f7ff] hover:text-[#17324d] transition cursor-pointer shrink-0 press-tactile"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
 
@@ -96,7 +97,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-[#dfe6f0] bg-white hover:bg-[#f8faff] text-[13px] font-semibold text-[#52657a] hover:text-[#17324d] transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-[#dfe6f0] bg-white hover:bg-[#f8faff] text-[13px] font-semibold text-[#52657a] hover:text-[#17324d] transition cursor-pointer press-tactile"
                 >
                   {dialog.cancelLabel || 'Hủy bỏ'}
                 </button>
@@ -106,7 +107,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ dialog, onClose })
                     dialog.onConfirm();
                     onClose();
                   }}
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition cursor-pointer ${
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition cursor-pointer press-tactile ${
                     isDanger
                       ? 'bg-[#c2410c] hover:bg-[#9a3412]'
                       : 'bg-[#0667d0] hover:bg-[#0557b3]'

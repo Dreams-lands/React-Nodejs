@@ -12,11 +12,41 @@ export type PageId =
   | 'login'
   | 'register'
   | 'checkout-success'
-  | 'checkout-fail';
+  | 'checkout-fail'
+  | 'admin';
 
 export type ProductCategory = 'food' | 'bed' | 'backpack' | 'hygiene' | 'spa';
 
-export type OrderStatus = 'pending' | 'shipping' | 'completed';
+export type OrderStatus = 'pending' | 'shipping' | 'completed' | 'cancelled';
+
+export type PaymentMethodId = 'vnpay' | 'momo' | 'cod';
+export type DeliveryMethodId = 'delivery' | 'pickup';
+
+export const ORDER_STATUS_META: Record<
+  OrderStatus,
+  { label: string; cls: string; badgeClass: string }
+> = {
+  pending: {
+    label: 'Chờ xác nhận',
+    cls: 'bg-[#fff2e9] text-[#c2410c]',
+    badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200',
+  },
+  shipping: {
+    label: 'Đang giao hàng',
+    cls: 'bg-[#eff5ff] text-[#0667d0]',
+    badgeClass: 'bg-[#eff5ff] text-[#0667d0] border border-[#c7dcff]',
+  },
+  completed: {
+    label: 'Hoàn thành',
+    cls: 'bg-emerald-50 text-emerald-700',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  },
+  cancelled: {
+    label: 'Đã hủy',
+    cls: 'bg-rose-50 text-rose-700',
+    badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200',
+  },
+};
 
 export interface AddressRecord {
   id: string;
@@ -44,6 +74,14 @@ export interface OrderRecord {
   }[];
 }
 
+export interface LookupOrderEntry extends OrderRecord {
+  deliveryMethod: DeliveryMethodId;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  isGuest?: boolean;
+}
+
 export interface ServiceBookingRecord {
   id: string;
   serviceName: string;
@@ -51,8 +89,11 @@ export interface ServiceBookingRecord {
   date: string;
   timeSlot: string;
   price: number;
-  status: 'upcoming' | 'completed';
+  status: 'upcoming' | 'completed' | 'cancelled';
   note?: string;
+  customerName?: string;
+  customerPhone?: string;
+  staffName?: string;
 }
 
 export function formatCurrency(amount: number): string {

@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -46,6 +46,10 @@ import type {
   CartItem,
   AddressRecord,
   OrderRecord,
+  OrderStatus,
+  LookupOrderEntry,
+  PaymentMethodId,
+  DeliveryMethodId,
   ServiceBookingRecord,
 } from './data/mockData';
 import {
@@ -55,7 +59,26 @@ import {
   INITIAL_ADDRESSES,
   INITIAL_ORDERS,
   INITIAL_BOOKINGS,
+  ORDER_STATUS_META,
 } from './data/mockData';
+import {
+  ADMIN_EXTRA_BOOKINGS,
+  ADMIN_EXTRA_ORDERS,
+  DEFAULT_WORKSPACE_ACCOUNTS,
+  INITIAL_PAYMENT_GATEWAYS,
+  INITIAL_STORE_SETTINGS,
+  STAFF_SHIFT_TASKS,
+  type PaymentGatewayConfig,
+  type StaffShiftTask,
+  type StoreSettings,
+  type WorkspaceUserRole,
+} from './data/adminData';
+const AdminWorkspace = lazy(() =>
+  import('./components/admin/AdminWorkspace').then((m) => ({ default: m.AdminWorkspace }))
+);
+const AccountPage = lazy(() =>
+  import('./components/AccountPage').then((m) => ({ default: m.AccountPage }))
+);
 import {
   PRODUCT_CATEGORIES,
   PET_AUDIENCES,
@@ -70,27 +93,12 @@ import {
   CompactHeader,
   CompactFooter,
 } from './components/HeadersAndFooters';
-import { AccountPage, type AccountTab } from './components/AccountPage';
+import type { AccountTab } from './components/AccountPage';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
 import { ConfirmDialog, type ConfirmDialogState } from './components/ConfirmDialog';
-
-type PaymentMethodId = 'vnpay' | 'momo' | 'cod';
-type DeliveryMethodId = 'delivery' | 'pickup';
-
-interface LookupOrderEntry {
-  id: string;
-  createdAt: string;
-  status: OrderRecord['status'];
-  totalAmount: number;
-  shippingAddress: string;
-  paymentMethod: string;
-  deliveryMethod: DeliveryMethodId;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  items: OrderRecord['items'];
-}
+import { useModalFocusTrap } from './lib/useModalFocusTrap';
+import { useThemeDroplet } from './lib/useThemeDroplet';
 
 interface OrderSnapshot {
   code: string;
@@ -140,12 +148,6 @@ const PAYMENT_OPTIONS: Array<{
     badge: 'COD',
   },
 ];
-
-const ORDER_STATUS_META: Record<OrderRecord['status'], { label: string; cls: string }> = {
-  pending: { label: 'Chờ xác nhận', cls: 'bg-[#fff2e9] text-[#c2410c]' },
-  shipping: { label: 'Đang giao hàng', cls: 'bg-[#eff5ff] text-[#0667d0]' },
-  completed: { label: 'Hoàn thành', cls: 'bg-emerald-50 text-emerald-700' },
-};
 
 const CATEGORY_LABELS: Record<'all' | ProductCategory, string> = {
   all: 'Sản phẩm',
@@ -201,13 +203,43 @@ const HERO_BANNERS: Array<{
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
+const getInitialPage = (): PageId => {
+  if (typeof window === 'undefined') return 'home';
+  const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+  const query = new URLSearchParams(window.location.search).get('page')?.toLowerCase();
+  if (hash === 'admin' || query === 'admin' || hash === 'staff' || query === 'staff') {
+    return 'login';
+  }
+  return 'home';
+};
+
 export function App() {
-  const [currentPage, setCurrentPage] = useState<PageId>('home');
-  const [returnPage, setReturnPage] = useState<PageId>('home');
+  const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
+  const [returnPage, setReturnPage] = useState<PageId>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+    return hash === 'admin' || hash === 'staff' ? 'admin' : 'home';
+  });
   const [heroSlide, setHeroSlide] = useState(0);
+  const { theme, toggleWithDroplet } = useThemeDroplet();
+
+  // Admin & Shared Storefront State
+  const [products, setProducts] = useState<ProductItem[]>(CATALOG_PRODUCTS);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(INITIAL_STORE_SETTINGS);
+  const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayConfig>(INITIAL_PAYMENT_GATEWAYS);
+  const [shiftTasks, setShiftTasks] = useState<StaffShiftTask[]>(STAFF_SHIFT_TASKS);
+  const [doneTaskIds, setDoneTaskIds] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const t of STAFF_SHIFT_TASKS) {
+      if (t.defaultDone) initial[t.id] = true;
+    }
+    return initial;
+  });
+  const [onShift, setOnShift] = useState(true);
 
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authRole, setAuthRole] = useState<'guest' | 'customer' | WorkspaceUserRole>('guest');
   const [userName, setUserName] = useState('Trịnh Anh Khoa');
   const [userEmail, setUserEmail] = useState('khoa.trinh@pethub.vn');
   const [userPhone, setUserPhone] = useState('0909 123 456');
@@ -215,16 +247,20 @@ export function App() {
   const [accountTab, setAccountTab] = useState<AccountTab>('profile');
   const [addresses, setAddresses] = useState<AddressRecord[]>(INITIAL_ADDRESSES);
   const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS);
-  const [lookupEntries, setLookupEntries] = useState<LookupOrderEntry[]>(() =>
-    INITIAL_ORDERS.map((o) => ({
+  const [lookupEntries, setLookupEntries] = useState<LookupOrderEntry[]>(() => [
+    ...INITIAL_ORDERS.map((o) => ({
       ...o,
-      deliveryMethod: 'delivery',
+      deliveryMethod: 'delivery' as DeliveryMethodId,
       customerName: 'Trịnh Anh Khoa',
       customerPhone: '0909 123 456',
       customerEmail: 'khoa.trinh@pethub.vn',
-    }))
-  );
-  const [bookings, setBookings] = useState<ServiceBookingRecord[]>(INITIAL_BOOKINGS);
+    })),
+    ...ADMIN_EXTRA_ORDERS,
+  ]);
+  const [bookings, setBookings] = useState<ServiceBookingRecord[]>(() => [
+    ...INITIAL_BOOKINGS,
+    ...ADMIN_EXTRA_BOOKINGS,
+  ]);
 
   // Catalog, Promotions & Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -266,6 +302,8 @@ export function App() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentSecondsLeft, setPaymentSecondsLeft] = useState(PAYMENT_TIMEOUT_SECONDS);
   const [lookupOpen, setLookupOpen] = useState(false);
+  const lookupModalRef = useRef<HTMLDivElement>(null);
+  useModalFocusTrap(lookupOpen, () => setLookupOpen(false), lookupModalRef);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupCode, setLookupCode] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -290,7 +328,9 @@ export function App() {
   // Auth Form State
   const [showPass, setShowPass] = useState(false);
   const [showRegPass, setShowRegPass] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('khoa.trinh@pethub.vn');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [regName, setRegName] = useState('Trịnh Khoa');
   const [regPhone, setRegPhone] = useState('0909 686 868');
   const [regEmail, setRegEmail] = useState('khoa.trinh@pethub.vn');
@@ -311,14 +351,126 @@ export function App() {
     }, 3200);
   };
 
-  const navigateTo = (page: PageId) => {
+  const navigateTo = (page: PageId, overrideRole?: 'admin' | 'staff' | 'customer' | 'guest') => {
+    const activeRole = overrideRole ?? authRole;
+    if (page === 'admin' && activeRole !== 'admin' && activeRole !== 'staff') {
+      setReturnPage('admin');
+      setCurrentPage('login');
+      triggerToast('Vui lòng đăng nhập tài khoản để tiếp tục.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (page === 'cart') {
       setPaymentSecondsLeft(PAYMENT_TIMEOUT_SECONDS);
       setCheckoutError(null);
     }
     setCurrentPage(page);
+    if (typeof window !== 'undefined') {
+      if (page === 'admin') {
+        if (window.location.hash !== '#/admin') {
+          window.history.replaceState(null, '', '#/admin');
+        }
+      } else if (window.location.hash === '#/admin' || window.location.hash === '#/staff') {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const syncHash = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+      if (hash === 'admin' || hash === 'staff') {
+        if (authRole === 'admin' || authRole === 'staff') {
+          setCurrentPage('admin');
+          if (hash === 'staff') {
+            window.history.replaceState(null, '', '#/admin');
+          }
+        } else {
+          setReturnPage('admin');
+          setCurrentPage('login');
+          triggerToast('Vui lòng đăng nhập tài khoản để tiếp tục.');
+        }
+      }
+    };
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, [authRole]);
+
+  // Admin Operations Synced Live to Storefront
+  const handleSaveAdminProduct = (item: ProductItem, isNew: boolean) => {
+    setProducts((prev) =>
+      isNew ? [item, ...prev] : prev.map((p) => (p.id === item.id ? item : p))
+    );
+    triggerToast(
+      isNew
+        ? `Đã thêm sản phẩm "${item.name}" vào kho và trang chủ.`
+        : `Đã cập nhật thông tin "${item.name}".`
+    );
+  };
+
+  const handleDeleteAdminProduct = (id: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    triggerToast('Đã xóa sản phẩm khỏi danh mục cửa hàng.');
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, nextStatus: OrderStatus) => {
+    setLookupEntries((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
+    );
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
+    );
+    triggerToast(`Đơn #${orderId} đã chuyển sang "${ORDER_STATUS_META[nextStatus].label}".`);
+  };
+
+  const handleAddAdminBooking = (booking: ServiceBookingRecord) => {
+    setBookings((prev) => [booking, ...prev]);
+    triggerToast(`Đã tạo lịch hẹn chăm sóc ${booking.id}.`);
+  };
+
+  const handleUpdateBookingStatus = (
+    id: string,
+    status: ServiceBookingRecord['status']
+  ) => {
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    triggerToast(`Đã cập nhật trạng thái lịch hẹn ${id}.`);
+  };
+
+  const handleAssignBookingStaff = (id: string, staffName: string) => {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, staffName } : b))
+    );
+    triggerToast(`Đã phân công ${staffName} cho lịch hẹn ${id}.`);
+  };
+
+  const handleCreatePosOrder = (
+    entry: LookupOrderEntry,
+    soldItems: Array<{ id: string; quantity: number }>
+  ) => {
+    setLookupEntries((prev) => [entry, ...prev]);
+    setProducts((prev) =>
+      prev.map((p) => {
+        const sold = soldItems.find((s) => s.id === p.id);
+        return sold ? { ...p, stockCount: Math.max(0, p.stockCount - sold.quantity) } : p;
+      })
+    );
+  };
+
+  const activePaymentOptions = useMemo(() => {
+    const enabled = PAYMENT_OPTIONS.filter((opt) => {
+      if (opt.id === 'vnpay') return paymentGateways.vnpayEnabled;
+      if (opt.id === 'momo') return paymentGateways.momoEnabled;
+      return paymentGateways.codEnabled;
+    });
+    return enabled.length > 0 ? enabled : PAYMENT_OPTIONS;
+  }, [paymentGateways]);
+
+  const effectivePaymentMethod: PaymentMethodId = activePaymentOptions.some(
+    (opt) => opt.id === paymentMethod
+  )
+    ? paymentMethod
+    : activePaymentOptions[0].id;
 
   const requireLoginFor = (targetPage: PageId, message: string) => {
     setReturnPage(targetPage);
@@ -373,11 +525,14 @@ export function App() {
   const handleLogout = () => {
     setConfirmDialog({
       title: 'Xác nhận đăng xuất',
-      message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản thành viên PetHub không?',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản PetHub không?',
       confirmLabel: 'Đăng xuất',
       tone: 'danger',
       onConfirm: () => {
         setIsLoggedIn(false);
+        setAuthRole('guest');
+        setLoginPassword('');
+        setLoginError(null);
         setCartItems([]);
         setCheckoutName('');
         setCheckoutPhone('');
@@ -386,8 +541,11 @@ export function App() {
         setDeliveryMethod('delivery');
         setCheckoutError(null);
         setBookingConfirmed(false);
+        if (typeof window !== 'undefined' && (window.location.hash === '#/admin' || window.location.hash === '#/staff')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
         setCurrentPage('home');
-        triggerToast('Đã đăng xuất khỏi tài khoản thành viên.');
+        triggerToast('Đã đăng xuất khỏi tài khoản.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
     });
@@ -403,8 +561,8 @@ export function App() {
 
   // Selected Product & Combined Reviews
   const selectedProduct = useMemo(() => {
-    return CATALOG_PRODUCTS.find((p) => p.id === selectedProductId) || CATALOG_PRODUCTS[0];
-  }, [selectedProductId]);
+    return products.find((p) => p.id === selectedProductId) || products[0] || CATALOG_PRODUCTS[0];
+  }, [products, selectedProductId]);
 
   const productReviews = useMemo(() => {
     const extra = customReviews[selectedProduct.id] || [];
@@ -485,7 +643,7 @@ export function App() {
       const orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
       const nowLabel = new Date().toLocaleDateString('vi-VN');
       const selectedPaymentLabel =
-        PAYMENT_OPTIONS.find((opt) => opt.id === paymentMethod)?.label || 'VNPay';
+        PAYMENT_OPTIONS.find((opt) => opt.id === effectivePaymentMethod)?.label || 'VNPay';
       const resolvedAddress =
         deliveryMethod === 'pickup'
           ? `Nhận tại cửa hàng: ${STORE_PICKUP_INFO.address}`
@@ -591,7 +749,7 @@ export function App() {
     const orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
     const nowLabel = new Date().toLocaleDateString('vi-VN');
     const selectedPaymentLabel =
-      PAYMENT_OPTIONS.find((opt) => opt.id === paymentMethod)?.label || 'VNPay';
+      PAYMENT_OPTIONS.find((opt) => opt.id === effectivePaymentMethod)?.label || 'VNPay';
     const resolvedAddress =
       deliveryMethod === 'pickup'
         ? `Nhận tại cửa hàng: ${STORE_PICKUP_INFO.address}`
@@ -649,7 +807,7 @@ export function App() {
 
   // Catalog Filters & Sorting
   const filteredSearchList = useMemo(() => {
-    const filtered = CATALOG_PRODUCTS.filter((item) => {
+    const filtered = products.filter((item) => {
       const matchesCat =
         selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
       const matchesPet =
@@ -683,11 +841,11 @@ export function App() {
       return [...filtered].sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
     }
     return filtered;
-  }, [searchQuery, selectedCategoryFilter, petScope, selectedSubTypes, selectedPriceRanges, sortBy]);
+  }, [products, searchQuery, selectedCategoryFilter, petScope, selectedSubTypes, selectedPriceRanges, sortBy]);
 
   // Featured Products: ONLY normal (non-discounted) items on Home
   const featuredProducts = useMemo(() => {
-    const nonDiscounted = CATALOG_PRODUCTS.filter(
+    const nonDiscounted = products.filter(
       (p) => !p.discountBadge && !p.originalPrice
     );
     if (homeCategoryTab === 'all') {
@@ -695,12 +853,12 @@ export function App() {
       return (highlighted.length >= 4 ? highlighted : nonDiscounted).slice(0, 4);
     }
     return nonDiscounted.filter((p) => p.category === homeCategoryTab).slice(0, 4);
-  }, [homeCategoryTab]);
+  }, [products, homeCategoryTab]);
 
   // Discounted Products: ALL items with % discount / originalPrice
   const allDiscountedProducts = useMemo(() => {
-    return CATALOG_PRODUCTS.filter((p) => Boolean(p.discountBadge || p.originalPrice));
-  }, []);
+    return products.filter((p) => Boolean(p.discountBadge || p.originalPrice));
+  }, [products]);
 
   const flashSaleProducts = useMemo(() => {
     return allDiscountedProducts.slice(0, 8);
@@ -751,33 +909,119 @@ export function App() {
     currentPage === 'checkout-success' ||
     currentPage === 'checkout-fail';
 
-  return (
-    <div className="min-h-screen flex flex-col bg-white text-[#17324d] overflow-x-clip selection:bg-[#0667d0] selection:text-white">
-      {/* Header */}
-      {isCompactLayout ? (
-        <CompactHeader onNavigate={navigateTo} isLoggedIn={isLoggedIn} />
-      ) : (
-        <PetHubHeader
-          currentPage={currentPage}
-          activeCatalogCategory={selectedCategoryFilter}
-          activePetAudience={petScope}
-          onNavigate={navigateTo}
-          onSelectCategory={handleSelectCategory}
-          onSelectPetAudience={handleSelectPetAudience}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          isLoggedIn={isLoggedIn}
-          userName={userName}
-          onLogout={handleLogout}
-          onOpenOrderLookup={openOrderLookupModal}
-          cartCount={totalCartCount}
-          cartTotal={cartFinalTotal.toLocaleString('vi-VN') + '₫'}
-        />
-      )}
+  const workspaceFallback = (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8faff] text-[#17324d] text-sm font-semibold">
+      Đang tải không gian làm việc...
+    </div>
+  );
 
-      {/* Main Content */}
-      <main className="flex-1 relative">
-        <AnimatePresence mode="wait">
+  return (
+    <MotionConfig reducedMotion="user">
+    <div className="min-h-screen flex flex-col bg-white text-[#17324d] overflow-x-clip selection:bg-[#0667d0] selection:text-white ph-theme-scope">
+      {currentPage !== 'admin' && (
+        <a href="#main-content" className="skip-link">
+          Bỏ qua tới nội dung chính
+        </a>
+      )}
+      {currentPage === 'admin' && (authRole === 'admin' || authRole === 'staff') ? (
+        <Suspense fallback={workspaceFallback}>
+          <AdminWorkspace
+            key={authRole}
+            userRole={authRole}
+            currentUserName={userName}
+            products={products}
+            orders={lookupEntries}
+            bookings={bookings}
+            storeSettings={storeSettings}
+            paymentGateways={paymentGateways}
+            shiftTasks={shiftTasks}
+            doneTaskIds={doneTaskIds}
+            onShift={onShift}
+            onToggleShift={() => {
+              setOnShift((prev) => {
+                const next = !prev;
+                triggerToast(
+                  next
+                    ? `${userName} đã chấm công Bắt đầu ca làm việc.`
+                    : `${userName} đã xác nhận Kết thúc ca làm việc.`
+                );
+                return next;
+              });
+            }}
+            onToggleTaskDone={(taskId) => {
+              setDoneTaskIds((prev) => {
+                const next = !prev[taskId];
+                triggerToast(
+                  next ? 'Đã xác nhận hoàn thành nhiệm vụ được giao.' : 'Đã mở lại trạng thái nhiệm vụ.'
+                );
+                return { ...prev, [taskId]: next };
+              });
+            }}
+            onAddTask={(task) => {
+              setShiftTasks((prev) => [task, ...prev]);
+              triggerToast(`Đã giao nhiệm vụ mới cho ${task.assignee || 'nhân viên'}.`);
+            }}
+            onSaveProduct={handleSaveAdminProduct}
+            onDeleteProduct={handleDeleteAdminProduct}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onCreatePosOrder={(entry, soldItems) => {
+              handleCreatePosOrder(entry, soldItems);
+              triggerToast(`Đã xuất hóa đơn #${entry.id} và tự động cập nhật tồn kho.`);
+            }}
+            onAddBooking={handleAddAdminBooking}
+            onUpdateBookingStatus={handleUpdateBookingStatus}
+            onAssignStaff={handleAssignBookingStaff}
+            onSaveStoreSettings={(next) => {
+              setStoreSettings(next);
+              triggerToast('Đã lưu và đồng bộ thông tin cửa hàng.');
+            }}
+            onSavePaymentGateways={(next) => {
+              setPaymentGateways(next);
+              triggerToast('Đã cập nhật trạng thái các cổng thanh toán.');
+            }}
+            onExitToStorefront={() => navigateTo('home')}
+            onLogout={handleLogout}
+            onRequestConfirm={(dialog) => setConfirmDialog(dialog)}
+            onNotify={triggerToast}
+            theme={theme}
+            onToggleTheme={toggleWithDroplet}
+          />
+        </Suspense>
+      ) : (
+        <>
+          {/* Header */}
+          {isCompactLayout ? (
+            <CompactHeader
+              onNavigate={navigateTo}
+              isLoggedIn={isLoggedIn}
+              theme={theme}
+              onToggleTheme={toggleWithDroplet}
+            />
+          ) : (
+            <PetHubHeader
+              currentPage={currentPage}
+              activeCatalogCategory={selectedCategoryFilter}
+              activePetAudience={petScope}
+              onNavigate={navigateTo}
+              onSelectCategory={handleSelectCategory}
+              onSelectPetAudience={handleSelectPetAudience}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              isLoggedIn={isLoggedIn}
+              userName={userName}
+              workspaceRole={authRole === 'admin' || authRole === 'staff' ? authRole : null}
+              onLogout={handleLogout}
+              onOpenOrderLookup={openOrderLookupModal}
+              cartCount={totalCartCount}
+              cartTotal={cartFinalTotal.toLocaleString('vi-VN') + '₫'}
+              theme={theme}
+              onToggleTheme={toggleWithDroplet}
+            />
+          )}
+
+          {/* Main Content */}
+          <main id="main-content" tabIndex={-1} className="flex-1 relative focus:outline-none">
+            <AnimatePresence mode="wait">
           {/* ===================================================================
            * 1. STOREFRONT HOMEPAGE (Minimalist Luxury Copy - Nói ít hiểu nhiều)
            * =================================================================== */}
@@ -794,20 +1038,22 @@ export function App() {
               {(() => {
                 const activeBanner = HERO_BANNERS[heroSlide];
                 return (
-                  <section className="relative w-full overflow-hidden bg-[#eff5ff] border-b border-[#dfe6f0]">
+                  <section className="relative w-full overflow-hidden ph-hero-surface border-b border-[#dfe6f0]">
                     <AnimatePresence mode="wait">
                       <motion.img
                         key={activeBanner.id}
                         src={activeBanner.image}
                         alt={activeBanner.imageAlt}
-                        initial={{ opacity: 0.35 }}
-                        animate={{ opacity: 1 }}
+                        fetchPriority={heroSlide === 0 ? 'high' : 'auto'}
+                        decoding="async"
+                        initial={{ opacity: 0.35, scale: 1.02 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0.35 }}
-                        transition={{ duration: 0.35 }}
+                        transition={{ type: 'spring', bounce: 0, duration: 0.42 }}
                         className="absolute inset-0 w-full h-full object-cover object-[76%_center] sm:object-right"
                       />
                     </AnimatePresence>
-                    <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-[#eff5ff]/96 via-[#eff5ff]/88 via-50% to-[#eff5ff]/45 sm:to-transparent" />
+                    <div className="absolute inset-0 ph-hero-scrim" />
 
                     <div className="relative z-10 max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12 flex items-center min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
                       {/* Hero Content Column with internal Arrows & Dots */}
@@ -815,19 +1061,19 @@ export function App() {
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={activeBanner.id}
-                            initial={{ opacity: 0, y: 8 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.25 }}
+                            transition={{ type: 'spring', bounce: 0, duration: 0.32 }}
                             className="max-w-[520px] space-y-5"
                           >
-                            <h1 className="text-[28px] sm:text-[38px] lg:text-[44px] font-extrabold text-[#17324d] leading-[1.14] tracking-[-0.03em]">
+                            <h1 className="text-[28px] sm:text-[40px] lg:text-[46px] font-extrabold text-[#17324d] leading-[1.08] tracking-[-0.03em]">
                               {activeBanner.titleTop}
                               <br />
                               <span className="text-[#0667d0]">{activeBanner.titleAccent}</span>
                             </h1>
 
-                            <p className="text-[14px] sm:text-[15px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
+                            <p className="text-[14px] sm:text-[15.5px] text-[#354c63] max-w-[46ch] leading-relaxed font-medium">
                               {activeBanner.desc}
                             </p>
 
@@ -839,7 +1085,7 @@ export function App() {
                                     ? navigateTo(activeBanner.ctaPage)
                                     : handleSelectCategory(activeBanner.ctaCategory ?? 'all')
                                 }
-                                className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_8px_20px_rgba(6,103,208,0.22)] cursor-pointer transition-colors"
+                                className="py-3 px-6 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white font-bold text-[14px] inline-flex items-center gap-2 shadow-[0_10px_24px_rgba(6,103,208,0.24)] cursor-pointer transition-colors press-tactile"
                               >
                                 <span>{activeBanner.ctaLabel}</span>
                                 <ArrowRight className="w-4 h-4" />
@@ -855,7 +1101,7 @@ export function App() {
                           onClick={() =>
                             setHeroSlide((prev) => (prev - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)
                           }
-                          className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                          className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full ph-hero-arrow items-center justify-center shadow-xs cursor-pointer transition press-tactile"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -863,7 +1109,7 @@ export function App() {
                           type="button"
                           aria-label="Banner tiếp theo"
                           onClick={() => setHeroSlide((prev) => (prev + 1) % HERO_BANNERS.length)}
-                          className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 hover:bg-white border-2 border-[#dfe6f0] text-[#17324d] items-center justify-center shadow-xs cursor-pointer transition"
+                          className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full ph-hero-arrow items-center justify-center shadow-xs cursor-pointer transition press-tactile"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
@@ -975,17 +1221,20 @@ export function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {STOREFRONT_SUPPLIES.map((sup) => (
-                    <motion.div
+                    <motion.button
                       key={sup.id}
+                      type="button"
                       whileHover={{ y: -4 }}
                       onClick={() => handleSelectCategory(sup.filterCategory)}
-                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/50 p-5 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+                      className="group card-elevate text-left rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/50 p-5 cursor-pointer transition-colors duration-300 flex flex-col justify-between press-tactile"
                     >
-                      <div>
+                      <div className="w-full">
                         <div className="h-48 w-full rounded-xl overflow-hidden mb-5 bg-[#f8faff]">
                           <img
                             src={sup.image}
                             alt={sup.title}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
@@ -996,14 +1245,14 @@ export function App() {
                           {sup.desc}
                         </p>
                       </div>
-                      <div className="pt-4 mt-5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
+                      <div className="w-full pt-4 mt-5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
                         <span className="text-[13px] text-[#52657a] font-medium">{sup.meta}</span>
                         <span className="text-[13px] font-bold text-[#0667d0] flex items-center gap-1 shrink-0">
                           <span>Khám phá</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                         </span>
                       </div>
-                    </motion.div>
+                    </motion.button>
                   ))}
                 </div>
               </section>
@@ -1047,23 +1296,29 @@ export function App() {
                   {featuredProducts.map((item) => (
                     <div
                       key={item.id}
-                      className="group rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-all hover:shadow-[0_14px_30px_rgba(23,50,77,0.07)]"
+                      className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-colors"
                     >
                       <div>
-                        <div
-                          onClick={() => openProductDetail(item)}
-                          className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3.5 cursor-pointer"
-                        >
+                        <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3.5">
                           {item.discountBadge && (
-                            <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
+                            <span className="pointer-events-none absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
                               {item.discountBadge}
                             </span>
                           )}
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
+                          <button
+                            type="button"
+                            onClick={() => openProductDetail(item)}
+                            aria-label={`Xem chi tiết ${item.name}`}
+                            className="w-full h-full block cursor-pointer"
+                          >
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </button>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -1071,17 +1326,20 @@ export function App() {
                             {item.brand}
                           </span>
                           <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#52657a] tabular-nums">
-                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
+                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
                             {item.rating.toFixed(1)} ({item.reviewCount})
                           </span>
                         </div>
 
-                        <h3
+                        <button
+                          type="button"
                           onClick={() => openProductDetail(item)}
-                          className="text-[15px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0667d0] cursor-pointer"
+                          className="w-full text-left cursor-pointer"
                         >
-                          {item.name}
-                        </h3>
+                          <h3 className="text-[15px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0667d0]">
+                            {item.name}
+                          </h3>
+                        </button>
                         <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
                       </div>
 
@@ -1096,10 +1354,11 @@ export function App() {
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => addProductToCart(item)}
-                          className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors"
+                          className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors press-tactile"
                         >
-                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>Thêm vào giỏ</span>
                         </button>
                       </div>
@@ -1142,37 +1401,46 @@ export function App() {
                     {flashSaleProducts.map((item) => (
                       <div
                         key={item.id}
-                        className="rounded-2xl bg-white border border-[#dfe6f0] p-4 flex flex-col justify-between hover:shadow-md transition-shadow"
+                        className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-colors"
                       >
                         <div>
-                          <div
-                            onClick={() => openProductDetail(item)}
-                            className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3 cursor-pointer"
-                          >
+                          <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3">
                             {item.discountBadge && (
-                              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
+                              <span className="pointer-events-none absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
                                 {item.discountBadge}
                               </span>
                             )}
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                            />
+                            <button
+                              type="button"
+                              onClick={() => openProductDetail(item)}
+                              aria-label={`Xem chi tiết ${item.name}`}
+                              className="w-full h-full block cursor-pointer"
+                            >
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            </button>
                           </div>
 
                           <div className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
                             {item.brand}
                           </div>
-                          <h3
+                          <button
+                            type="button"
                             onClick={() => openProductDetail(item)}
-                            className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0] cursor-pointer"
+                            className="w-full text-left cursor-pointer"
                           >
-                            {item.name}
-                          </h3>
+                            <h3 className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0]">
+                              {item.name}
+                            </h3>
+                          </button>
                           <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
                           <div className="inline-flex items-center gap-1 text-[12px] text-[#52657a] mt-1 tabular-nums">
-                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" />
+                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
                             <span>{item.rating.toFixed(1)} ({item.reviewCount})</span>
                           </div>
                         </div>
@@ -1740,6 +2008,7 @@ export function App() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="pb-14"
             >
+              <Suspense fallback={workspaceFallback}>
               <AccountPage
                 isLoggedIn={isLoggedIn}
                 userName={userName}
@@ -1804,13 +2073,13 @@ export function App() {
                 }}
                 onRequestConfirm={(dialog) => setConfirmDialog(dialog)}
                 orders={orders}
-                bookings={bookings}
-                likedProducts={CATALOG_PRODUCTS.filter((p) => likedIds[p.id])}
+                bookings={bookings.filter((b) => !b.id.startsWith('BK-2026-'))}
+                likedProducts={products.filter((p) => likedIds[p.id])}
                 onToggleLike={toggleLike}
                 onAddToCart={(prod, qty) => addProductToCart(prod, qty)}
                 onBuyAgain={(order) => {
                   order.items.forEach((ordItem) => {
-                    const matched = CATALOG_PRODUCTS.find((p) => p.id === ordItem.id);
+                    const matched = products.find((p) => p.id === ordItem.id);
                     if (matched) {
                       addProductToCart(matched, ordItem.quantity);
                     }
@@ -1818,12 +2087,13 @@ export function App() {
                   navigateTo('cart');
                 }}
                 onOpenProduct={(id) => {
-                  const found = CATALOG_PRODUCTS.find((p) => p.id === id);
+                  const found = products.find((p) => p.id === id);
                   if (found) openProductDetail(found);
                 }}
                 onNavigate={navigateTo}
                 onLogout={handleLogout}
               />
+              </Suspense>
             </motion.div>
           )}
 
@@ -2474,13 +2744,15 @@ export function App() {
                         <div className="rounded-xl bg-[#f8faff] border border-[#c8ddf8] p-3 space-y-1">
                           <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#0667d0]">
                             <MapPin className="w-3.5 h-3.5 shrink-0" />
-                            <span>{STORE_PICKUP_INFO.name}</span>
+                            <span>{storeSettings.storeName || STORE_PICKUP_INFO.name}</span>
                           </div>
                           <p className="text-[12px] text-[#17324d] font-medium leading-snug">
-                            {STORE_PICKUP_INFO.address}
+                            {[storeSettings.streetAddress, storeSettings.district, storeSettings.city]
+                              .filter(Boolean)
+                              .join(', ') || STORE_PICKUP_INFO.address}
                           </p>
                           <p className="text-[11px] text-[#52657a]">
-                            Giờ nhận hàng: {STORE_PICKUP_INFO.hours} · Giữ đơn miễn phí 48 giờ
+                            Giờ nhận hàng: {storeSettings.hours || STORE_PICKUP_INFO.hours} · Giữ đơn miễn phí 48 giờ
                           </p>
                         </div>
                       )}
@@ -2492,8 +2764,8 @@ export function App() {
                         Phương thức thanh toán
                       </div>
                       <div className="space-y-2">
-                        {PAYMENT_OPTIONS.map((opt) => {
-                          const isSelected = paymentMethod === opt.id;
+                        {activePaymentOptions.map((opt) => {
+                          const isSelected = effectivePaymentMethod === opt.id;
                           const IconComp =
                             opt.id === 'vnpay'
                               ? QrCode
@@ -3133,9 +3405,42 @@ export function App() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
+                      const identifier = loginEmail.trim().toLowerCase();
+                      const pwd = loginPassword;
+                      if (!identifier || !pwd) {
+                        setLoginError('Vui lòng nhập đầy đủ tài khoản/email và mật khẩu.');
+                        return;
+                      }
+
+                      const matchedWorkspace = DEFAULT_WORKSPACE_ACCOUNTS.find(
+                        (acc) => acc.email.toLowerCase() === identifier || acc.username.toLowerCase() === identifier
+                      );
+
+                      if (matchedWorkspace) {
+                        if (pwd !== matchedWorkspace.password) {
+                          setLoginError(
+                            'Tên đăng nhập / email hoặc mật khẩu không chính xác. Vui lòng thử lại.'
+                          );
+                          return;
+                        }
+                        setLoginError(null);
+                        setIsLoggedIn(true);
+                        setAuthRole(matchedWorkspace.role);
+                        setUserName(matchedWorkspace.displayName);
+                        setUserEmail(matchedWorkspace.email);
+                        triggerToast(
+                          matchedWorkspace.role === 'admin'
+                            ? `Đăng nhập thành công (${matchedWorkspace.displayName} · Quản trị viên).`
+                            : `Đăng nhập thành công (${matchedWorkspace.displayName} · Nhân viên giới hạn quyền).`
+                        );
+                        navigateTo('admin', matchedWorkspace.role);
+                        return;
+                      }
+
                       const nameFromEmail = loginEmail.includes('@')
                         ? ownerName
                         : loginEmail.trim() || 'Trịnh Anh Khoa';
+                      setLoginError(null);
                       setUserName(nameFromEmail);
                       if (loginEmail.includes('@')) {
                         setUserEmail(loginEmail.trim());
@@ -3144,8 +3449,14 @@ export function App() {
                       setCheckoutPhone(userPhone);
                       setCheckoutEmail(loginEmail.includes('@') ? loginEmail.trim() : userEmail);
                       setIsLoggedIn(true);
+                      setAuthRole('customer');
                       triggerToast(`Đăng nhập thành công. Xin chào ${nameFromEmail}.`);
-                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                      navigateTo(
+                        returnPage === 'login' || returnPage === 'register' || returnPage === 'admin'
+                          ? 'home'
+                          : returnPage,
+                        'customer'
+                      );
                     }}
                     className="space-y-4"
                   >
@@ -3158,6 +3469,12 @@ export function App() {
                       </p>
                     </div>
 
+                    {loginError && (
+                      <div className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-[12.5px] font-semibold text-rose-700">
+                        {loginError}
+                      </div>
+                    )}
+
                     <div className="space-y-1.5">
                       <label className="text-[12px] font-bold text-[#17324d] block">
                         Email hoặc Số điện thoại
@@ -3167,7 +3484,11 @@ export function App() {
                         <input
                           type="text"
                           value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          onChange={(e) => {
+                            setLoginEmail(e.target.value);
+                            setLoginError(null);
+                          }}
+                          placeholder="example@email.com"
                           className="flex-1 bg-transparent text-[13px] font-medium text-[#17324d] focus:outline-none"
                         />
                       </div>
@@ -3191,7 +3512,12 @@ export function App() {
                           <Lock className="w-4 h-4 text-[#52657a]" />
                           <input
                             type={showPass ? 'text' : 'password'}
-                            defaultValue="pethub2026"
+                            value={loginPassword}
+                            onChange={(e) => {
+                              setLoginPassword(e.target.value);
+                              setLoginError(null);
+                            }}
+                            placeholder="Nhập mật khẩu"
                             className="flex-1 bg-transparent text-[13px] font-bold text-[#17324d] focus:outline-none"
                           />
                         </div>
@@ -3237,9 +3563,15 @@ export function App() {
                       setCheckoutPhone(regPhone.trim());
                       setCheckoutEmail(regEmail.trim());
                       setIsLoggedIn(true);
+                      setAuthRole('customer');
                       setRegPassword('');
                       triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
-                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                      navigateTo(
+                        returnPage === 'login' || returnPage === 'register' || returnPage === 'admin'
+                          ? 'home'
+                          : returnPage,
+                        'customer'
+                      );
                     }}
                     className="space-y-4"
                   >
@@ -3554,27 +3886,40 @@ export function App() {
           onQuickToast={triggerToast}
         />
       )}
+        </>
+      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog dialog={confirmDialog} onClose={() => setConfirmDialog(null)} />
 
       {/* Guest Order Lookup Modal */}
+      <AnimatePresence>
       {lookupOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-[#17324d]/45 backdrop-blur-[2px] flex items-center justify-center p-4"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="order-lookup-title"
           onClick={() => setLookupOpen(false)}
         >
-          <div
-            className="w-full max-w-[520px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_24px_60px_rgba(23,50,77,0.22)] p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+          <motion.div
+            ref={lookupModalRef}
+            tabIndex={-1}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
+            className="w-full max-w-[520px] rounded-2xl bg-white border border-[#dfe6f0] shadow-[0_24px_60px_rgba(23,50,77,0.22)] p-6 space-y-5 max-h-[90vh] overflow-y-auto focus:outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center shrink-0">
-                  <PackageSearch className="w-5 h-5" />
+                  <PackageSearch className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 id="order-lookup-title" className="text-[17px] font-bold text-[#17324d]">
@@ -3589,19 +3934,20 @@ export function App() {
                 type="button"
                 onClick={() => setLookupOpen(false)}
                 aria-label="Đóng tra cứu"
-                className="p-1.5 rounded-lg text-[#52657a] hover:bg-[#f3f7ff] hover:text-[#17324d] cursor-pointer"
+                className="p-1.5 rounded-lg text-[#52657a] hover:bg-[#f3f7ff] hover:text-[#17324d] cursor-pointer press-tactile"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleOrderLookupSubmit} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                  <label htmlFor="lookup-phone-input" className="block text-[12px] font-bold text-[#17324d] mb-1">
                     Số điện thoại *
                   </label>
                   <input
+                    id="lookup-phone-input"
                     type="tel"
                     value={lookupPhone}
                     onChange={(e) => {
@@ -3609,15 +3955,15 @@ export function App() {
                       if (lookupError) setLookupError(null);
                     }}
                     placeholder="VD: 0909 123 456"
-                    aria-label="Số điện thoại tra cứu"
                     className="w-full h-10 px-3 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[13px] text-[#17324d] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                  <label htmlFor="lookup-code-input" className="block text-[12px] font-bold text-[#17324d] mb-1">
                     Mã đơn hàng *
                   </label>
                   <input
+                    id="lookup-code-input"
                     type="text"
                     value={lookupCode}
                     onChange={(e) => {
@@ -3625,14 +3971,13 @@ export function App() {
                       if (lookupError) setLookupError(null);
                     }}
                     placeholder="VD: PH123456"
-                    aria-label="Mã đơn hàng tra cứu"
                     className="w-full h-10 px-3 rounded-xl bg-[#f8faff] border border-[#dfe6f0] focus:border-[#0667d0] text-[13px] text-[#17324d] focus:outline-none uppercase"
                   />
                 </div>
               </div>
 
               {lookupError && (
-                <div className="rounded-xl bg-[#fff2e9] border border-[#ffddc7] px-3.5 py-2.5 text-[12px] font-semibold text-[#9a3412]">
+                <div role="alert" className="rounded-xl bg-[#fff2e9] border border-[#ffddc7] px-3.5 py-2.5 text-[12px] font-semibold text-[#9a3412]">
                   {lookupError}
                 </div>
               )}
@@ -3657,7 +4002,7 @@ export function App() {
                 )}
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors"
+                  className="px-5 py-2.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors press-tactile"
                 >
                   Kiểm tra đơn hàng
                 </button>
@@ -3708,6 +4053,8 @@ export function App() {
                         <img
                           src={item.image}
                           alt={item.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-9 h-9 rounded-lg object-cover bg-white shrink-0"
                         />
                         <span className="font-semibold text-[#17324d] truncate">
@@ -3729,28 +4076,35 @@ export function App() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Floating Contact Stack */}
-      <FloatingContact onQuickToast={triggerToast} />
+      {currentPage !== 'admin' && (
+        <FloatingContact onQuickToast={triggerToast} />
+      )}
 
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (
           <motion.div
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
             className="fixed left-5 bottom-6 z-50 max-w-[360px] px-4 py-3 rounded-xl bg-[#17324d] text-white text-xs font-semibold shadow-[0_12px_30px_rgba(23,50,77,0.28)] flex items-center gap-2.5 border border-white/10"
           >
-            <Sparkles className="w-4 h-4 text-[#ffb547] shrink-0" />
+            <Sparkles className="w-4 h-4 text-[#ffb547] shrink-0" aria-hidden="true" />
             <span>{toastMsg}</span>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }
 

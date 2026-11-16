@@ -25,7 +25,7 @@ import type {
   OrderStatus,
   ServiceBookingRecord,
 } from '../data/mockData';
-import { formatCurrency } from '../data/mockData';
+import { formatCurrency, ORDER_STATUS_META } from '../data/mockData';
 
 export type AccountTab =
   | 'profile'
@@ -65,24 +65,6 @@ interface AccountPageProps {
   onNavigate: (page: PageId) => void;
   onLogout: () => void;
 }
-
-const ORDER_STATUS_META: Record<
-  OrderStatus,
-  { label: string; badgeClass: string }
-> = {
-  pending: {
-    label: 'Chờ xác nhận',
-    badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200',
-  },
-  shipping: {
-    label: 'Đang giao',
-    badgeClass: 'bg-[#eff5ff] text-[#0667d0] border border-[#c7dcff]',
-  },
-  completed: {
-    label: 'Hoàn thành',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  },
-};
 
 export const AccountPage: React.FC<AccountPageProps> = ({
   isLoggedIn,
@@ -699,6 +681,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                       { id: 'pending', label: 'Chờ xác nhận' },
                       { id: 'shipping', label: 'Đang giao' },
                       { id: 'completed', label: 'Hoàn thành' },
+                      { id: 'cancelled', label: 'Đã hủy' },
                     ] as { id: 'all' | OrderStatus; label: string }[]
                   ).map((tab) => {
                     const isActive = orderStatusFilter === tab.id;
