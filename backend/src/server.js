@@ -1,5 +1,6 @@
+const path = require("path");
 const dotenv = require("dotenv");
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = require("./app");
 const { testConnection } = require("./config/db");
@@ -28,17 +29,14 @@ const startServer = async () => {
       console.log("==================================================");
     });
 
-    // 3. Xử lý tắt server an toàn (Graceful Shutdown)
-    const handleShutdown = (signal) => {
-      console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng server an toàn...`);
-      server.close(() => {
-        console.log("🔒 Server đã dừng xử lý kết nối.");
-        process.exit(0);
-      });
-    };
+    // 3. Giữ event loop luôn active trong môi trường dev
+    setInterval(() => {}, 1000 * 60 * 60);
 
-    process.on("SIGTERM", () => handleShutdown("SIGTERM"));
-    process.on("SIGINT", () => handleShutdown("SIGINT"));
+    // Xử lý tắt server an toàn khi có signal rõ ràng
+    process.on("SIGINT", () => {
+      console.log("\n🛑 Nhận SIGINT. Đóng server...");
+      server.close(() => process.exit(0));
+    });
   } catch (error) {
     console.error("❌ Không thể khởi động server:", error);
     process.exit(1);

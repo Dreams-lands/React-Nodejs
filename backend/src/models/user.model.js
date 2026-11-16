@@ -2,64 +2,49 @@ const { pool } = require("../config/db");
 
 /**
  * UserModel (Tầng Model trong kiến trúc MVC)
- * Tương tác trực tiếp với bảng `users` trong Cơ sở dữ liệu PostgreSQL
+ * Tương tác trực tiếp với bảng `users` trong Cơ sở dữ liệu PostgreSQL PetHub
  */
-
-// Bộ nhớ đệm tạm thời (In-memory fallback) phòng khi PostgreSQL chưa bật
 let inMemoryUsers = [
-  { id: 1, name: "Nguyễn Văn An", email: "an.nguyen@example.com", role: "admin", status: "active", createdAt: new Date() },
-  { id: 2, name: "Trần Thị Bích", email: "bich.tran@example.com", role: "editor", status: "active", createdAt: new Date() },
-  { id: 3, name: "Lê Hoàng Cường", email: "cuong.le@example.com", role: "user", status: "active", createdAt: new Date() },
+  { id: 1, name: "Trịnh Anh Khoa", email: "admin@pethub.com", role: "Admin", status: "active", createdAt: new Date() },
+  { id: 2, name: "Linh Phạm", email: "linh.staff@pethub.com", role: "Staff", status: "active", createdAt: new Date() },
+  { id: 3, name: "Khách Đăng Nhập", email: "khach@gmail.com", role: "Customer", status: "active", createdAt: new Date() },
 ];
 
 class UserModel {
   /**
-   * Khởi tạo bảng users nếu chưa tồn tại (Auto migration)
+   * Khởi tạo kiểm tra bảng users (an toàn)
    */
   static async initTable() {
     try {
-      const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(100) NOT NULL,
-          email VARCHAR(100) NOT NULL UNIQUE,
-          role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'editor', 'user')),
-          status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'banned')),
-          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-      `;
-      await pool.query(createTableQuery);
-
-      const countResult = await pool.query("SELECT COUNT(*) as count FROM users");
-      if (parseInt(countResult.rows[0].count, 10) === 0) {
-        const seedQuery = `
-          INSERT INTO users (name, email, role, status) VALUES 
-          ('Nguyễn Văn An', 'an.nguyen@example.com', 'admin', 'active'),
-          ('Trần Thị Bích', 'bich.tran@example.com', 'editor', 'active'),
-          ('Lê Hoàng Cường', 'cuong.le@example.com', 'user', 'active')
-          ON CONFLICT (email) DO NOTHING;
-        `;
-        await pool.query(seedQuery);
-        console.log("🌱 [PostgreSQL] Bảng 'users' đã có dữ liệu khởi tạo.");
-      }
+      // Chỉ kiểm tra kết nối bảng users
+      await pool.query("SELECT 1 FROM users LIMIT 1");
     } catch (error) {
-      console.warn("⚠️  [Model] Lỗi kiểm tra bảng users trong PostgreSQL:", error.message);
+      console.warn("ℹ️  [Model] Bảng users chưa sẵn sàng hoặc đang dùng schema PetHub:", error.message);
     }
   }
 
   /**
-   * Lấy danh sách tất cả người dùng
+   * Lấy danh sách tất cả người dùng (tương thích PetHub)
    */
   static async findAll() {
     try {
-      const { rows } = await pool.query(
-        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users ORDER BY id DESC'
-      );
+      const { rows } = await pool.query(`
+        SELECT 
+          u.user_id AS id,
+          u.full_name AS name,
+          u.email,
+          COALESCE(r.role_name, 'Customer') AS role,
+          CASE WHEN u.is_active THEN 'active' ELSE 'inactive' END AS status,
+          u.phone,
+          u.address,
+          u.created_at AS "createdAt"
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.role_id
+        ORDER BY u.user_id DESC
+      `);
       return rows;
     } catch (error) {
-      console.warn("⚠️  [Model] Dùng dữ liệu in-memory fallback (do PostgreSQL chưa kết nối):", error.message);
+      console.warn("⚠️  [Model] Lấy danh sách user lỗi, dùng in-memory:", error.message);
       return inMemoryUsers;
     }
   }
@@ -70,7 +55,18 @@ class UserModel {
   static async findById(id) {
     try {
       const { rows } = await pool.query(
-        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users WHERE id = $1',
+        `SELECT 
+          u.user_id AS id,
+          u.full_name AS name,
+          u.email,
+          COALESCE(r.role_name, 'Customer') AS role,
+          CASE WHEN u.is_active THEN 'active' ELSE 'inactive' END AS status,
+          u.phone,
+          u.address,
+          u.created_at AS "createdAt"
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.role_id
+        WHERE u.user_id = $1`,
         [id]
       );
       return rows[0] || null;
@@ -85,86 +81,114 @@ class UserModel {
   static async findByEmail(email) {
     try {
       const { rows } = await pool.query(
-        'SELECT id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt" FROM users WHERE LOWER(email) = LOWER($1)',
+        `SELECT 
+          u.user_id AS id,
+          u.full_name AS name,
+          u.email,
+          COALESCE(r.role_name, 'Customer') AS role,
+          u.password_hash,
+          CASE WHEN u.is_active THEN 'active' ELSE 'inactive' END AS status
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.role_id
+        WHERE u.email = $1`,
         [email]
       );
       return rows[0] || null;
     } catch (error) {
-      return inMemoryUsers.find((u) => u.email.toLowerCase() === email.toLowerCase()) || null;
+      return inMemoryUsers.find((u) => u.email === email) || null;
     }
   }
 
   /**
-   * Thêm người dùng mới (Dùng RETURNING của PostgreSQL để lấy ngay bản ghi vừa tạo)
+   * Tạo người dùng mới
    */
-  static async create({ name, email, role = "user", status = "active" }) {
+  static async create({ name, email, role = "Customer", status = "active" }) {
     try {
+      // Tìm role_id
+      const roleResult = await pool.query("SELECT role_id FROM roles WHERE LOWER(role_name) = LOWER($1)", [role]);
+      const roleId = roleResult.rows[0]?.role_id || 3;
+
       const { rows } = await pool.query(
-        `INSERT INTO users (name, email, role, status)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt"`,
-        [name, email, role, status]
+        `INSERT INTO users (role_id, full_name, email, password_hash, is_active)
+         VALUES ($1, $2, $3, '$2b$10$w3.J./w/O5.4WnBq6g4h0.6r1W0VlG2m6m6g3u.Qh.Kq9O2jE/K', $4)
+         RETURNING user_id AS id, full_name AS name, email, $5 AS role, $6 AS status`,
+        [roleId, name, email, status === "active", role, status]
       );
       return rows[0];
     } catch (error) {
       const newUser = {
-        id: inMemoryUsers.length > 0 ? Math.max(...inMemoryUsers.map((u) => u.id)) + 1 : 1,
+        id: inMemoryUsers.length + 1,
         name,
         email,
         role,
         status,
         createdAt: new Date(),
-        updatedAt: new Date(),
       };
-      inMemoryUsers.unshift(newUser);
+      inMemoryUsers.push(newUser);
       return newUser;
     }
   }
 
   /**
-   * Cập nhật thông tin người dùng (Dùng RETURNING của PostgreSQL)
+   * Cập nhật người dùng
    */
-  static async update(id, { name, email, role, status }) {
+  static async update(id, updateData) {
     try {
-      const { rows } = await pool.query(
-        `UPDATE users
-         SET name = COALESCE($1, name),
-             email = COALESCE($2, email),
-             role = COALESCE($3, role),
-             status = COALESCE($4, status)
-         WHERE id = $5
-         RETURNING id, name, email, role, status, created_at AS "createdAt", updated_at AS "updatedAt"`,
-        [name, email, role, status, id]
+      const fields = [];
+      const values = [];
+      let idx = 1;
+
+      if (updateData.name) {
+        fields.push(`full_name = $${idx++}`);
+        values.push(updateData.name);
+      }
+      if (updateData.email) {
+        fields.push(`email = $${idx++}`);
+        values.push(updateData.email);
+      }
+      if (updateData.status) {
+        fields.push(`is_active = $${idx++}`);
+        values.push(updateData.status === "active");
+      }
+      if (updateData.role) {
+        const roleResult = await pool.query("SELECT role_id FROM roles WHERE LOWER(role_name) = LOWER($1)", [updateData.role]);
+        if (roleResult.rows[0]) {
+          fields.push(`role_id = $${idx++}`);
+          values.push(roleResult.rows[0].role_id);
+        }
+      }
+
+      if (fields.length === 0) return await this.findById(id);
+
+      values.push(id);
+      await pool.query(
+        `UPDATE users SET ${fields.join(", ")} WHERE user_id = $${idx}`,
+        values
       );
-      return rows[0] || null;
+      return await this.findById(id);
     } catch (error) {
-      const index = inMemoryUsers.findIndex((u) => u.id === Number(id));
-      if (index !== -1) {
-        inMemoryUsers[index] = {
-          ...inMemoryUsers[index],
-          name: name || inMemoryUsers[index].name,
-          email: email || inMemoryUsers[index].email,
-          role: role || inMemoryUsers[index].role,
-          status: status || inMemoryUsers[index].status,
-          updatedAt: new Date(),
-        };
-        return inMemoryUsers[index];
+      const userIndex = inMemoryUsers.findIndex((u) => u.id === Number(id));
+      if (userIndex !== -1) {
+        inMemoryUsers[userIndex] = { ...inMemoryUsers[userIndex], ...updateData };
+        return inMemoryUsers[userIndex];
       }
       return null;
     }
   }
 
   /**
-   * Xóa người dùng theo ID
+   * Xóa người dùng (Soft delete)
    */
   static async delete(id) {
     try {
-      const result = await pool.query("DELETE FROM users WHERE id = $1", [id]);
-      return result.rowCount > 0;
+      const { rows } = await pool.query(
+        "UPDATE users SET is_active = FALSE WHERE user_id = $1 RETURNING user_id AS id",
+        [id]
+      );
+      return rows[0] || null;
     } catch (error) {
-      const initialLen = inMemoryUsers.length;
       inMemoryUsers = inMemoryUsers.filter((u) => u.id !== Number(id));
-      return inMemoryUsers.length < initialLen;
+      return { id: Number(id) };
     }
   }
 }
