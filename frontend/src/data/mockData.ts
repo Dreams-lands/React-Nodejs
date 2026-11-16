@@ -79,6 +79,7 @@ export interface LookupOrderEntry extends OrderRecord {
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
+  staffName?: string;
   isGuest?: boolean;
 }
 
@@ -543,7 +544,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-cloud-bed',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Nệm tròn lông cừu Cloud Comfort cho chó',
     shortDesc: 'Vỏ cotton pha lông cừu mềm mại, ruột bông 3D giữ form êm ái quanh năm.',
     description:
@@ -856,7 +857,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-rattan-bed',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Ổ nệm mây kháng khuẩn đế chống trượt cho mèo',
     shortDesc: 'Khung thoáng khí kết hợp đệm bông kháng khuẩn, phù hợp khí hậu nhiệt đới.',
     description:
@@ -1032,7 +1033,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-cat-litter-box',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Hộp cát vệ sinh khử mùi có nắp & xẻng xúc cho mèo',
     shortDesc: 'Nhà vệ sinh kín chống văng cát, cửa lật một chiều ngăn mùi hôi và kèm xẻng gài hông tiện lợi.',
     description:
@@ -1060,7 +1061,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-dog-cage',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Lồng chuồng chó sơn tĩnh điện gấp gọn khay nhựa',
     shortDesc: 'Khung thép nan dày phủ sơn tĩnh điện chống gỉ, hai cửa ra vào kèm khay đáy rút vệ sinh dễ dàng.',
     description:
@@ -1088,7 +1089,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-cat-cage',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Chuồng mèo biệt thự nhiều tầng sơn tĩnh điện kèm võng',
     shortDesc: 'Không gian 3 tầng rộng rãi có sàn gỗ và võng ngủ treo êm ái cho từ 1–3 bé mèo.',
     description:
@@ -1119,7 +1120,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-dog-orthopedic-bed',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Giường nệm chữ nhật memory foam nâng đỡ xương cho chó',
     shortDesc: 'Lõi foam đàn hồi cao hỗ trợ khớp hông cho chó trung và lớn, bọc vải nhung gân thoáng khí.',
     description:
@@ -1150,7 +1151,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-cat-plush-bed',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Giường nệm tròn lông cừu ấm áp cho mèo',
     shortDesc: 'Lòng nệm sâu ôm trọn cơ thể mèo, mang lại cảm giác an toàn và giữ ấm tuyệt đối.',
     description:
@@ -1178,7 +1179,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-ceramic-bowl-dog',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Bộ bát ăn đôi gốm sứ kệ gỗ sồi chống trượt cho chó',
     shortDesc: 'Hai chén sứ nung an toàn kết hợp giá gỗ nâng chiều cao vừa tầm, bảo vệ đốt sống cổ cho cún.',
     description:
@@ -1206,7 +1207,7 @@ export const CATALOG_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-ceramic-bowl-cat',
-    brand: 'PETHUB HOME',
+    brand: 'PETSFRIEND HOME',
     name: 'Bộ bát ăn đôi sứ trắng nâng cổ chống nghẹn cho mèo',
     shortDesc: 'Độ cao 11cm giúp mèo ăn uống đúng tư thế sinh lý, hạn chế nôn trớ thức ăn sau bữa.',
     description:
@@ -1251,7 +1252,7 @@ export const INITIAL_ADDRESSES: AddressRecord[] = [
     label: 'Văn phòng',
     recipient: 'Trịnh Anh Khoa',
     phone: '0909 123 456',
-    address: 'Tầng 6, Tòa nhà PetHub Tech, Q. Phú Nhuận, TP. Hồ Chí Minh',
+    address: 'Tầng 6, Tòa nhà PetsFriend Tech, Q. Phú Nhuận, TP. Hồ Chí Minh',
     isDefault: false,
   },
 ];

@@ -16,7 +16,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
   const [messages, setMessages] = useState([
     {
       from: 'bot',
-      text: 'Xin chào! Chuyên viên Hỗ trợ trực tuyến PetHub sẵn sàng tư vấn dinh dưỡng, phụ kiện, đơn hàng và lịch chăm sóc cho thú cưng của bạn.',
+      text: 'Xin chào! Chuyên viên Hỗ trợ trực tuyến PetsFriend sẵn sàng tư vấn dinh dưỡng, phụ kiện, đơn hàng và lịch chăm sóc cho thú cưng của bạn.',
     },
   ]);
 
@@ -31,7 +31,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
         ...prev,
         {
           from: 'bot',
-          text: `Cảm ơn bạn. Nhân viên Hỗ trợ trực tuyến PetHub đã tiếp nhận "${userMsg}" và sẽ phản hồi ngay trong giây lát.`,
+          text: `Cảm ơn bạn. Nhân viên Hỗ trợ trực tuyến PetsFriend đã tiếp nhận "${userMsg}" và sẽ phản hồi ngay trong giây lát.`,
         },
       ]);
     }, 650);

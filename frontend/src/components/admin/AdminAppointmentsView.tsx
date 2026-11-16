@@ -355,7 +355,7 @@ export const AdminAppointmentsView: React.FC<AdminAppointmentsViewProps> = ({
                 </div>
                 <div className="font-semibold text-[#0667d0]">{selectedBooking.serviceName}</div>
                 <div className="text-[12px] text-[#52657a] flex items-center gap-3 pt-1">
-                  <span>Khách: {selectedBooking.customerName || 'Khách PetHub'}</span>
+                  <span>Khách: {selectedBooking.customerName || 'Khách PetsFriend'}</span>
                   {selectedBooking.customerPhone && (
                     <span className="inline-flex items-center gap-1 tabular-nums">
                       <Phone className="w-3 h-3" />

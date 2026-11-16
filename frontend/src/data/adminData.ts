@@ -2,7 +2,6 @@ import type { LookupOrderEntry, ProductCategory, ServiceBookingRecord } from './
 
 export type AdminSectionId =
   | 'overview'
-  | 'tasks'
   | 'orders'
   | 'pos'
   | 'appointments'
@@ -41,11 +40,13 @@ export const DEFAULT_WORKSPACE_ACCOUNTS: DefaultAccountCredential[] = [
 ];
 
 export type SettingsTabId = 'general' | 'payments' | 'permissions';
+export type OrdersMode = 'manage' | 'invoices';
 export type InventoryMode = 'catalog' | 'stock';
 export type AnalyticsMode = 'period' | 'daily';
 export type RevenuePeriodId = 'past-months' | 'past-years';
 
 export interface AdminNavOptions {
+  ordersMode?: OrdersMode;
   inventoryMode?: InventoryMode;
   analyticsMode?: AnalyticsMode;
   settingsTab?: SettingsTabId;
@@ -100,7 +101,7 @@ export interface StaffAssignmentSummary {
 }
 
 export const INITIAL_STORE_SETTINGS: StoreSettings = {
-  storeName: 'PetHub Flagship — Chi nhánh Quận 1',
+  storeName: 'PetsFriend Flagship — Chi nhánh Quận 1',
   streetAddress: '128 Nguyễn Trãi, P. Bến Thành',
   district: 'Quận 1',
   city: 'TP. Hồ Chí Minh',
@@ -116,7 +117,7 @@ export const INITIAL_STORE_SETTINGS: StoreSettings = {
 
 export const INITIAL_PAYMENT_GATEWAYS: PaymentGatewayConfig = {
   codEnabled: true,
-  codNote: 'Khách kiểm tra hàng trước khi thanh toán trực tiếp cho shipper hoặc tại quầy PetHub.',
+  codNote: 'Khách kiểm tra hàng trước khi thanh toán trực tiếp cho shipper hoặc tại quầy PetsFriend.',
   vnpayEnabled: true,
   vnpayTmnCode: 'PETHUB_VNPAY_DEMO',
   vnpayEnvironment: 'sandbox',
@@ -147,6 +148,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     deliveryMethod: 'pickup',
     customerName: 'Hồ Minh Tuấn',
     customerPhone: '0907 345 112',
+    staffName: 'Hà Lê',
     isGuest: true,
     items: [
       {
@@ -177,6 +179,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     deliveryMethod: 'delivery',
     customerName: 'Nguyễn Quỳnh Như',
     customerPhone: '0914 882 390',
+    staffName: 'Linh Phạm',
     isGuest: false,
     items: [
       {
@@ -200,6 +203,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     customerName: 'Nguyễn Minh Anh',
     customerPhone: '0903 456 781',
     customerEmail: 'minhanh.nguyen@gmail.com',
+    staffName: 'Mai Nguyễn',
     isGuest: true,
     items: [
       {
@@ -239,6 +243,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     customerName: 'Trần Hoàng Nam',
     customerPhone: '0918 222 645',
     customerEmail: 'hoangnam.tran@gmail.com',
+    staffName: 'Hà Lê',
     isGuest: true,
     items: [
       {
@@ -262,6 +267,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     customerName: 'Lê Thảo Vy',
     customerPhone: '0935 678 920',
     customerEmail: 'thaovy.le@gmail.com',
+    staffName: 'Linh Phạm',
     isGuest: false,
     items: [
       {
@@ -284,6 +290,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     deliveryMethod: 'delivery',
     customerName: 'Phạm Đức Huy',
     customerPhone: '0987 123 456',
+    staffName: 'An Trần',
     isGuest: false,
     items: [
       {
@@ -314,6 +321,7 @@ export const ADMIN_EXTRA_ORDERS: LookupOrderEntry[] = [
     deliveryMethod: 'delivery',
     customerName: 'Đặng Gia Bảo',
     customerPhone: '0973 345 890',
+    staffName: 'Hà Lê',
     isGuest: true,
     items: [
       {
@@ -395,27 +403,79 @@ export const ADMIN_EXTRA_BOOKINGS: ServiceBookingRecord[] = [
   },
 ];
 
-export const STAFF_MEMBERS = ['Linh Phạm', 'Mai Nguyễn', 'An Trần'];
+export const STAFF_MEMBERS = ['Linh Phạm', 'Hà Lê', 'Mai Nguyễn', 'An Trần'];
 
-export const INITIAL_PERMISSION_MATRIX: PermissionMatrixRow[] = [
-  { id: 'perm-overview', module: 'Tổng quan', label: 'Xem bảng điều khiển & chỉ số vận hành', manager: true, cashier: true, groomer: true },
-  { id: 'perm-inv-view', module: 'Kho hàng', label: 'Xem danh sách sản phẩm & tồn kho', manager: true, cashier: true, groomer: false },
-  { id: 'perm-inv-edit', module: 'Kho hàng', label: 'Thêm / sửa sản phẩm, giá khuyến mãi & tồn kho', manager: true, cashier: false, groomer: false },
-  { id: 'perm-ord-view', module: 'Đơn hàng', label: 'Xem, xác nhận & in hóa đơn bán hàng', manager: true, cashier: true, groomer: false },
-  { id: 'perm-ord-refund', module: 'Đơn hàng', label: 'Đối soát VNPay / MoMo & hủy đơn hoàn tiền', manager: true, cashier: false, groomer: false },
-  { id: 'perm-rev-view', module: 'Doanh thu', label: 'Xem & xuất báo cáo tài chính CSV/Excel', manager: true, cashier: false, groomer: false },
-  { id: 'perm-spa-view', module: 'Dịch vụ chăm sóc', label: 'Xem lịch hẹn chăm sóc thú cưng', manager: true, cashier: true, groomer: true },
-  { id: 'perm-spa-edit', module: 'Dịch vụ chăm sóc', label: 'Tạo lịch, phân công nhân viên & đổi khung giờ', manager: true, cashier: true, groomer: false },
-  { id: 'perm-spa-done', module: 'Dịch vụ chăm sóc', label: 'Cập nhật hoàn thành quy trình chăm sóc', manager: true, cashier: false, groomer: true },
-  { id: 'perm-set-store', module: 'Cài đặt', label: 'Chỉnh thông tin cửa hàng & cổng thanh toán', manager: false, cashier: false, groomer: false },
-  { id: 'perm-set-role', module: 'Cài đặt', label: 'Quản lý vai trò & phân quyền nhân sự', manager: false, cashier: false, groomer: false },
-];
+export interface SharedStaffPermissions {
+  ordersManage: boolean;
+  ordersInvoices: boolean;
+  pos: boolean;
+  appointments: boolean;
+  inventoryView: boolean;
+  inventoryEdit: boolean;
+  analytics: boolean;
+  settings: boolean;
+}
 
-export const STAFF_ROLE_SUMMARIES: StaffAssignmentSummary[] = [
-  { role: 'admin', title: 'Quản trị viên', subtitle: 'Toàn quyền hệ thống (Khóa)', membersText: 'Trịnh Anh Khoa', count: 1 },
-  { role: 'manager', title: 'Quản lý cửa hàng', subtitle: 'Vận hành & báo cáo', membersText: 'Mai Nguyễn', count: 1 },
-  { role: 'cashier', title: 'Thu ngân & CSKH', subtitle: 'Đơn hàng & lịch hẹn', membersText: 'Hà Lê', count: 1 },
-  { role: 'groomer', title: 'Chuyên viên chăm sóc', subtitle: 'Thực hiện gói dịch vụ', membersText: 'Linh Phạm, An Trần', count: 2 },
+export interface SharedStaffPermissionRow {
+  key: keyof SharedStaffPermissions;
+  module: string;
+  label: string;
+  lockedAdminOnly?: boolean;
+}
+
+export const DEFAULT_SHARED_STAFF_PERMISSIONS: SharedStaffPermissions = {
+  ordersManage: true,
+  ordersInvoices: true,
+  pos: true,
+  appointments: true,
+  inventoryView: true,
+  inventoryEdit: false,
+  analytics: false,
+  settings: false,
+};
+
+export const SHARED_STAFF_PERMISSION_ROWS: SharedStaffPermissionRow[] = [
+  {
+    key: 'ordersManage',
+    module: 'Đơn hàng',
+    label: 'Xem chi tiết, trạng thái đơn hàng & xác nhận thành công',
+  },
+  {
+    key: 'ordersInvoices',
+    module: 'Hóa đơn',
+    label: 'Xem danh sách hóa đơn, nhân viên trực, thời gian & in hóa đơn',
+  },
+  {
+    key: 'pos',
+    module: 'Bán tại quầy',
+    label: 'Sử dụng màn hình thu ngân POS (tính tiền, tiền thối, in bill)',
+  },
+  {
+    key: 'appointments',
+    module: 'Dịch vụ chăm sóc',
+    label: 'Xem lịch hẹn & xác nhận hoàn thành dịch vụ chăm sóc thú cưng',
+  },
+  {
+    key: 'inventoryView',
+    module: 'Kho hàng',
+    label: 'Xem danh sách sản phẩm & số lượng tồn kho',
+  },
+  {
+    key: 'inventoryEdit',
+    module: 'Kho hàng',
+    label: 'Thêm, sửa, xóa sản phẩm & điều chỉnh giá / tồn kho',
+  },
+  {
+    key: 'analytics',
+    module: 'Doanh thu',
+    label: 'Xem báo cáo doanh thu tháng/năm, ngày giờ & xuất file CSV',
+  },
+  {
+    key: 'settings',
+    module: 'Hệ thống',
+    label: 'Thay đổi thông tin cửa hàng, cổng thanh toán & ma trận phân quyền',
+    lockedAdminOnly: true,
+  },
 ];
 
 export interface DailyRevenuePoint {
@@ -433,14 +493,6 @@ export interface StaffProfile {
   roleKey: Exclude<StaffRoleKey, 'admin'>;
   shiftLabel: string;
   station: string;
-}
-
-export interface StaffShiftTask {
-  id: string;
-  phase: 'Đầu ca' | 'Trong ca' | 'Cuối ca';
-  label: string;
-  assignee?: string;
-  defaultDone?: boolean;
 }
 
 export function isBankTransferPayment(paymentMethod: string): boolean {
@@ -487,13 +539,6 @@ export const STAFF_PROFILES: StaffProfile[] = [
   },
 ];
 
-export const STAFF_SHIFT_TASKS: StaffShiftTask[] = [
-  { id: 'task-1', phase: 'Đầu ca', label: 'Kiểm tra máy POS, đầu quét QR VNPay/MoMo & tiền lẻ đầu ca', defaultDone: true },
-  { id: 'task-2', phase: 'Đầu ca', label: 'Vệ sinh bàn chải lông, máy sấy & khử khuẩn khu vực Spa', defaultDone: true },
-  { id: 'task-3', phase: 'Trong ca', label: 'Xác nhận và đóng gói các đơn hàng giao nhanh 2h', defaultDone: false },
-  { id: 'task-4', phase: 'Cuối ca', label: 'Đối soát hóa đơn Tiền mặt (COD) & Chuyển khoản cuối ngày', defaultDone: false },
-];
-
 export const DAILY_REVENUE_SERIES: DailyRevenuePoint[] = [
   { day: '10/11', date: 'Thứ 3 · 10/11', transfer: 14200000, cash: 6800000, orders: 26 },
   { day: '11/11', date: 'Thứ 4 · 11/11', transfer: 18600000, cash: 8400000, orders: 34 },
@@ -511,46 +556,45 @@ export const REVENUE_PERIOD_DATASETS: Record<
     dateRange: string;
     growthLabel: string;
     avgOrderGrowth: string;
-    trend: Array<{ period: string; revenue: number; orders: number }>;
-    split: Array<{ channel: string; amount: number }>;
+    trend: Array<{
+      period: string;
+      fullLabel: string;
+      revenue: number;
+      transfer: number;
+      cash: number;
+      orders: number;
+    }>;
   }
 > = {
   'past-months': {
-    label: 'Các tháng đã qua (2026)',
-    dateRange: 'Tháng 01 – Tháng 11/2026',
-    growthLabel: '+16.8% so với tháng trước',
+    label: '12 tháng trong năm (2026)',
+    dateRange: 'Tháng 01 – Tháng 12/2026',
+    growthLabel: 'Tổng hợp cả năm 2026 (T1 – T12)',
     avgOrderGrowth: '+12.4% giá trị trung bình',
     trend: [
-      { period: 'Th1', revenue: 168400000, orders: 320 },
-      { period: 'Th2', revenue: 174200000, orders: 332 },
-      { period: 'Th3', revenue: 185900000, orders: 356 },
-      { period: 'Th4', revenue: 192400000, orders: 368 },
-      { period: 'Th5', revenue: 201800000, orders: 384 },
-      { period: 'Th6', revenue: 208500000, orders: 398 },
-      { period: 'Th7', revenue: 214300000, orders: 410 },
-      { period: 'Th8', revenue: 221900000, orders: 422 },
-      { period: 'Th9', revenue: 216500000, orders: 415 },
-      { period: 'Th10', revenue: 232400000, orders: 446 },
-      { period: 'Th11', revenue: 256600000, orders: 480 },
-    ],
-    split: [
-      { channel: 'Sản phẩm cửa hàng', amount: 1818300000 },
-      { channel: 'Dịch vụ chăm sóc', amount: 454600000 },
+      { period: 'T1', fullLabel: 'Tháng 01/2026', transfer: 116200000, cash: 52200000, revenue: 168400000, orders: 320 },
+      { period: 'T2', fullLabel: 'Tháng 02/2026', transfer: 120200000, cash: 54000000, revenue: 174200000, orders: 332 },
+      { period: 'T3', fullLabel: 'Tháng 03/2026', transfer: 128300000, cash: 57600000, revenue: 185900000, orders: 356 },
+      { period: 'T4', fullLabel: 'Tháng 04/2026', transfer: 132800000, cash: 59600000, revenue: 192400000, orders: 368 },
+      { period: 'T5', fullLabel: 'Tháng 05/2026', transfer: 139200000, cash: 62600000, revenue: 201800000, orders: 384 },
+      { period: 'T6', fullLabel: 'Tháng 06/2026', transfer: 143900000, cash: 64600000, revenue: 208500000, orders: 398 },
+      { period: 'T7', fullLabel: 'Tháng 07/2026', transfer: 147900000, cash: 66400000, revenue: 214300000, orders: 410 },
+      { period: 'T8', fullLabel: 'Tháng 08/2026', transfer: 153100000, cash: 68800000, revenue: 221900000, orders: 422 },
+      { period: 'T9', fullLabel: 'Tháng 09/2026', transfer: 149400000, cash: 67100000, revenue: 216500000, orders: 415 },
+      { period: 'T10', fullLabel: 'Tháng 10/2026', transfer: 160400000, cash: 72000000, revenue: 232400000, orders: 446 },
+      { period: 'T11', fullLabel: 'Tháng 11/2026', transfer: 177100000, cash: 79500000, revenue: 256600000, orders: 480 },
+      { period: 'T12', fullLabel: 'Tháng 12/2026', transfer: 186800000, cash: 83900000, revenue: 270700000, orders: 506 },
     ],
   },
   'past-years': {
-    label: 'Các năm đã qua (2024 – 2026)',
-    dateRange: 'Năm 2024 – 2026 (lũy kế)',
+    label: 'Các năm (2024 – 2026)',
+    dateRange: 'Năm 2024 – 2026',
     growthLabel: '+28.4% tăng trưởng theo năm',
     avgOrderGrowth: '+15.6% giá trị trung bình',
     trend: [
-      { period: 'Năm 2024', revenue: 1420500000, orders: 2890 },
-      { period: 'Năm 2025', revenue: 1864200000, orders: 3610 },
-      { period: 'Năm 2026 (đến T11)', revenue: 2272900000, orders: 4331 },
-    ],
-    split: [
-      { channel: 'Sản phẩm cửa hàng', amount: 4446100000 },
-      { channel: 'Dịch vụ chăm sóc', amount: 1111500000 },
+      { period: '2024', fullLabel: 'Năm 2024', transfer: 980100000, cash: 440400000, revenue: 1420500000, orders: 2890 },
+      { period: '2025', fullLabel: 'Năm 2025', transfer: 1286300000, cash: 577900000, revenue: 1864200000, orders: 3610 },
+      { period: '2026', fullLabel: 'Năm 2026 (T1 – T12)', transfer: 1755300000, cash: 788300000, revenue: 2543600000, orders: 4837 },
     ],
   },
 };

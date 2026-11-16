@@ -39,18 +39,16 @@ export function useThemeDroplet() {
 
     const rect = triggerEl?.getBoundingClientRect();
     const cx = rect ? rect.left + rect.width / 2 : window.innerWidth - 84;
-    const startY = rect ? rect.bottom - 2 : 34;
-    const dropDistance = 38;
-    const impactY = Math.min(window.innerHeight - 24, startY + dropDistance);
+    const cy = rect ? rect.top + rect.height / 2 : 36;
 
     const maxR = Math.hypot(
       Math.max(cx, window.innerWidth - cx),
-      Math.max(impactY, window.innerHeight - impactY)
+      Math.max(cy, window.innerHeight - cy)
     );
 
     const root = document.documentElement;
     root.style.setProperty('--drop-x', `${Math.round(cx)}px`);
-    root.style.setProperty('--drop-y', `${Math.round(impactY)}px`);
+    root.style.setProperty('--drop-y', `${Math.round(cy)}px`);
     root.style.setProperty('--drop-r', `${Math.ceil(maxR)}px`);
 
     const commitThemeDom = () => {
@@ -62,43 +60,13 @@ export function useThemeDroplet() {
       setTheme(nextTheme);
     };
 
-    const applyTheme = () => {
-      if (doc.startViewTransition) {
-        doc.startViewTransition(() => {
-          flushSync(commitThemeDom);
-        });
-      } else {
-        commitThemeDom();
-      }
-    };
-
-    if (prefersReduced || !triggerEl || typeof document === 'undefined') {
-      applyTheme();
-      return;
+    if (!prefersReduced && doc.startViewTransition) {
+      doc.startViewTransition(() => {
+        flushSync(commitThemeDom);
+      });
+    } else {
+      commitThemeDom();
     }
-
-    const droplet = document.createElement('div');
-    droplet.className = `ph-theme-droplet ${nextTheme === 'dark' ? 'is-obsidian' : 'is-daylight'}`;
-    droplet.style.left = `${cx}px`;
-    droplet.style.top = `${startY}px`;
-    document.body.appendChild(droplet);
-
-    const fallAnim = droplet.animate(
-      [
-        { transform: 'translate(-50%, 0px) scale(0.85, 0.9)', opacity: 0.92 },
-        { transform: `translate(-50%, ${dropDistance}px) scale(0.92, 1.24)`, opacity: 1 },
-      ],
-      {
-        duration: 150,
-        easing: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
-        fill: 'forwards',
-      }
-    );
-
-    fallAnim.onfinish = () => {
-      droplet.remove();
-      applyTheme();
-    };
   };
 
   return { theme, toggleWithDroplet };

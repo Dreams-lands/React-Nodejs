@@ -1,19 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Cell,
 } from 'recharts';
 import {
   Download,
   Calendar,
+  Clock,
   Landmark,
   Banknote,
   Search,
@@ -21,6 +20,8 @@ import {
   Printer,
   X,
   ArrowRight,
+  FileBarChart2,
+  Loader2,
 } from 'lucide-react';
 import type { LookupOrderEntry, ProductItem } from '../../data/mockData';
 import { formatCurrency } from '../../data/mockData';
@@ -42,18 +43,193 @@ interface AdminAnalyticsViewProps {
   onNotify: (msg: string) => void;
 }
 
+const getDefaultTodayIso = (): string => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const formatIsoToVnDate = (isoDate: string): string => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : isoDate;
+};
+
+const formatIsoToShortDay = (isoDate: string): string => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  return match ? `${match[3]}/${match[2]}` : isoDate;
+};
+
+const parseOrderCreatedAt = (createdAt: string): { isoDate: string | null; time: string } => {
+  const dateMatch = /(\d{2})\/(\d{2})\/(\d{4})/.exec(createdAt);
+  const timeMatch = /(\d{2}):(\d{2})/.exec(createdAt);
+  const isoDate = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : null;
+  // Orders created right away in checkout carry "Vừa đặt" instead of HH:mm
+  const now = new Date();
+  const fallbackTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : fallbackTime;
+  return { isoDate, time };
+};
+
 export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
-  products,
   orders,
   mode = 'period',
   onModeChange,
   onNotify,
 }) => {
+  const todayIso = useMemo(() => getDefaultTodayIso(), []);
   const [period, setPeriod] = useState<RevenuePeriodId>('past-months');
+
+  // Single-day + time window filter state for "Theo ngày & Hóa đơn"
+  const [selectedDate, setSelectedDate] = useState<string>(todayIso);
+  const [startTime, setStartTime] = useState<string>('00:00');
+  const [endTime, setEndTime] = useState<string>('23:59');
+  const [reportVisible, setReportVisible] = useState<boolean>(false);
+  const [isReportLoading, setIsReportLoading] = useState<boolean>(false);
+  const [reportSnapshot, setReportSnapshot] = useState<{
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>({
+    date: todayIso,
+    startTime: '00:00',
+    endTime: '23:59',
+  });
+  const loadTimerRef = useRef<number | null>(null);
+
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'transfer' | 'cash'>('all');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<LookupOrderEntry | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (loadTimerRef.current !== null) {
+        window.clearTimeout(loadTimerRef.current);
+      }
+    };
+  }, []);
+
+  const [normalizedStart, normalizedEnd] =
+    startTime <= endTime ? [startTime, endTime] : [endTime, startTime];
+
+  // Invoices strictly matching selected date + time window
+  const dateTimeMatchingOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const parsed = parseOrderCreatedAt(o.createdAt);
+      if (parsed.isoDate !== selectedDate) return false;
+      return parsed.time >= normalizedStart && parsed.time <= normalizedEnd;
+    });
+  }, [orders, selectedDate, normalizedStart, normalizedEnd]);
+
+  const filteredInvoices = useMemo(() => {
+    const q = invoiceSearch.trim().toLowerCase();
+    return dateTimeMatchingOrders.filter((o) => {
+      const isTransfer = isBankTransferPayment(o.paymentMethod);
+      const matchMethod =
+        invoiceFilter === 'all' ||
+        (invoiceFilter === 'transfer' && isTransfer) ||
+        (invoiceFilter === 'cash' && !isTransfer);
+      const matchQuery =
+        !q ||
+        o.id.toLowerCase().includes(q) ||
+        (o.customerName || '').toLowerCase().includes(q) ||
+        (o.customerPhone || '').toLowerCase().includes(q);
+      return matchMethod && matchQuery;
+    });
+  }, [dateTimeMatchingOrders, invoiceFilter, invoiceSearch]);
+
+  const computeDayBreakdown = (targetDate: string, fromT: string, toT: string) => {
+    const lo = fromT <= toT ? fromT : toT;
+    const hi = fromT <= toT ? toT : fromT;
+    const dayOrders = orders.filter((o) => {
+      if (o.status === 'cancelled') return false;
+      const parsed = parseOrderCreatedAt(o.createdAt);
+      return parsed.isoDate === targetDate && parsed.time >= lo && parsed.time <= hi;
+    });
+
+    let liveTransfer = 0;
+    let liveCash = 0;
+    for (const o of dayOrders) {
+      if (isBankTransferPayment(o.paymentMethod)) {
+        liveTransfer += o.totalAmount;
+      } else {
+        liveCash += o.totalAmount;
+      }
+    }
+
+    const isFullDay = lo === '00:00' && hi === '23:59';
+    const shortKey = formatIsoToShortDay(targetDate);
+    const baseline = isFullDay ? DAILY_REVENUE_SERIES.find((d) => d.day === shortKey) : undefined;
+
+    const transfer = (baseline?.transfer ?? 0) + liveTransfer;
+    const cash = (baseline?.cash ?? 0) + liveCash;
+    const orderCount = (baseline?.orders ?? 0) + dayOrders.length;
+
+    return {
+      day: shortKey,
+      dateLabel:
+        targetDate === todayIso
+          ? `Hôm nay · ${formatIsoToVnDate(targetDate)}`
+          : formatIsoToVnDate(targetDate),
+      transfer,
+      cash,
+      total: transfer + cash,
+      orders: orderCount,
+    };
+  };
+
+  // Single-day chart defaults to today (1 day only, never multi-day range)
+  const todayChartSummary = useMemo(
+    () => computeDayBreakdown(todayIso, '00:00', '23:59'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, todayIso]
+  );
+
+  const singleDayHorizontalSeries = useMemo(
+    () => [
+      {
+        method: 'Chuyển khoản',
+        amount: todayChartSummary.transfer,
+        fill: '#0667d0',
+      },
+      {
+        method: 'Tiền mặt (COD)',
+        amount: todayChartSummary.cash,
+        fill: '#c2410c',
+      },
+    ],
+    [todayChartSummary]
+  );
+
+  // Triggered report table summary for the chosen date + time range
+  const selectedDayReport = useMemo(
+    () => computeDayBreakdown(reportSnapshot.date, reportSnapshot.startTime, reportSnapshot.endTime),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, reportSnapshot]
+  );
+
+  const handleViewDailyReport = () => {
+    if (loadTimerRef.current !== null) {
+      window.clearTimeout(loadTimerRef.current);
+    }
+    setIsReportLoading(true);
+    const nextSnap = {
+      date: selectedDate,
+      startTime: normalizedStart,
+      endTime: normalizedEnd,
+    };
+    loadTimerRef.current = window.setTimeout(() => {
+      setReportSnapshot(nextSnap);
+      setReportVisible(true);
+      setIsReportLoading(false);
+      onNotify(
+        `Đã tải báo cáo doanh thu ngày ${formatIsoToVnDate(nextSnap.date)} (${nextSnap.startTime} – ${nextSnap.endTime}).`
+      );
+    }, 220);
+  };
+
+  // Period / Year analytics (T1-T12 or Years)
   const dataset = REVENUE_PERIOD_DATASETS[period];
 
   const totalRevenue = useMemo(
@@ -71,84 +247,10 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
     [totalRevenue, totalOrdersCount]
   );
 
-  const topProducts = useMemo(() => {
-    return [...products]
-      .sort((a, b) => (b.soldCount ?? 30) * b.priceNum - (a.soldCount ?? 30) * a.priceNum)
-      .slice(0, 5)
-      .map((p, idx) => {
-        const units = p.soldCount ?? 90 - idx * 14;
-        return {
-          ...p,
-          unitsSold: units,
-          revenue: units * p.priceNum,
-        };
-      });
-  }, [products]);
-
-  const liveMethodStats = useMemo(() => {
-    let transferAmount = 0;
-    let cashAmount = 0;
-    let transferCount = 0;
-    let cashCount = 0;
-
-    for (const o of orders) {
-      if (o.status === 'cancelled') continue;
-      if (isBankTransferPayment(o.paymentMethod)) {
-        transferAmount += o.totalAmount;
-        transferCount += 1;
-      } else {
-        cashAmount += o.totalAmount;
-        cashCount += 1;
-      }
-    }
-    return {
-      transferAmount,
-      cashAmount,
-      transferCount,
-      cashCount,
-      totalLiveAmount: transferAmount + cashAmount,
-    };
-  }, [orders]);
-
-  const dailySummary = useMemo(() => {
-    const baseTransfer = DAILY_REVENUE_SERIES.reduce((s, d) => s + d.transfer, 0);
-    const baseCash = DAILY_REVENUE_SERIES.reduce((s, d) => s + d.cash, 0);
-    const totalTransfer = baseTransfer + liveMethodStats.transferAmount;
-    const totalCash = baseCash + liveMethodStats.cashAmount;
-    const totalWeek = totalTransfer + totalCash;
-    const todayPoint = DAILY_REVENUE_SERIES[DAILY_REVENUE_SERIES.length - 1];
-    const todayTotal = todayPoint.transfer + todayPoint.cash + liveMethodStats.totalLiveAmount;
-    return {
-      totalTransfer,
-      totalCash,
-      totalWeek,
-      todayTotal,
-      transferPct: totalWeek > 0 ? Math.round((totalTransfer / totalWeek) * 100) : 0,
-      cashPct: totalWeek > 0 ? Math.round((totalCash / totalWeek) * 100) : 0,
-    };
-  }, [liveMethodStats]);
-
-  const filteredInvoices = useMemo(() => {
-    const q = invoiceSearch.trim().toLowerCase();
-    return orders.filter((o) => {
-      const isTransfer = isBankTransferPayment(o.paymentMethod);
-      const matchMethod =
-        invoiceFilter === 'all' ||
-        (invoiceFilter === 'transfer' && isTransfer) ||
-        (invoiceFilter === 'cash' && !isTransfer);
-      const matchQuery =
-        !q ||
-        o.id.toLowerCase().includes(q) ||
-        (o.customerName || '').toLowerCase().includes(q) ||
-        (o.customerPhone || '').toLowerCase().includes(q);
-      return matchMethod && matchQuery;
-    });
-  }, [orders, invoiceFilter, invoiceSearch]);
-
   const handleExportReport = () => {
     if (mode === 'daily') {
       downloadCsvFile(
-        'pethub-hoa-don-thanh-toan.csv',
+        `pethub-hoa-don-${selectedDate}.csv`,
         ['Mã hóa đơn', 'Mã đơn', 'Thời gian', 'Khách hàng', 'Hình thức', 'Kênh thanh toán', 'Số tiền (VND)', 'Trạng thái'],
         filteredInvoices.map((o) => [
           `HD-${o.id}`,
@@ -161,16 +263,16 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
           o.status === 'completed' ? 'Đã thu tiền' : o.status === 'cancelled' ? 'Đã hủy' : 'Chờ thu tiền',
         ])
       );
-      onNotify(`Đã xuất ${filteredInvoices.length} hóa đơn thanh toán ra file CSV.`);
+      onNotify(`Đã xuất ${filteredInvoices.length} hóa đơn ngày ${formatIsoToVnDate(selectedDate)} ra file CSV.`);
       return;
     }
 
     downloadCsvFile(
-      `pethub-revenue-${period}.csv`,
-      ['Kỳ báo cáo', 'Doanh thu (VND)', 'Số đơn hàng'],
-      dataset.trend.map((t) => [t.period, t.revenue, t.orders])
+      `pethub-doanh-thu-${period}.csv`,
+      ['Kỳ báo cáo', 'Số đơn', 'Thu Chuyển khoản (VND)', 'Thu Tiền mặt (VND)', 'Tổng doanh thu (VND)'],
+      dataset.trend.map((t) => [t.fullLabel, t.orders, t.transfer, t.cash, t.revenue])
     );
-    onNotify(`Đã xuất báo cáo doanh thu (${dataset.label}) ra file CSV.`);
+    onNotify(`Đã xuất báo cáo ${dataset.label} ra file CSV.`);
   };
 
   if (mode === 'daily') {
@@ -183,54 +285,98 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
               Doanh thu Theo ngày &amp; Hóa đơn thanh toán
             </h1>
             <p className="text-[13px] text-[#52657a] mt-1">
-              Theo dõi thu từng ngày và đối soát hóa đơn Tiền mặt (COD) / Chuyển khoản.
+              Chọn ngày giờ để lọc hóa đơn và bấm Xem báo cáo để kiểm tra số liệu trong ngày.
             </p>
           </div>
 
           <button
             type="button"
             onClick={handleExportReport}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#dfe6f0] hover:border-[#0667d0] text-[#17324d] hover:text-[#0667d0] text-[13px] font-bold cursor-pointer transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Xuất CSV hóa đơn</span>
           </button>
         </div>
 
-        {/* Clean 3-column Metric Strip */}
-        <AdminMetricStrip
-          columns={3}
-          items={[
-            {
-              label: 'Doanh thu 7 ngày gần nhất',
-              value: formatCurrency(dailySummary.totalWeek),
-              note: `Hôm nay 16/11: ${formatCurrency(dailySummary.todayTotal)}`,
-              tone: 'accent',
-            },
-            {
-              label: 'Thu Chuyển khoản (VNPay / MoMo)',
-              value: formatCurrency(dailySummary.totalTransfer),
-              note: `${dailySummary.transferPct}% tổng thu · ${liveMethodStats.transferCount} hóa đơn`,
-              tone: 'positive',
-            },
-            {
-              label: 'Thu Tiền mặt (COD)',
-              value: formatCurrency(dailySummary.totalCash),
-              note: `${dailySummary.cashPct}% tổng thu · ${liveMethodStats.cashCount} hóa đơn`,
-              tone: 'warn',
-            },
-          ]}
-        />
+        {/* Date-Time Picker + View Report Button */}
+        <div className="rounded-2xl bg-white border border-[#dfe6f0] p-4 sm:p-5 flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end gap-3.5">
+            <div>
+              <label
+                htmlFor="analytics-day-input"
+                className="block text-[11px] font-bold uppercase text-[#52657a] mb-1.5"
+              >
+                Chọn ngày
+              </label>
+              <div className="relative flex items-center">
+                <Calendar className="w-4 h-4 text-[#0667d0] absolute left-3 pointer-events-none" />
+                <input
+                  id="analytics-day-input"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value || todayIso)}
+                  className="h-10 pl-9 pr-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-semibold text-[#17324d] focus:outline-none focus:border-[#0667d0]"
+                />
+              </div>
+            </div>
 
-        {/* Daily Revenue Bar Chart: Chuyển khoản vs Tiền mặt */}
+            <div>
+              <label
+                htmlFor="analytics-time-start"
+                className="block text-[11px] font-bold uppercase text-[#52657a] mb-1.5"
+              >
+                Khung giờ (Từ – Đến)
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center">
+                  <Clock className="w-3.5 h-3.5 text-[#52657a] absolute left-3 pointer-events-none" />
+                  <input
+                    id="analytics-time-start"
+                    type="time"
+                    aria-label="Từ giờ"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value || '00:00')}
+                    className="h-10 pl-8 pr-2.5 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-semibold text-[#17324d] focus:outline-none focus:border-[#0667d0]"
+                  />
+                </div>
+                <span className="text-[12px] font-semibold text-[#52657a]">–</span>
+                <input
+                  id="analytics-time-end"
+                  type="time"
+                  aria-label="Đến giờ"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value || '23:59')}
+                  className="h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] font-semibold text-[#17324d] focus:outline-none focus:border-[#0667d0]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleViewDailyReport}
+            disabled={isReportLoading}
+            className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] disabled:opacity-70 text-white text-[13px] font-bold cursor-pointer transition-colors"
+          >
+            {isReportLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileBarChart2 className="w-4 h-4" />
+            )}
+            <span>{isReportLoading ? 'Đang tải...' : 'Xem báo cáo'}</span>
+          </button>
+        </div>
+
+        {/* Single-Day Bar Chart (Today Only) */}
         <div className="rounded-2xl bg-white border border-[#dfe6f0] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                Doanh thu từng ngày (10/11 – 16/11/2026)
+                Doanh thu ngày hôm nay ({formatIsoToVnDate(todayIso)})
               </h2>
               <p className="text-[12px] text-[#52657a]">
-                Tách riêng khoản thu Chuyển khoản và Tiền mặt theo từng ngày
+                Hiển thị riêng khoản thu Chuyển khoản và Tiền mặt trong ngày hôm nay
               </p>
             </div>
             <div className="flex items-center gap-4 text-[12px] font-semibold">
@@ -245,16 +391,29 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
             </div>
           </div>
 
-          <div className="h-[260px] w-full">
+          <div className="h-[220px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={DAILY_REVENUE_SERIES} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#52657a' }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: '#52657a' }}
+              <BarChart
+                data={singleDayHorizontalSeries}
+                layout="vertical"
+                margin={{ top: 10, right: 28, left: 8, bottom: 4 }}
+                barCategoryGap="22%"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 12, fill: '#52657a' }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v: number) => `${Math.round(v / 1000000)}tr`}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="method"
+                  width={130}
+                  tick={{ fontSize: 13, fontWeight: 700, fill: '#17324d' }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
@@ -263,85 +422,87 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
                     boxShadow: '0 8px 24px rgba(23,50,77,0.08)',
                     fontSize: '12px',
                   }}
-                  formatter={(value: unknown, name: unknown) => [
-                    formatCurrency(Number(value || 0)),
-                    name === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt (COD)',
-                  ]}
+                  formatter={(value: unknown) => [formatCurrency(Number(value || 0)), 'Doanh thu hôm nay']}
                 />
-                <Bar dataKey="transfer" name="transfer" fill="#0667d0" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false} />
-                <Bar dataKey="cash" name="cash" fill="#c2410c" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false} />
+                <Bar dataKey="amount" barSize={48} radius={[0, 10, 10, 0]} isAnimationActive={false}>
+                  {singleDayHorizontalSeries.map((entry) => (
+                    <Cell key={entry.method} fill={entry.fill} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Daily Breakdown Report Table */}
-        <div className="w-full max-w-full rounded-2xl bg-white border border-[#dfe6f0] overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-[#eef2f7] bg-[#f8faff] flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                Bảng báo cáo Doanh thu từng ngày
-              </h2>
-              <p className="text-[12px] text-[#52657a]">
-                Chi tiết số đơn và doanh thu Tiền mặt / Chuyển khoản theo từng ngày gần nhất
-              </p>
+        {/* Report Table — Appears ONLY when user clicks "Xem báo cáo" */}
+        {reportVisible && (
+          <div className="w-full max-w-full rounded-2xl bg-white border border-[#0667d0]/35 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#eef2f7] bg-[#f8faff] flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-[16px] font-extrabold text-[#17324d]">
+                  Bảng báo cáo doanh thu ngày {formatIsoToVnDate(reportSnapshot.date)}
+                </h2>
+                <p className="text-[12px] text-[#52657a]">
+                  Khung giờ áp dụng: {reportSnapshot.startTime} – {reportSnapshot.endTime}
+                </p>
+              </div>
+              <span className="text-[13px] font-extrabold text-[#0667d0] tabular-nums">
+                Tổng thu: {formatCurrency(selectedDayReport.total)}
+              </span>
             </div>
-            <span className="text-[12px] font-bold text-[#0667d0] tabular-nums">
-              7 ngày: {formatCurrency(dailySummary.totalWeek)}
-            </span>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="border-b border-[#eef2f7] bg-[#f8fafc] text-[11px] font-bold uppercase text-[#52657a]">
-                <tr>
-                  <th className="py-3 px-4">Ngày</th>
-                  <th className="py-3 px-4 text-right">Số đơn</th>
-                  <th className="py-3 px-4 text-right">Thu Chuyển khoản</th>
-                  <th className="py-3 px-4 text-right">Thu Tiền mặt (COD)</th>
-                  <th className="py-3 px-4 text-right">Tổng doanh thu ngày</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eef2f7] text-[13px] tabular-nums">
-                {[...DAILY_REVENUE_SERIES].reverse().map((row, idx) => {
-                  const isToday = idx === 0;
-                  const transferVal = row.transfer + (isToday ? liveMethodStats.transferAmount : 0);
-                  const cashVal = row.cash + (isToday ? liveMethodStats.cashAmount : 0);
-                  const ordersVal = row.orders + (isToday ? liveMethodStats.transferCount + liveMethodStats.cashCount : 0);
-                  return (
-                    <tr key={row.day} className="hover:bg-[#f8faff]/70">
-                      <td className="py-3 px-4 font-bold text-[#17324d] whitespace-nowrap">
-                        {row.date}
-                      </td>
-                      <td className="py-3 px-4 text-right font-semibold text-[#52657a]">
-                        {ordersVal} đơn
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-[#0667d0]">
-                        {formatCurrency(transferVal)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-[#c2410c]">
-                        {formatCurrency(cashVal)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-extrabold text-[#17324d]">
-                        {formatCurrency(transferVal + cashVal)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="border-b border-[#eef2f7] bg-[#f8fafc] text-[11px] font-bold uppercase text-[#52657a]">
+                  <tr>
+                    <th className="py-3 px-4">Ngày báo cáo</th>
+                    <th className="py-3 px-4">Khung giờ</th>
+                    <th className="py-3 px-4 text-right">Số đơn</th>
+                    <th className="py-3 px-4 text-right">Thu Chuyển khoản</th>
+                    <th className="py-3 px-4 text-right">Thu Tiền mặt (COD)</th>
+                    <th className="py-3 px-4 text-right">Tổng doanh thu</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[13px] tabular-nums">
+                  <tr className="hover:bg-[#f8faff]/70">
+                    <td className="py-3.5 px-4 font-bold text-[#17324d] whitespace-nowrap">
+                      {selectedDayReport.dateLabel}
+                    </td>
+                    <td className="py-3.5 px-4 text-[#52657a] whitespace-nowrap">
+                      {reportSnapshot.startTime} – {reportSnapshot.endTime}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-semibold text-[#52657a]">
+                      {selectedDayReport.orders} đơn
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-[#0667d0]">
+                      {formatCurrency(selectedDayReport.transfer)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-[#c2410c]">
+                      {formatCurrency(selectedDayReport.cash)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-extrabold text-[#17324d]">
+                      {formatCurrency(selectedDayReport.total)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Invoices Table Card */}
-        <div className="w-full max-w-full rounded-2xl bg-white border border-[#dfe6f0] overflow-hidden">
+        {/* Invoices Table Card — Filtered strictly by selected Date + Time */}
+        <div
+          className={`w-full max-w-full rounded-2xl bg-white border border-[#dfe6f0] overflow-hidden transition-opacity ${
+            isReportLoading ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
           <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#eef2f7] bg-[#f8faff]">
             <div>
               <h2 className="text-[16px] font-extrabold text-[#17324d]">
                 Hóa đơn thanh toán ({filteredInvoices.length})
               </h2>
               <p className="text-[12px] text-[#52657a]">
-                Đồng bộ tự động từ đơn đặt hàng Storefront và bán hàng tại quầy
+                Đang lọc theo ngày {formatIsoToVnDate(selectedDate)} · {normalizedStart} – {normalizedEnd}
               </p>
             </div>
 
@@ -397,7 +558,7 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
                 {filteredInvoices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-10 text-center text-[13px] text-[#52657a]">
-                      Không có hóa đơn phù hợp với bộ lọc hiện tại.
+                      Không có hóa đơn nào trong ngày {formatIsoToVnDate(selectedDate)} ({normalizedStart} – {normalizedEnd}).
                     </td>
                   </tr>
                 ) : (
@@ -575,10 +736,10 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[22px] sm:text-[26px] font-extrabold text-[#17324d] tracking-[-0.025em]">
-            Tổng doanh thu Theo tháng &amp; Năm đã qua
+            Doanh thu Theo tháng &amp; Năm
           </h1>
           <p className="text-[13px] text-[#52657a] mt-1">
-            Tổng hợp doanh thu tích lũy các tháng đã qua trong năm và đối chiếu tăng trưởng theo năm.
+            Biểu đồ Chuyển khoản / Tiền mặt từ Tháng 1 – Tháng 12 và tổng doanh thu cả năm.
           </p>
         </div>
 
@@ -608,8 +769,8 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="inline-flex rounded-xl border border-[#dfe6f0] bg-white p-1">
           {[
-            { id: 'past-months', label: 'Theo tháng đã qua (2026)' },
-            { id: 'past-years', label: 'Theo năm đã qua (2024 – 2026)' },
+            { id: 'past-months', label: 'Theo 12 tháng (T1 – T12)' },
+            { id: 'past-years', label: 'Theo năm (2024 – 2026)' },
           ].map((item) => (
             <button
               key={item.id}
@@ -632,12 +793,142 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
         </span>
       </div>
 
-      {/* Clean 3-column Metric Strip */}
+      {/* Adapted Grouped Bar Chart (Blue Chuyển khoản vs Orange Tiền mặt COD across T1–T12 / Years) */}
+      <div className="rounded-2xl bg-white border border-[#dfe6f0] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-[16px] font-extrabold text-[#17324d]">
+              Doanh thu {dataset.label}
+            </h2>
+            <p className="text-[12px] text-[#52657a]">
+              Tách riêng khoản thu Chuyển khoản và Tiền mặt theo từng {period === 'past-months' ? 'tháng (T1 – T12)' : 'năm'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-[12px] font-semibold">
+            <span className="inline-flex items-center gap-1.5 text-[#0667d0]">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#0667d0]" />
+              Chuyển khoản
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[#c2410c]">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#c2410c]" />
+              Tiền mặt (COD)
+            </span>
+          </div>
+        </div>
+
+        <div className={period === 'past-years' ? 'h-[310px] w-full' : 'h-[280px] w-full'}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={dataset.trend}
+              margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+              barGap={period === 'past-years' ? 14 : 6}
+              barCategoryGap={period === 'past-years' ? '22%' : '18%'}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+              <XAxis dataKey="period" tick={{ fontSize: 12, fontWeight: period === 'past-years' ? 700 : 500, fill: '#52657a' }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#52657a' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) =>
+                  v >= 1000000000 ? `${(v / 1000000000).toFixed(1)}tỷ` : `${Math.round(v / 1000000)}tr`
+                }
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: '12px',
+                  border: '1px solid #dfe6f0',
+                  boxShadow: '0 8px 24px rgba(23,50,77,0.08)',
+                  fontSize: '12px',
+                }}
+                formatter={(value: unknown, name: unknown) => [
+                  formatCurrency(Number(value || 0)),
+                  name === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt (COD)',
+                ]}
+              />
+              <Bar
+                dataKey="transfer"
+                name="transfer"
+                fill="#0667d0"
+                radius={period === 'past-years' ? [8, 8, 0, 0] : [6, 6, 0, 0]}
+                barSize={period === 'past-years' ? 58 : undefined}
+                maxBarSize={period === 'past-years' ? 68 : 26}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="cash"
+                name="cash"
+                fill="#c2410c"
+                radius={period === 'past-years' ? [8, 8, 0, 0] : [6, 6, 0, 0]}
+                barSize={period === 'past-years' ? 58 : undefined}
+                maxBarSize={period === 'past-years' ? 68 : 26}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Adapted Breakdown Table (Same clean table structure from Daily Breakdown) */}
+      <div className="w-full max-w-full rounded-2xl bg-white border border-[#dfe6f0] overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-[#eef2f7] bg-[#f8faff] flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-[16px] font-extrabold text-[#17324d]">
+              {period === 'past-months'
+                ? 'Bảng báo cáo Doanh thu từng tháng (T1 – T12/2026)'
+                : 'Bảng báo cáo Doanh thu từng năm (2024 – 2026)'}
+            </h2>
+            <p className="text-[12px] text-[#52657a]">
+              Chi tiết số đơn, thu Chuyển khoản và Tiền mặt theo từng {period === 'past-months' ? 'tháng' : 'năm'}
+            </p>
+          </div>
+          <span className="text-[12px] font-bold text-[#0667d0] tabular-nums">
+            Tổng {period === 'past-months' ? 'cả năm 2026' : 'giai đoạn'}: {formatCurrency(totalRevenue)}
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="border-b border-[#eef2f7] bg-[#f8fafc] text-[11px] font-bold uppercase text-[#52657a]">
+              <tr>
+                <th className="py-3 px-4">{period === 'past-months' ? 'Tháng' : 'Năm'}</th>
+                <th className="py-3 px-4 text-right">Số đơn</th>
+                <th className="py-3 px-4 text-right">Thu Chuyển khoản</th>
+                <th className="py-3 px-4 text-right">Thu Tiền mặt (COD)</th>
+                <th className="py-3 px-4 text-right">Tổng doanh thu</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#eef2f7] text-[13px] tabular-nums">
+              {dataset.trend.map((row) => (
+                <tr key={row.period} className="hover:bg-[#f8faff]/70">
+                  <td className="py-3 px-4 font-bold text-[#17324d] whitespace-nowrap">
+                    {row.fullLabel}
+                  </td>
+                  <td className="py-3 px-4 text-right font-semibold text-[#52657a]">
+                    {row.orders} đơn
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-[#0667d0]">
+                    {formatCurrency(row.transfer)}
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-[#c2410c]">
+                    {formatCurrency(row.cash)}
+                  </td>
+                  <td className="py-3 px-4 text-right font-extrabold text-[#17324d]">
+                    {formatCurrency(row.revenue)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Bottom 3-Column KPI Strip (Replaces Top 5 Products + Cash/Transfer Cards) */}
       <AdminMetricStrip
         columns={3}
         items={[
           {
-            label: 'Tổng doanh thu',
+            label: period === 'past-months' ? 'Tổng doanh thu cả năm' : 'Tổng doanh thu',
             value: formatCurrency(totalRevenue),
             note: dataset.growthLabel,
             tone: 'accent',
@@ -655,201 +946,6 @@ export const AdminAnalyticsView: React.FC<AdminAnalyticsViewProps> = ({
           },
         ]}
       />
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-        <div className="xl:col-span-7 rounded-2xl bg-white border border-[#dfe6f0] p-5">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <div>
-              <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                Xu hướng doanh thu ({dataset.label})
-              </h2>
-              <p className="text-[12px] text-[#52657a]">{dataset.growthLabel}</p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0667d0]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0667d0]" />
-              Doanh thu (VND)
-            </span>
-          </div>
-
-          <div className="h-[270px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dataset.trend} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="analyticsAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0667d0" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#0667d0" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="period" tick={{ fontSize: 11, fill: '#52657a' }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: '#52657a' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v: number) =>
-                    v >= 1000000000 ? `${(v / 1000000000).toFixed(1)}tỷ` : `${Math.round(v / 1000000)}tr`
-                  }
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '12px',
-                    border: '1px solid #dfe6f0',
-                    boxShadow: '0 8px 24px rgba(23,50,77,0.08)',
-                    fontSize: '12px',
-                  }}
-                  formatter={(value: unknown) => [formatCurrency(Number(value || 0)), 'Doanh thu']}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#0667d0" strokeWidth={2.5} fill="url(#analyticsAreaGrad)" isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="xl:col-span-5 rounded-2xl bg-white border border-[#dfe6f0] p-5">
-          <div className="mb-4">
-            <h2 className="text-[16px] font-extrabold text-[#17324d]">
-              Sản phẩm vs Dịch vụ chăm sóc
-            </h2>
-            <p className="text-[12px] text-[#52657a]">
-              So sánh tỷ trọng đóng góp doanh thu ({dataset.label})
-            </p>
-          </div>
-
-          <div className="h-[270px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataset.split} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="channel" tick={{ fontSize: 11, fill: '#52657a' }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: '#52657a' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v: number) =>
-                    v >= 1000000000 ? `${(v / 1000000000).toFixed(1)}tỷ` : `${Math.round(v / 1000000)}tr`
-                  }
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '12px',
-                    border: '1px solid #dfe6f0',
-                    fontSize: '12px',
-                  }}
-                  formatter={(value: unknown) => [formatCurrency(Number(value || 0)), 'Doanh thu']}
-                />
-                <Bar dataKey="amount" radius={[10, 10, 0, 0]} maxBarSize={68} isAnimationActive={false}>
-                  {dataset.split.map((_, idx) => (
-                    <Cell key={idx} fill={idx === 0 ? '#0667d0' : '#c2410c'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row: Top 5 Products + Cash vs Transfer Split */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-        <div className="xl:col-span-8 rounded-2xl bg-white border border-[#dfe6f0] p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <div>
-              <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                Top 5 sản phẩm đóng góp doanh thu
-              </h2>
-              <p className="text-[12px] text-[#52657a]">
-                Theo số lượng bán ra từ danh mục PetHub
-              </p>
-            </div>
-            <span className="text-[11px] text-[#52657a]">Đơn vị: VND (₫)</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="border-b border-[#eef2f7] text-[11px] font-bold uppercase text-[#52657a]">
-                <tr>
-                  <th className="py-2.5 pr-3">Sản phẩm</th>
-                  <th className="py-2.5 px-3 text-right">Đã bán</th>
-                  <th className="py-2.5 px-3 text-right">Đơn giá</th>
-                  <th className="py-2.5 pl-3 text-right">Doanh thu</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eef2f7] text-[13px]">
-                {topProducts.map((p) => (
-                  <tr key={p.id}>
-                    <td className="py-3 pr-3 font-bold text-[#17324d] max-w-[300px] truncate">
-                      {p.name}
-                    </td>
-                    <td className="py-3 px-3 text-right font-semibold text-[#17324d] tabular-nums">
-                      {p.unitsSold}
-                    </td>
-                    <td className="py-3 px-3 text-right text-[#52657a] tabular-nums">
-                      {formatCurrency(p.priceNum)}
-                    </td>
-                    <td className="py-3 pl-3 text-right font-extrabold text-[#17324d] tabular-nums">
-                      {formatCurrency(p.revenue)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="xl:col-span-4 rounded-2xl bg-white border border-[#dfe6f0] p-5 flex flex-col justify-between gap-4">
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                Tiền mặt vs Chuyển khoản
-              </h2>
-              <p className="text-[12px] text-[#52657a]">
-                Tỷ trọng thanh toán thực tế trên hệ thống ({dataset.label})
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  label: 'Chuyển khoản (VNPay QR & MoMo)',
-                  amount: Math.round(totalRevenue * 0.69) + liveMethodStats.transferAmount,
-                  pct: 69,
-                  color: 'bg-[#0667d0]',
-                },
-                {
-                  label: 'Tiền mặt (COD / Tại quầy)',
-                  amount: Math.round(totalRevenue * 0.31) + liveMethodStats.cashAmount,
-                  pct: 31,
-                  color: 'bg-[#c2410c]',
-                },
-              ].map((row) => (
-                <div key={row.label} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[12px] tabular-nums">
-                    <span className="font-bold text-[#17324d]">{row.label}</span>
-                    <span className="font-extrabold text-[#17324d]">
-                      {formatCurrency(row.amount)}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-[#eef2f7] overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${row.color}`}
-                      style={{ width: `${row.pct}%` }}
-                    />
-                  </div>
-                  <div className="text-right text-[11px] font-semibold text-[#52657a] tabular-nums">
-                    {row.pct}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-[#eef2f7] flex items-center justify-between tabular-nums">
-            <span className="text-[13px] font-bold text-[#17324d]">Tổng theo kỳ</span>
-            <span className="text-[17px] font-extrabold text-[#0667d0]">
-              {formatCurrency(totalRevenue)}
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

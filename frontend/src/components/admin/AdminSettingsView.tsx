@@ -8,13 +8,15 @@ import {
   Lock,
   RefreshCw,
   Info,
+  Users,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import {
-  INITIAL_PERMISSION_MATRIX,
-  STAFF_ROLE_SUMMARIES,
+  SHARED_STAFF_PERMISSION_ROWS,
   type PaymentGatewayConfig,
-  type PermissionMatrixRow,
   type SettingsTabId,
+  type SharedStaffPermissions,
   type StoreSettings,
 } from '../../data/adminData';
 
@@ -22,8 +24,12 @@ interface AdminSettingsViewProps {
   activeTab?: SettingsTabId;
   storeSettings: StoreSettings;
   paymentGateways: PaymentGatewayConfig;
+  staffRoster: string[];
+  staffPermissions: SharedStaffPermissions;
   onSaveStoreSettings: (next: StoreSettings) => void;
   onSavePaymentGateways: (next: PaymentGatewayConfig) => void;
+  onSaveStaffRoster: (nextRoster: string[]) => void;
+  onSaveStaffPermissions: (nextPerms: SharedStaffPermissions) => void;
   onNotify: (msg: string) => void;
 }
 
@@ -52,21 +58,42 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   activeTab = 'general',
   storeSettings,
   paymentGateways,
+  staffRoster,
+  staffPermissions,
   onSaveStoreSettings,
   onSavePaymentGateways,
+  onSaveStaffRoster,
+  onSaveStaffPermissions,
   onNotify,
 }) => {
   const [draftStore, setDraftStore] = useState<StoreSettings>(storeSettings);
   const [draftGateways, setDraftGateways] = useState<PaymentGatewayConfig>(paymentGateways);
-  const [permissions, setPermissions] = useState<PermissionMatrixRow[]>(
-    INITIAL_PERMISSION_MATRIX
-  );
+  const [draftPermissions, setDraftPermissions] = useState<SharedStaffPermissions>(staffPermissions);
+  const [newStaffName, setNewStaffName] = useState('');
   const headerMeta = SETTINGS_HEADER_META[activeTab];
 
-  const togglePermission = (id: string, role: 'manager' | 'cashier' | 'groomer') => {
-    setPermissions((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [role]: !row[role] } : row))
-    );
+  const toggleStaffPermission = (key: keyof SharedStaffPermissions) => {
+    setDraftPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleAddStaffMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = newStaffName.trim();
+    if (!cleaned) return;
+    if (staffRoster.some((s) => s.toLowerCase() === cleaned.toLowerCase())) {
+      onNotify(`Nhân viên "${cleaned}" đã có trong danh sách dùng chung tài khoản staff.`);
+      return;
+    }
+    onSaveStaffRoster([...staffRoster, cleaned]);
+    setNewStaffName('');
+  };
+
+  const handleRemoveStaffMember = (name: string) => {
+    if (staffRoster.length <= 1) {
+      onNotify('Cần giữ ít nhất 1 nhân viên sử dụng tài khoản staff.');
+      return;
+    }
+    onSaveStaffRoster(staffRoster.filter((s) => s !== name));
   };
 
   return (
@@ -494,21 +521,33 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Staff Role Permissions */}
+      {/* Tab 3: Shared Staff Account Permissions */}
       {activeTab === 'permissions' && (
         <div className="space-y-5">
+          {/* Shared-Staff Model Explainer */}
+          <div className="rounded-2xl bg-[#eff5ff] border border-[#c8ddf8] p-4 flex items-start gap-3 text-[12.5px] text-[#17324d]">
+            <Info className="w-4 h-4 text-[#0667d0] shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-[#0667d0]">Mô hình phân quyền dùng chung tài khoản Staff:</strong> Tất cả nhân viên trực ca sử dụng chung 1 tài khoản{' '}
+              <code className="px-1.5 py-0.5 rounded bg-white border border-[#c8ddf8] text-[12px] font-mono">
+                staff@pethub.vn
+              </code>
+              . Sau khi đăng nhập, nhân viên chọn tên ca trực của mình ở thanh trên cùng hoặc quầy POS để tự động ghi nhận vào Hóa đơn bán hàng, đồng thời chịu ràng buộc chung theo bảng phân quyền bên dưới.
+            </div>
+          </div>
+
           <div className="rounded-2xl bg-white border border-[#dfe6f0] overflow-hidden">
             <div className="p-5 border-b border-[#eef2f7] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className="text-[16px] font-extrabold text-[#17324d]">
-                  Ma trận phân quyền nhân viên
+                  Ma trận phân quyền theo tài khoản hệ thống
                 </h2>
                 <p className="text-[12px] text-[#52657a]">
-                  Bật/tắt quyền truy cập từng phân hệ theo vai trò. Tài khoản Quản trị viên được khóa toàn quyền.
+                  Bật/tắt quyền thao tác chung cho tất cả nhân viên khi đăng nhập bằng tài khoản staff. Tài khoản Quản trị viên được khóa toàn quyền.
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-[#f8faff] border border-[#dfe6f0] text-[11px] font-bold text-[#17324d]">
-                4 vai trò hệ thống
+                2 tài khoản (Admin &amp; Staff dùng chung)
               </span>
             </div>
 
@@ -517,22 +556,20 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                 <thead className="bg-[#f8faff] border-b border-[#eef2f7] text-[12px] text-[#17324d]">
                   <tr>
                     <th className="px-5 py-3 font-extrabold">Phân hệ / Quyền thao tác</th>
-                    <th className="px-4 py-3 text-center font-extrabold">Quản trị viên</th>
-                    <th className="px-4 py-3 text-center font-extrabold">Quản lý cửa hàng</th>
-                    <th className="px-4 py-3 text-center font-extrabold">Thu ngân</th>
-                    <th className="px-4 py-3 text-center font-extrabold">Chuyên viên chăm sóc</th>
+                    <th className="px-5 py-3 text-center font-extrabold">Quản trị viên (admin)</th>
+                    <th className="px-5 py-3 text-center font-extrabold">Tài khoản Staff dùng chung ({staffRoster.length} NV)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#eef2f7] text-[13px]">
-                  {permissions.map((row) => (
-                    <tr key={row.id} className="hover:bg-[#f8faff]">
+                  {SHARED_STAFF_PERMISSION_ROWS.map((row) => (
+                    <tr key={row.key} className="hover:bg-[#f8faff]">
                       <td className="px-5 py-3">
                         <span className="text-[11px] font-bold text-[#52657a] mr-2">
                           [{row.module}]
                         </span>
                         <span className="font-semibold text-[#17324d]">{row.label}</span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-5 py-3 text-center">
                         <span
                           title="Toàn quyền cố định"
                           className="inline-flex w-6 h-6 rounded-md bg-slate-100 text-[#52657a] items-center justify-center"
@@ -540,49 +577,101 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                           <Lock className="w-3.5 h-3.5" />
                         </span>
                       </td>
-                      {(['manager', 'cashier', 'groomer'] as const).map((roleKey) => (
-                        <td key={roleKey} className="px-4 py-3 text-center">
+                      <td className="px-5 py-3 text-center">
+                        {row.lockedAdminOnly ? (
+                          <span className="text-[11px] font-bold text-[#52657a]">Chỉ Admin</span>
+                        ) : (
                           <input
                             type="checkbox"
-                            aria-label={`${row.label} - ${roleKey}`}
-                            checked={row[roleKey]}
-                            onChange={() => togglePermission(row.id, roleKey)}
+                            aria-label={`${row.label} - Tài khoản staff`}
+                            checked={draftPermissions[row.key]}
+                            onChange={() => toggleStaffPermission(row.key)}
                             className="w-4 h-4 accent-[#0667d0] rounded cursor-pointer"
                           />
-                        </td>
-                      ))}
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="px-5 py-4 bg-[#f8faff] border-t border-[#eef2f7] flex justify-end">
+            <div className="px-5 py-4 bg-[#f8faff] border-t border-[#eef2f7] flex justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => onNotify('Đã lưu bảng phân quyền nhân viên PetHub.')}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#c2410c] hover:bg-[#a93608] text-white text-[13px] font-bold cursor-pointer"
+                onClick={() => setDraftPermissions(staffPermissions)}
+                className="px-4 py-2 rounded-xl border border-[#dfe6f0] bg-white text-[13px] font-bold text-[#17324d] cursor-pointer"
+              >
+                Khôi phục
+              </button>
+              <button
+                type="button"
+                onClick={() => onSaveStaffPermissions(draftPermissions)}
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[13px] font-bold cursor-pointer"
               >
                 <Check className="w-4 h-4" />
-                <span>Lưu phân quyền</span>
+                <span>Lưu &amp; áp dụng phân quyền</span>
               </button>
             </div>
           </div>
 
-          {/* Staff Assignment Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {STAFF_ROLE_SUMMARIES.map((card) => (
-              <div
-                key={card.role}
-                className="rounded-2xl bg-white border border-[#dfe6f0] p-4 space-y-1.5"
-              >
-                <div className="text-[13px] font-extrabold text-[#17324d]">{card.title}</div>
-                <div className="text-[12px] text-[#52657a]">{card.membersText}</div>
-                <div className="text-[11px] font-bold text-[#0667d0] pt-1">
-                  {card.count} thành viên · {card.subtitle}
+          {/* Shared Staff Roster Card */}
+          <div className="rounded-2xl bg-white border border-[#dfe6f0] p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#eff5ff] text-[#0667d0] flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-extrabold text-[#17324d]">
+                    Danh sách nhân viên dùng chung tài khoản staff ({staffRoster.length})
+                  </h3>
+                  <p className="text-[12px] text-[#52657a]">
+                    Nhân viên trong danh sách được chọn tên mình làm nhân viên bán/trực trên POS và Hóa đơn.
+                  </p>
                 </div>
               </div>
-            ))}
+
+              <form onSubmit={handleAddStaffMember} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newStaffName}
+                  onChange={(e) => setNewStaffName(e.target.value)}
+                  placeholder="Tên nhân viên mới..."
+                  className="h-9 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[12.5px] text-[#17324d] focus:outline-none focus:border-[#0667d0]"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1 h-9 px-3.5 rounded-xl bg-[#0667d0] hover:bg-[#0558b5] text-white text-[12px] font-bold cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm</span>
+                </button>
+              </form>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {staffRoster.map((memberName) => (
+                <div
+                  key={memberName}
+                  className="rounded-xl border border-[#dfe6f0] bg-[#f8faff] px-3.5 py-2.5 flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-bold text-[#17324d] truncate">{memberName}</div>
+                    <div className="text-[11px] text-[#52657a]">Dùng chung · staff@pethub.vn</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStaffMember(memberName)}
+                    title={`Xóa ${memberName}`}
+                    aria-label={`Xóa nhân viên ${memberName}`}
+                    className="p-1.5 rounded-lg hover:bg-rose-50 text-[#52657a] hover:text-rose-600 cursor-pointer shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

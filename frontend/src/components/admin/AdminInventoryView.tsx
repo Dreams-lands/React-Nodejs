@@ -67,7 +67,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
 
   // Form states for add/edit modal
   const [formName, setFormName] = useState('');
-  const [formBrand, setFormBrand] = useState('PETHUB SELECT');
+  const [formBrand, setFormBrand] = useState('PETSFRIEND SELECT');
   const [formCat, setFormCat] = useState<Exclude<ProductCategory, 'spa'>>('food');
   const [formSubType, setFormSubType] = useState('Dinh dưỡng & Hạt khô');
   const [formPetType, setFormPetType] = useState<'dog' | 'cat' | 'both'>('both');
@@ -130,7 +130,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
       setIsCreating(true);
       setEditingProduct(null);
       setFormName('');
-      setFormBrand('PETHUB SELECT');
+      setFormBrand('PETSFRIEND SELECT');
       setFormCat('food');
       setFormSubType('Dinh dưỡng & Hạt khô');
       setFormPetType('both');
@@ -157,11 +157,11 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
       ? { ...editingProduct }
       : {
           id: `prod-custom-${Date.now().toString().slice(-5)}`,
-          brand: formBrand.trim() || 'PETHUB SELECT',
+          brand: formBrand.trim() || 'PETSFRIEND SELECT',
           name: formName.trim(),
-          shortDesc: 'Sản phẩm chính hãng được phân phối trực tiếp tại PetHub Flagship.',
+          shortDesc: 'Sản phẩm chính hãng được phân phối trực tiếp tại PetsFriend Flagship.',
           description:
-            'Sản phẩm chọn lọc chuẩn chất lượng PetHub, an toàn và phù hợp nhu cầu chăm sóc thú cưng hằng ngày.',
+            'Sản phẩm chọn lọc chuẩn chất lượng PetsFriend, an toàn và phù hợp nhu cầu chăm sóc thú cưng hằng ngày.',
           packSize: formPackSize.trim() || 'Tiêu chuẩn',
           sizes: ['Tiêu chuẩn'],
           rating: 4.9,
@@ -176,7 +176,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
           gallery: [formImage.trim() || '/images/prod-ceramic-bowl.jpg'],
           bgTone: '#eff5ff',
           stockCount: formStock,
-          highlights: ['Chính hãng PetHub Flagship', 'Kiểm tra kỹ trước khi giao'],
+          highlights: ['Chính hãng PetsFriend Flagship', 'Kiểm tra kỹ trước khi giao'],
           soldCount: 0,
           reviews: [],
         };
@@ -184,7 +184,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
     const nextItem: ProductItem = {
       ...base,
       name: formName.trim(),
-      brand: formBrand.trim().toUpperCase() || 'PETHUB',
+      brand: formBrand.trim().toUpperCase() || 'PETSFRIEND',
       category: formCat,
       subType: formSubType as ProductItem['subType'],
       petType: formPetType,
@@ -346,7 +346,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
                 onClick={() =>
                   onRequestConfirm({
                     title: 'Xác nhận xóa sản phẩm',
-                    message: `Bạn có chắc chắn muốn xóa "${item.name}" khỏi kho PetHub?`,
+                    message: `Bạn có chắc chắn muốn xóa "${item.name}" khỏi kho PetsFriend?`,
                     confirmLabel: 'Xóa sản phẩm',
                     tone: 'danger',
                     onConfirm: () => onDeleteProduct(item.id),

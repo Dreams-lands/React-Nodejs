@@ -54,7 +54,7 @@
   }
 }
 
-/* Water-Droplet View Transition Ripple (Light <-> Dark across Storefront, Admin & Staff) */
+/* Radial Circular View Transition Ripple (Light <-> Dark across Storefront & Admin) */
 @keyframes ph-droplet-expand {
   from {
     clip-path: circle(0px at var(--drop-x) var(--drop-y));
@@ -76,31 +76,7 @@
 
 ::view-transition-new(root) {
   z-index: 9999;
-  animation: ph-droplet-expand 660ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.ph-theme-droplet {
-  position: fixed;
-  width: 13px;
-  height: 17px;
-  border-radius: 50% 50% 50% 50% / 64% 64% 36% 36%;
-  pointer-events: none;
-  z-index: 10000;
-  will-change: transform, opacity;
-}
-
-.ph-theme-droplet.is-obsidian {
-  background: radial-gradient(circle at 34% 32%, #52525b 0%, #141417 45%, #050507 100%);
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.45),
-    inset 0 1px 2px rgba(255, 255, 255, 0.4);
-}
-
-.ph-theme-droplet.is-daylight {
-  background: radial-gradient(circle at 34% 32%, #ffffff 0%, #e5effc 55%, #b9d4f7 100%);
-  box-shadow:
-    0 6px 16px rgba(6, 103, 208, 0.35),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  animation: ph-droplet-expand 720ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* Accessibility: Skip Link for keyboard navigation (WCAG 2.4.1) */
@@ -253,7 +229,8 @@ html[data-theme="dark"] .ph-theme-scope :is(
   .bg-white\/95,
   .bg-\[\#ffffff\],
   .bg-\[\#f8fafc\],
-  .bg-\[\#fcfdff\]
+  .bg-\[\#fcfdff\],
+  .focus-within\:bg-white:focus-within
 ) {
   background-color: #141417;
 }

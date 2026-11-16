@@ -129,7 +129,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             Đăng nhập để quản lý tài khoản
           </h1>
           <p className="text-sm text-[#52657a] max-w-md mx-auto mb-7">
-            Theo dõi đơn hàng, quản lý địa chỉ giao hàng, xem lại lịch hẹn spa và danh sách sản phẩm yêu thích của bạn tại PetHub.
+            Theo dõi đơn hàng, quản lý địa chỉ giao hàng, xem lại lịch hẹn spa và danh sách sản phẩm yêu thích của bạn tại PetsFriend.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
@@ -265,7 +265,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     }
     onRequestConfirm({
       title: 'Xác nhận đổi mật khẩu',
-      message: 'Bạn chắc chắn muốn cập nhật mật khẩu mới cho tài khoản PetHub ngay bây giờ?',
+      message: 'Bạn chắc chắn muốn cập nhật mật khẩu mới cho tài khoản PetsFriend ngay bây giờ?',
       confirmLabel: 'Xác nhận đổi',
       tone: 'primary',
       onConfirm: () => {
@@ -323,7 +323,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 </div>
                 <div className="text-xs text-[#52657a] flex items-center gap-1 mt-0.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#0667d0]" />
-                  <span>Hội viên PetHub</span>
+                  <span>Hội viên PetsFriend</span>
                 </div>
               </div>
             </div>

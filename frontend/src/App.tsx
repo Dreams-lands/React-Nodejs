@@ -64,12 +64,13 @@ import {
 import {
   ADMIN_EXTRA_BOOKINGS,
   ADMIN_EXTRA_ORDERS,
+  DEFAULT_SHARED_STAFF_PERMISSIONS,
   DEFAULT_WORKSPACE_ACCOUNTS,
   INITIAL_PAYMENT_GATEWAYS,
   INITIAL_STORE_SETTINGS,
-  STAFF_SHIFT_TASKS,
+  STAFF_MEMBERS,
   type PaymentGatewayConfig,
-  type StaffShiftTask,
+  type SharedStaffPermissions,
   type StoreSettings,
   type WorkspaceUserRole,
 } from './data/adminData';
@@ -116,7 +117,7 @@ interface OrderSnapshot {
 }
 
 const STORE_PICKUP_INFO = {
-  name: 'PetHub Flagship — Chi nhánh Quận 1',
+  name: 'PetsFriend Flagship — Chi nhánh Quận 1',
   address: '128 Nguyễn Trãi, P. Bến Thành, Quận 1, TP. Hồ Chí Minh',
   hours: '08:00 – 21:00 mỗi ngày',
 };
@@ -227,15 +228,11 @@ export function App() {
   const [products, setProducts] = useState<ProductItem[]>(CATALOG_PRODUCTS);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(INITIAL_STORE_SETTINGS);
   const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayConfig>(INITIAL_PAYMENT_GATEWAYS);
-  const [shiftTasks, setShiftTasks] = useState<StaffShiftTask[]>(STAFF_SHIFT_TASKS);
-  const [doneTaskIds, setDoneTaskIds] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    for (const t of STAFF_SHIFT_TASKS) {
-      if (t.defaultDone) initial[t.id] = true;
-    }
-    return initial;
-  });
-  const [onShift, setOnShift] = useState(true);
+  const [sharedStaffRoster, setSharedStaffRoster] = useState<string[]>(STAFF_MEMBERS);
+  const [activeShiftStaff, setActiveShiftStaff] = useState<string>(STAFF_MEMBERS[0]);
+  const [staffPermissions, setStaffPermissions] = useState<SharedStaffPermissions>(
+    DEFAULT_SHARED_STAFF_PERMISSIONS
+  );
 
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -254,6 +251,7 @@ export function App() {
       customerName: 'Trịnh Anh Khoa',
       customerPhone: '0909 123 456',
       customerEmail: 'khoa.trinh@pethub.vn',
+      staffName: 'Hà Lê',
     })),
     ...ADMIN_EXTRA_ORDERS,
   ]);
@@ -415,8 +413,11 @@ export function App() {
   };
 
   const handleUpdateOrderStatus = (orderId: string, nextStatus: OrderStatus) => {
+    const actorName = authRole === 'staff' ? activeShiftStaff : userName;
     setLookupEntries((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
+      prev.map((o) =>
+        o.id === orderId ? { ...o, status: nextStatus, staffName: o.staffName || actorName } : o
+      )
     );
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
@@ -525,7 +526,7 @@ export function App() {
   const handleLogout = () => {
     setConfirmDialog({
       title: 'Xác nhận đăng xuất',
-      message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản PetHub không?',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản PetsFriend không?',
       confirmLabel: 'Đăng xuất',
       tone: 'danger',
       onConfirm: () => {
@@ -887,7 +888,7 @@ export function App() {
     const newRev: ProductReview = {
       id: `rev-user-${Date.now()}`,
       author: userName,
-      petTag: reviewPetTag.trim() || 'Thành viên PetHub',
+      petTag: reviewPetTag.trim() || 'Thành viên PetsFriend',
       rating: reviewRating,
       date: 'Hôm nay',
       verified: true,
@@ -929,38 +930,29 @@ export function App() {
             key={authRole}
             userRole={authRole}
             currentUserName={userName}
+            staffRoster={sharedStaffRoster}
+            activeShiftStaff={activeShiftStaff}
+            onChangeShiftStaff={(nextName) => {
+              setActiveShiftStaff(nextName);
+              triggerToast(`Đã chuyển ca trực sang nhân viên ${nextName}.`);
+            }}
+            onSaveStaffRoster={(nextRoster) => {
+              setSharedStaffRoster(nextRoster);
+              if (!nextRoster.includes(activeShiftStaff)) {
+                setActiveShiftStaff(nextRoster[0] || STAFF_MEMBERS[0]);
+              }
+              triggerToast('Đã cập nhật danh sách nhân viên dùng chung tài khoản staff.');
+            }}
+            staffPermissions={staffPermissions}
+            onSaveStaffPermissions={(nextPerms) => {
+              setStaffPermissions(nextPerms);
+              triggerToast('Đã lưu và áp dụng phân quyền cho tài khoản staff dùng chung.');
+            }}
             products={products}
             orders={lookupEntries}
             bookings={bookings}
             storeSettings={storeSettings}
             paymentGateways={paymentGateways}
-            shiftTasks={shiftTasks}
-            doneTaskIds={doneTaskIds}
-            onShift={onShift}
-            onToggleShift={() => {
-              setOnShift((prev) => {
-                const next = !prev;
-                triggerToast(
-                  next
-                    ? `${userName} đã chấm công Bắt đầu ca làm việc.`
-                    : `${userName} đã xác nhận Kết thúc ca làm việc.`
-                );
-                return next;
-              });
-            }}
-            onToggleTaskDone={(taskId) => {
-              setDoneTaskIds((prev) => {
-                const next = !prev[taskId];
-                triggerToast(
-                  next ? 'Đã xác nhận hoàn thành nhiệm vụ được giao.' : 'Đã mở lại trạng thái nhiệm vụ.'
-                );
-                return { ...prev, [taskId]: next };
-              });
-            }}
-            onAddTask={(task) => {
-              setShiftTasks((prev) => [task, ...prev]);
-              triggerToast(`Đã giao nhiệm vụ mới cho ${task.assignee || 'nhân viên'}.`);
-            }}
             onSaveProduct={handleSaveAdminProduct}
             onDeleteProduct={handleDeleteAdminProduct}
             onUpdateOrderStatus={handleUpdateOrderStatus}
@@ -1191,7 +1183,7 @@ export function App() {
                       Tin chọn bởi hơn 50.000 gia đình Việt.
                     </h2>
                     <p className="text-[14px] text-[#52657a] leading-relaxed max-w-[58ch]">
-                      Mỗi sản phẩm tại PetHub đều được chọn lọc kỹ lưỡng về thành phần, chất liệu và độ an toàn.
+                      Mỗi sản phẩm tại PetsFriend đều được chọn lọc kỹ lưỡng về thành phần, chất liệu và độ an toàn.
                     </p>
                   </div>
                   <button
@@ -2942,7 +2934,7 @@ export function App() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!ownerPhone.trim()) {
-                        triggerToast('Vui lòng nhập số điện thoại để PetHub liên hệ xác nhận lịch hẹn.');
+                        triggerToast('Vui lòng nhập số điện thoại để PetsFriend liên hệ xác nhận lịch hẹn.');
                         return;
                       }
                       const newBooking: ServiceBookingRecord = {
@@ -3164,7 +3156,7 @@ export function App() {
                   <span className="font-semibold text-[#0667d0]">Liên hệ</span>
                 </div>
                 <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#17324d] tracking-tight">
-                  Liên hệ PetHub
+                  Liên hệ PetsFriend
                 </h1>
                 <p className="text-[14px] text-[#52657a] max-w-[60ch]">
                   Hỗ trợ tư vấn dinh dưỡng, đặt lịch dịch vụ chăm sóc và theo dõi đơn hàng trực tiếp.
@@ -3244,7 +3236,7 @@ export function App() {
                         Đã tiếp nhận yêu cầu hỗ trợ
                       </h2>
                       <p className="text-[14px] text-[#52657a] leading-relaxed">
-                        Cảm ơn <span className="font-bold text-[#17324d]">{contactName}</span>. Tư vấn viên PetHub sẽ liên hệ qua số{' '}
+                        Cảm ơn <span className="font-bold text-[#17324d]">{contactName}</span>. Tư vấn viên PetsFriend sẽ liên hệ qua số{' '}
                         <span className="font-bold text-[#0667d0] tabular-nums">{contactPhone}</span> trong thời gian sớm nhất.
                       </p>
                       <div className="pt-2 flex flex-wrap justify-center gap-3">
@@ -3276,13 +3268,13 @@ export function App() {
                           return;
                         }
                         setContactSent(true);
-                        triggerToast('Đã gửi tin nhắn liên hệ tới PetHub.');
+                        triggerToast('Đã gửi tin nhắn liên hệ tới PetsFriend.');
                       }}
                       className="space-y-5"
                     >
                       <div>
                         <h2 className="text-lg font-extrabold text-[#17324d]">
-                          Gửi lời nhắn cho PetHub
+                          Gửi lời nhắn cho PetsFriend
                         </h2>
                         <p className="text-[13px] text-[#52657a] mt-1">
                           Không cần đăng nhập — điền thông tin bên dưới để được tư vấn viên phản hồi trực tiếp.

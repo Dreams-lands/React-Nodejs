@@ -28,9 +28,10 @@ import type {
   AdminSectionId,
   AnalyticsMode,
   InventoryMode,
+  OrdersMode,
   PaymentGatewayConfig,
   SettingsTabId,
-  StaffShiftTask,
+  SharedStaffPermissions,
   StoreSettings,
   WorkspaceUserRole,
 } from '../../data/adminData';
@@ -41,20 +42,11 @@ import { AdminOrdersView } from './AdminOrdersView';
 import { AdminAnalyticsView } from './AdminAnalyticsView';
 import { AdminAppointmentsView } from './AdminAppointmentsView';
 import { AdminSettingsView } from './AdminSettingsView';
-import { AdminTasksView } from './AdminTasksView';
 import { AdminPosView } from './AdminPosView';
 import { ThemeToggleButton } from '../ThemeToggleButton';
 import type { ThemeMode } from '../../lib/useThemeDroplet';
 
-const STAFF_ALLOWED_SECTIONS: AdminSectionId[] = [
-  'tasks',
-  'orders',
-  'appointments',
-  'pos',
-  'inventory',
-];
-
-type SidebarGroupKey = 'sales' | 'inventory' | 'analytics' | 'settings';
+type SidebarGroupKey = 'orders' | 'sales' | 'inventory' | 'analytics' | 'settings';
 
 interface SidebarChildItem {
   key: string;
@@ -84,10 +76,9 @@ type SidebarEntry =
     };
 
 const SECTION_PARENT_GROUP: Partial<Record<AdminSectionId, SidebarGroupKey>> = {
-  orders: 'sales',
+  orders: 'orders',
   appointments: 'sales',
   pos: 'sales',
-  tasks: 'sales',
   inventory: 'inventory',
   analytics: 'analytics',
   settings: 'settings',
@@ -96,17 +87,17 @@ const SECTION_PARENT_GROUP: Partial<Record<AdminSectionId, SidebarGroupKey>> = {
 interface AdminWorkspaceProps {
   userRole: WorkspaceUserRole;
   currentUserName: string;
+  staffRoster: string[];
+  activeShiftStaff: string;
+  onChangeShiftStaff: (name: string) => void;
+  onSaveStaffRoster: (nextRoster: string[]) => void;
+  staffPermissions: SharedStaffPermissions;
+  onSaveStaffPermissions: (nextPerms: SharedStaffPermissions) => void;
   products: ProductItem[];
   orders: LookupOrderEntry[];
   bookings: ServiceBookingRecord[];
   storeSettings: StoreSettings;
   paymentGateways: PaymentGatewayConfig;
-  shiftTasks: StaffShiftTask[];
-  doneTaskIds: Record<string, boolean>;
-  onShift: boolean;
-  onToggleShift: () => void;
-  onToggleTaskDone: (taskId: string) => void;
-  onAddTask: (task: StaffShiftTask) => void;
   onSaveProduct: (item: ProductItem, isNew: boolean) => void;
   onDeleteProduct: (id: string) => void;
   onUpdateOrderStatus: (orderId: string, nextStatus: OrderStatus) => void;
@@ -130,17 +121,17 @@ interface AdminWorkspaceProps {
 export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
   userRole,
   currentUserName,
+  staffRoster,
+  activeShiftStaff,
+  onChangeShiftStaff,
+  onSaveStaffRoster,
+  staffPermissions,
+  onSaveStaffPermissions,
   products,
   orders,
   bookings,
   storeSettings,
   paymentGateways,
-  shiftTasks,
-  doneTaskIds,
-  onShift,
-  onToggleShift,
-  onToggleTaskDone,
-  onAddTask,
   onSaveProduct,
   onDeleteProduct,
   onUpdateOrderStatus,
@@ -157,13 +148,29 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
   theme = 'light',
   onToggleTheme,
 }) => {
+  const staffAllowedSections = useMemo<AdminSectionId[]>(() => {
+    const allowed: AdminSectionId[] = [];
+    if (staffPermissions.ordersManage || staffPermissions.ordersInvoices) allowed.push('orders');
+    if (staffPermissions.appointments) allowed.push('appointments');
+    if (staffPermissions.pos) allowed.push('pos');
+    if (staffPermissions.inventoryView || staffPermissions.inventoryEdit) allowed.push('inventory');
+    if (staffPermissions.analytics) allowed.push('analytics');
+    return allowed;
+  }, [staffPermissions]);
+
   const [activeSection, setActiveSection] = useState<AdminSectionId>(() =>
-    userRole === 'staff' ? 'tasks' : 'overview'
+    userRole === 'staff' ? staffAllowedSections[0] || 'orders' : 'overview'
+  );
+  const [ordersMode, setOrdersMode] = useState<OrdersMode>(() =>
+    userRole === 'staff' && !staffPermissions.ordersManage && staffPermissions.ordersInvoices
+      ? 'invoices'
+      : 'manage'
   );
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>('catalog');
   const [analyticsMode, setAnalyticsMode] = useState<AnalyticsMode>('period');
   const [settingsTab, setSettingsTab] = useState<SettingsTabId>('general');
   const [expandedGroups, setExpandedGroups] = useState<Record<SidebarGroupKey, boolean>>({
+    orders: true,
     sales: true,
     inventory: true,
     analytics: true,
@@ -174,9 +181,18 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
   const effectiveSection: AdminSectionId =
-    userRole === 'staff' && !STAFF_ALLOWED_SECTIONS.includes(activeSection)
-      ? 'tasks'
+    userRole === 'staff' && !staffAllowedSections.includes(activeSection)
+      ? staffAllowedSections[0] || 'orders'
       : activeSection;
+
+  const effectiveOrdersMode: OrdersMode =
+    userRole === 'staff'
+      ? ordersMode === 'invoices' && staffPermissions.ordersInvoices
+        ? 'invoices'
+        : staffPermissions.ordersManage
+          ? 'manage'
+          : 'invoices'
+      : ordersMode;
 
   useEffect(() => {
     if (!mobileMenuOpen && !showNotifPanel) return;
@@ -198,26 +214,30 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
     () => products.filter((p) => p.stockCount <= 15).length,
     [products]
   );
-  const upcomingBookingsCount = useMemo(
-    () => bookings.filter((b) => b.status === 'upcoming').length,
-    [bookings]
-  );
-
-  const incompleteTasksCount = useMemo(
-    () => shiftTasks.filter((t) => !doneTaskIds[t.id]).length,
-    [shiftTasks, doneTaskIds]
-  );
-
   const navigateTo = (section: AdminSectionId, options?: AdminNavOptions) => {
-    if (userRole === 'staff' && !STAFF_ALLOWED_SECTIONS.includes(section)) {
-      onNotify('Tài khoản Nhân viên không có quyền truy cập mục này.');
+    if (userRole === 'staff' && !staffAllowedSections.includes(section)) {
+      onNotify('Tài khoản nhân viên hiện chưa được cấp quyền truy cập mục này.');
+      return;
+    }
+    if (
+      userRole === 'staff' &&
+      section === 'orders' &&
+      options?.ordersMode === 'invoices' &&
+      !staffPermissions.ordersInvoices
+    ) {
+      onNotify('Tài khoản nhân viên hiện chưa được cấp quyền xem Hóa đơn.');
       return;
     }
     setActiveSection(section);
+    if (section === 'orders') {
+      setOrdersMode(options?.ordersMode ?? 'manage');
+    } else if (options?.ordersMode) {
+      setOrdersMode(options.ordersMode);
+    }
     if (options?.inventoryMode) {
       setInventoryMode(options.inventoryMode);
     }
-    if (options?.analyticsMode && userRole === 'admin') {
+    if (options?.analyticsMode && (userRole === 'admin' || staffPermissions.analytics)) {
       setAnalyticsMode(options.analyticsMode);
     }
     if (options?.settingsTab && userRole === 'admin') {
@@ -235,56 +255,108 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const upcomingBookingsCount = useMemo(
+    () => bookings.filter((b) => b.status === 'upcoming').length,
+    [bookings]
+  );
+
+  const staffNavEntries: SidebarEntry[] = [];
+  if (staffPermissions.ordersManage || staffPermissions.ordersInvoices) {
+    const orderChildren: SidebarChildItem[] = [];
+    if (staffPermissions.ordersManage) {
+      orderChildren.push({
+        key: 'orders-manage',
+        label: 'Quản lý đơn hàng',
+        section: 'orders',
+        options: { ordersMode: 'manage' },
+        badge: pendingOrdersCount || undefined,
+        badgeTone: 'orange',
+        isActive: effectiveSection === 'orders' && effectiveOrdersMode === 'manage',
+      });
+    }
+    if (staffPermissions.ordersInvoices) {
+      orderChildren.push({
+        key: 'orders-invoices',
+        label: 'Hóa đơn',
+        section: 'orders',
+        options: { ordersMode: 'invoices' },
+        isActive: effectiveSection === 'orders' && effectiveOrdersMode === 'invoices',
+      });
+    }
+    staffNavEntries.push({
+      kind: 'group',
+      key: 'orders',
+      label: 'Đơn hàng',
+      icon: ShoppingBag,
+      children: orderChildren,
+    });
+  }
+  if (staffPermissions.appointments || staffPermissions.pos) {
+    const salesChildren: SidebarChildItem[] = [];
+    if (staffPermissions.appointments) {
+      salesChildren.push({
+        key: 'appointments',
+        label: 'Lịch chăm sóc',
+        section: 'appointments',
+        badge: upcomingBookingsCount || undefined,
+        badgeTone: 'blue',
+        isActive: effectiveSection === 'appointments',
+      });
+    }
+    if (staffPermissions.pos) {
+      salesChildren.push({
+        key: 'pos',
+        label: 'Bán tại quầy (POS)',
+        section: 'pos',
+        isActive: effectiveSection === 'pos',
+      });
+    }
+    staffNavEntries.push({
+      kind: 'group',
+      key: 'sales',
+      label: 'Dịch vụ & Quầy',
+      icon: ClipboardCheck,
+      children: salesChildren,
+    });
+  }
+  if (staffPermissions.inventoryView || staffPermissions.inventoryEdit) {
+    staffNavEntries.push({
+      kind: 'leaf',
+      key: 'inventory-staff',
+      label: staffPermissions.inventoryEdit ? 'Sản phẩm & Kho' : 'Sản phẩm & Kho (Chỉ xem)',
+      icon: Boxes,
+      section: 'inventory',
+      isActive: effectiveSection === 'inventory',
+    });
+  }
+  if (staffPermissions.analytics) {
+    staffNavEntries.push({
+      kind: 'group',
+      key: 'analytics',
+      label: 'Doanh thu',
+      icon: BarChart3,
+      children: [
+        {
+          key: 'analytics-period',
+          label: 'Theo tháng / năm',
+          section: 'analytics',
+          options: { analyticsMode: 'period' },
+          isActive: effectiveSection === 'analytics' && analyticsMode === 'period',
+        },
+        {
+          key: 'analytics-daily',
+          label: 'Theo ngày & Hóa đơn',
+          section: 'analytics',
+          options: { analyticsMode: 'daily' },
+          isActive: effectiveSection === 'analytics' && analyticsMode === 'daily',
+        },
+      ],
+    });
+  }
+
   const navEntries: SidebarEntry[] =
     userRole === 'staff'
-      ? [
-          {
-            kind: 'leaf',
-            key: 'tasks',
-            label: 'Nhiệm vụ được giao',
-            icon: ClipboardCheck,
-            section: 'tasks',
-            isActive: activeSection === 'tasks',
-          },
-          {
-            kind: 'group',
-            key: 'sales',
-            label: 'Bán hàng & Dịch vụ',
-            icon: ShoppingBag,
-            children: [
-              {
-                key: 'orders',
-                label: 'Đơn hàng (Xác nhận)',
-                section: 'orders',
-                badge: pendingOrdersCount || undefined,
-                badgeTone: 'orange',
-                isActive: activeSection === 'orders',
-              },
-              {
-                key: 'appointments',
-                label: 'Lịch chăm sóc',
-                section: 'appointments',
-                badge: upcomingBookingsCount || undefined,
-                badgeTone: 'blue',
-                isActive: activeSection === 'appointments',
-              },
-              {
-                key: 'pos',
-                label: 'Bán tại quầy (POS)',
-                section: 'pos',
-                isActive: activeSection === 'pos',
-              },
-            ],
-          },
-          {
-            kind: 'leaf',
-            key: 'inventory-readonly',
-            label: 'Sản phẩm & Kho (Chỉ xem)',
-            icon: Boxes,
-            section: 'inventory',
-            isActive: activeSection === 'inventory',
-          },
-        ]
+      ? staffNavEntries
       : [
           {
             kind: 'leaf',
@@ -296,18 +368,34 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
           },
           {
             kind: 'group',
-            key: 'sales',
-            label: 'Bán hàng & Dịch vụ',
+            key: 'orders',
+            label: 'Đơn hàng',
             icon: ShoppingBag,
             children: [
               {
-                key: 'orders',
-                label: 'Đơn hàng',
+                key: 'orders-manage',
+                label: 'Quản lý đơn hàng',
                 section: 'orders',
+                options: { ordersMode: 'manage' },
                 badge: pendingOrdersCount || undefined,
                 badgeTone: 'orange',
-                isActive: activeSection === 'orders',
+                isActive: activeSection === 'orders' && ordersMode === 'manage',
               },
+              {
+                key: 'orders-invoices',
+                label: 'Hóa đơn',
+                section: 'orders',
+                options: { ordersMode: 'invoices' },
+                isActive: activeSection === 'orders' && ordersMode === 'invoices',
+              },
+            ],
+          },
+          {
+            kind: 'group',
+            key: 'sales',
+            label: 'Dịch vụ & Quầy',
+            icon: ClipboardCheck,
+            children: [
               {
                 key: 'appointments',
                 label: 'Dịch vụ chăm sóc',
@@ -321,14 +409,6 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
                 label: 'Bán tại quầy (POS)',
                 section: 'pos',
                 isActive: activeSection === 'pos',
-              },
-              {
-                key: 'tasks',
-                label: 'Nhiệm vụ nhân viên',
-                section: 'tasks',
-                badge: incompleteTasksCount || undefined,
-                badgeTone: 'blue',
-                isActive: activeSection === 'tasks',
               },
             ],
           },
@@ -440,7 +520,7 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
             </div>
             <div>
               <div className="text-[19px] font-extrabold text-[#17324d] leading-none">
-                pethub.
+                PetsFriend
               </div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-[#52657a] mt-1">
                 {userRole === 'staff' ? 'Nhân viên · Quyền hạn chế' : 'Cổng Quản Trị'}
@@ -717,22 +797,42 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
             )}
 
             <div className="flex items-center gap-2.5 pl-2 border-l border-[#eef2f7]">
-              <div className="w-9 h-9 rounded-xl bg-[#eff5ff] text-[#0667d0] text-[12px] font-extrabold flex items-center justify-center">
-                {currentUserName
-                  .split(' ')
-                  .slice(-2)
-                  .map((w) => w[0])
-                  .join('')
-                  .toUpperCase()}
-              </div>
-              <div className="hidden sm:block text-left">
-                <div className="text-[12px] font-extrabold text-[#17324d] leading-tight">
-                  {currentUserName}
+              {userRole === 'staff' ? (
+                <div className="flex items-center gap-2 rounded-xl border border-[#c8ddf8] bg-[#eff5ff] px-2.5 py-1.5">
+                  <span className="hidden md:inline text-[11px] font-bold text-[#52657a]">
+                    NV trực:
+                  </span>
+                  <select
+                    aria-label="Chọn nhân viên đang trực ca"
+                    value={activeShiftStaff}
+                    onChange={(e) => onChangeShiftStaff(e.target.value)}
+                    className="text-[12.5px] font-extrabold text-[#0667d0] bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    {staffRoster.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="text-[11px] text-[#52657a]">
-                  {userRole === 'staff' ? 'Nhân viên (Quyền giới hạn)' : 'Quản trị viên'}
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="w-9 h-9 rounded-xl bg-[#eff5ff] text-[#0667d0] text-[12px] font-extrabold flex items-center justify-center">
+                    {currentUserName
+                      .split(' ')
+                      .slice(-2)
+                      .map((w) => w[0])
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-[12px] font-extrabold text-[#17324d] leading-tight">
+                      {currentUserName}
+                    </div>
+                    <div className="text-[11px] text-[#52657a]">Quản trị viên</div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -749,28 +849,12 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
             />
           )}
 
-          {effectiveSection === 'tasks' && (
-            <AdminTasksView
-              userRole={userRole}
-              currentUserName={currentUserName}
-              onShift={onShift}
-              onToggleShift={onToggleShift}
-              tasks={shiftTasks}
-              doneTaskIds={doneTaskIds}
-              onToggleTaskDone={onToggleTaskDone}
-              onAddTask={onAddTask}
-              orders={orders}
-              bookings={bookings}
-              onUpdateOrderStatus={onUpdateOrderStatus}
-              onUpdateBookingStatus={onUpdateBookingStatus}
-              onNavigateSection={navigateTo}
-            />
-          )}
-
           {effectiveSection === 'pos' && (
             <AdminPosView
               products={products}
               storeSettings={storeSettings}
+              staffMembers={staffRoster}
+              defaultStaffName={userRole === 'staff' ? activeShiftStaff : currentUserName}
               onCreatePosOrder={onCreatePosOrder}
               onNotify={onNotify}
             />
@@ -778,10 +862,10 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
 
           {effectiveSection === 'inventory' && (
             <AdminInventoryView
-              key={`${inventoryMode}-${userRole}`}
+              key={`${inventoryMode}-${userRole}-${staffPermissions.inventoryEdit}`}
               products={products}
               mode={inventoryMode}
-              readOnly={userRole === 'staff'}
+              readOnly={userRole === 'staff' && !staffPermissions.inventoryEdit}
               onSaveProduct={onSaveProduct}
               onDeleteProduct={onDeleteProduct}
               onRequestConfirm={onRequestConfirm}
@@ -791,7 +875,9 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
 
           {effectiveSection === 'orders' && (
             <AdminOrdersView
+              key={effectiveOrdersMode}
               orders={orders}
+              mode={effectiveOrdersMode}
               userRole={userRole}
               onUpdateOrderStatus={onUpdateOrderStatus}
               onRequestConfirm={onRequestConfirm}
@@ -799,7 +885,7 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
             />
           )}
 
-          {effectiveSection === 'analytics' && userRole === 'admin' && (
+          {effectiveSection === 'analytics' && (userRole === 'admin' || staffPermissions.analytics) && (
             <AdminAnalyticsView
               products={products}
               orders={orders}
@@ -825,8 +911,12 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
               activeTab={settingsTab}
               storeSettings={storeSettings}
               paymentGateways={paymentGateways}
+              staffRoster={staffRoster}
+              staffPermissions={staffPermissions}
               onSaveStoreSettings={onSaveStoreSettings}
               onSavePaymentGateways={onSavePaymentGateways}
+              onSaveStaffRoster={onSaveStaffRoster}
+              onSaveStaffPermissions={onSaveStaffPermissions}
               onNotify={onNotify}
             />
           )}
