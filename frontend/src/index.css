@@ -1,73 +1,482 @@
-:root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --secondary: #64748b;
-  --secondary-hover: #475569;
-  --success: #10b981;
-  --success-bg: #ecfdf5;
-  --warning: #f59e0b;
-  --warning-bg: #fffbeb;
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --danger-bg: #fef2f2;
-  
-  --bg-body: #f8fafc;
-  --bg-card: #ffffff;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
-  --border-color: #e2e8f0;
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
-  
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --ph-blue: #0667d0;
+    --ph-blue-deep: #0558b5;
+    --ph-orange: #c2410c;
+    --ph-ink: #17324d;
+    --ph-muted: #52657a;
+    --ph-surface: #eff5ff;
+    --ph-surface-soft: #f8faff;
+    --ph-border: #dfe6f0;
+    --drop-x: 50%;
+    --drop-y: 56px;
+    --drop-r: 150vmax;
+    font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--ph-ink);
+    background-color: #ffffff;
+  }
+
+  body {
+    margin: 0;
+    background-color: #ffffff;
+    color: var(--ph-ink);
+  }
+
+  html[data-theme="dark"],
+  html[data-theme="dark"] body {
+    background-color: #0b0b0d;
+    color: #f4f4f6;
+    color-scheme: dark;
+  }
+
+  ::selection {
+    background-color: #0667d0;
+    color: #ffffff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #0667d0;
+    outline-offset: 2px;
+  }
+
+  /* WCAG 2.4.11 Focus Not Obscured: clear sticky header + nav bar */
+  :focus,
+  :target {
+    scroll-margin-top: 132px;
+  }
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Water-Droplet View Transition Ripple (Light <-> Dark across Storefront, Admin & Staff) */
+@keyframes ph-droplet-expand {
+  from {
+    clip-path: circle(0px at var(--drop-x) var(--drop-y));
+  }
+  to {
+    clip-path: circle(var(--drop-r) at var(--drop-x) var(--drop-y));
+  }
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: var(--bg-body);
-  color: var(--text-main);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+::view-transition-old(root) {
+  z-index: 1;
 }
 
-a {
-  color: var(--primary);
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: ph-droplet-expand 660ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ph-theme-droplet {
+  position: fixed;
+  width: 13px;
+  height: 17px;
+  border-radius: 50% 50% 50% 50% / 64% 64% 36% 36%;
+  pointer-events: none;
+  z-index: 10000;
+  will-change: transform, opacity;
+}
+
+.ph-theme-droplet.is-obsidian {
+  background: radial-gradient(circle at 34% 32%, #52525b 0%, #141417 45%, #050507 100%);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.ph-theme-droplet.is-daylight {
+  background: radial-gradient(circle at 34% 32%, #ffffff 0%, #e5effc 55%, #b9d4f7 100%);
+  box-shadow:
+    0 6px 16px rgba(6, 103, 208, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Accessibility: Skip Link for keyboard navigation (WCAG 2.4.1) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 10px 18px;
+  border-radius: 0 0 12px 0;
+  background-color: #0667d0;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
-  transition: color 0.2s;
+  box-shadow: 0 8px 20px rgba(6, 103, 208, 0.28);
 }
 
-a:hover {
-  color: var(--primary-hover);
+.skip-link:focus {
+  left: 12px;
+  top: 8px;
 }
 
-code {
-  font-family: var(--font-mono);
-  background-color: #f1f5f9;
-  color: #0f172a;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 0.875em;
+/* 60fps Compositor-Only Elevation: rasterize shadow once on ::after, animate opacity */
+.card-elevate {
+  position: relative;
+}
+
+.card-elevate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 18px 40px rgba(6, 103, 208, 0.12);
+  opacity: 0;
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.card-elevate:hover::after {
+  opacity: 1;
+}
+
+/* Apple Design: Instant tactile response on pointer-down */
+.press-tactile:active {
+  transform: scale(0.97);
+  transition: transform 100ms ease-out;
+}
+
+/* Apple Design: Translucent chrome with reduced-transparency fallback */
+.backdrop-surface {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+}
+
+/* Hero surface, glass arrows & directional readability scrim */
+.ph-hero-surface {
+  background-color: #eff5ff;
+}
+
+.ph-hero-arrow {
+  background-color: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid #dfe6f0;
+  color: #17324d;
+}
+
+.ph-hero-arrow:hover {
+  background-color: #ffffff;
+}
+
+.ph-hero-scrim {
+  background: linear-gradient(
+    to right,
+    rgba(239, 245, 255, 0.96) 0%,
+    rgba(239, 245, 255, 0.88) 48%,
+    transparent 100%
+  );
+}
+
+@media (max-width: 639px) {
+  .ph-hero-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgba(239, 245, 255, 0.96) 0%,
+      rgba(239, 245, 255, 0.9) 55%,
+      rgba(239, 245, 255, 0.48) 100%
+    );
+  }
+}
+
+/* ==========================================================================
+ * Apple Obsidian Dark Mode (Neutral charcoal — zero AI-slop neon/purple)
+ * Applies consistently across Storefront (/), Admin (#/admin), & Staff (#/staff)
+ * ========================================================================== */
+html[data-theme="dark"] .ph-theme-scope {
+  background-color: #0b0b0d;
+  color: #f4f4f6;
+}
+
+html[data-theme="dark"] .ph-theme-scope .backdrop-surface {
+  background-color: rgba(11, 11, 13, 0.78);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="dark"] .ph-theme-scope .ph-hero-surface {
+  background-color: #0e0e11;
+}
+
+html[data-theme="dark"] .ph-theme-scope .ph-hero-arrow {
+  background-color: rgba(20, 20, 23, 0.76);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f4f4f6;
+}
+
+html[data-theme="dark"] .ph-theme-scope .ph-hero-arrow:hover {
+  background-color: rgba(34, 34, 40, 0.92);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+html[data-theme="dark"] .ph-theme-scope .ph-hero-scrim {
+  background: linear-gradient(
+    to right,
+    rgba(11, 11, 13, 0.96) 0%,
+    rgba(11, 11, 13, 0.86) 50%,
+    rgba(11, 11, 13, 0.2) 100%
+  );
+}
+
+@media (max-width: 639px) {
+  html[data-theme="dark"] .ph-theme-scope .ph-hero-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgba(11, 11, 13, 0.95) 0%,
+      rgba(11, 11, 13, 0.88) 55%,
+      rgba(11, 11, 13, 0.45) 100%
+    );
+  }
+}
+
+html[data-theme="dark"] .ph-theme-scope .card-elevate::after {
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-white,
+  .bg-white\/95,
+  .bg-\[\#ffffff\],
+  .bg-\[\#f8fafc\],
+  .bg-\[\#fcfdff\]
+) {
+  background-color: #141417;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-\[\#f8faff\],
+  .bg-\[\#f8fbff\],
+  .bg-\[\#f6f8fb\],
+  .bg-\[\#f9fafb\],
+  .bg-\[\#f3f7ff\]
+) {
+  background-color: #1c1c20;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-\[\#eff5ff\],
+  .bg-\[\#e1eeff\],
+  .bg-\[\#e5eeff\]
+) {
+  background-color: #1c222b;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-\[\#fff2e9\],
+  .bg-\[\#fff7f0\],
+  .bg-\[\#fff8f5\],
+  .bg-\[\#fffaf5\],
+  .bg-amber-50
+) {
+  background-color: #241b15;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-emerald-50
+) {
+  background-color: #13251d;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-rose-50,
+  .bg-rose-50\/40
+) {
+  background-color: #271519;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-slate-100
+) {
+  background-color: #232329;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .hover\:bg-\[\#f8faff\]:hover,
+  .hover\:bg-\[\#f6f8fb\]:hover,
+  .hover\:bg-\[\#f3f7ff\]:hover,
+  .hover\:bg-\[\#f8faff\]\/70:hover
+) {
+  background-color: #232329;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .hover\:bg-\[\#eff5ff\]:hover,
+  .hover\:bg-\[\#e1eeff\]:hover,
+  .hover\:bg-\[\#e5eeff\]:hover,
+  .hover\:bg-\[\#e3edff\]:hover,
+  .hover\:bg-\[\#eef2f7\]:hover
+) {
+  background-color: #242b36;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .border-\[\#dfe6f0\],
+  .border-\[\#eef2f7\],
+  .border-\[\#e7edf6\],
+  .border-\[\#c8ddf8\],
+  .border-\[\#b9d7ff\],
+  .border-\[\#93c5fd\],
+  .border-\[\#ffe4d6\],
+  .border-\[\#ffddc7\],
+  .border-\[\#e2e8f0\],
+  .border-slate-200,
+  .border-amber-200,
+  .border-emerald-200,
+  .border-rose-200
+) {
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+html[data-theme="dark"] .ph-theme-scope .divide-\[\#eef2f7\] > :not(:last-child) {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .text-\[\#17324d\],
+  .text-\[\#0f172a\],
+  .text-slate-900
+) {
+  color: #f4f4f6;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .text-\[\#52657a\],
+  .text-\[\#354c63\],
+  .text-\[\#334155\],
+  .text-slate-600
+) {
+  color: #a1a1aa;
+}
+
+html[data-theme="dark"] .ph-theme-scope .text-\[\#0667d0\] {
+  color: #4c9aff;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .text-\[\#c2410c\],
+  .text-\[\#9a3412\],
+  .text-amber-700
+) {
+  color: #e5834b;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .text-emerald-700,
+  .text-emerald-800,
+  .text-emerald-900
+) {
+  color: #4ade80;
+}
+
+html[data-theme="dark"] .ph-theme-scope .text-rose-700 {
+  color: #fb7185;
+}
+
+html[data-theme="dark"] .ph-theme-scope .text-\[\#b7247d\] {
+  color: #f472b6;
+}
+
+html[data-theme="dark"] .ph-theme-scope :is(
+  .bg-\[\#0667d0\],
+  .bg-\[\#c2410c\],
+  .bg-\[\#044d9e\],
+  .bg-\[\#17324d\],
+  .bg-emerald-600
+) {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .ph-theme-scope .bg-\[\#0667d0\] .text-\[\#0667d0\],
+html[data-theme="dark"] .ph-theme-scope .bg-\[\#0667d0\] .text-\[\#17324d\] {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .ph-theme-scope footer.bg-\[\#f8faff\] {
+  background-color: #0e0e11;
+}
+
+html[data-theme="dark"] .ph-theme-scope input,
+html[data-theme="dark"] .ph-theme-scope select,
+html[data-theme="dark"] .ph-theme-scope textarea {
+  color: #f4f4f6;
+}
+
+html[data-theme="dark"] .ph-theme-scope input::placeholder,
+html[data-theme="dark"] .ph-theme-scope textarea::placeholder {
+  color: #71717a;
+}
+
+/* Recharts readable gridlines, ticks & tooltip in Dark Mode */
+html[data-theme="dark"] .ph-theme-scope .recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .ph-theme-scope .recharts-cartesian-axis-tick-value {
+  fill: #a1a1aa;
+}
+
+html[data-theme="dark"] .ph-theme-scope .recharts-area-curve {
+  stroke: #4c9aff;
+}
+
+html[data-theme="dark"] .ph-theme-scope .recharts-default-tooltip {
+  background-color: #1c1c20 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f4f4f6 !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .backdrop-surface,
+  .ph-hero-arrow {
+    background-color: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  html[data-theme="dark"] .ph-theme-scope .backdrop-surface,
+  html[data-theme="dark"] .ph-theme-scope .ph-hero-arrow {
+    background-color: #141417;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
