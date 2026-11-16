@@ -1,28 +1,38 @@
 -- ==============================================================================
--- WebQL Database Seed Data (PostgreSQL)
--- Dữ liệu mẫu ban đầu để kiểm thử hệ thống
+-- PetHub Database Seed Data (PostgreSQL) - 16 BẢNG ĐỒNG BỘ
+-- Mật khẩu mặc định cho các tài khoản test là: 123456
 -- ==============================================================================
 
--- 1. Nạp dữ liệu bảng `users`
-INSERT INTO users (name, email, role, status) VALUES
-('Nguyễn Văn An', 'an.nguyen@example.com', 'admin', 'active'),
-('Trần Thị Bích', 'bich.tran@example.com', 'editor', 'active'),
-('Lê Hoàng Cường', 'cuong.le@example.com', 'user', 'active'),
-('Phạm Thị Dung', 'dung.pham@example.com', 'user', 'active'),
-('Võ Minh Đức', 'duc.vo@example.com', 'user', 'inactive')
+-- 1. Nạp roles (4 cấp quyền)
+INSERT INTO roles (role_id, role_name) VALUES 
+(1, 'Admin'), 
+(2, 'Manager'), 
+(3, 'Staff'), 
+(4, 'Customer')
+ON CONFLICT (role_id) DO NOTHING;
+
+-- 2. Nạp tài khoản test (Mật khẩu chuẩn Bcrypt cho '123456')
+-- Hash: $2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG
+INSERT INTO users (role_id, full_name, email, password_hash, phone, address, is_active) VALUES
+(1, 'Admin Khóa', 'admin@pethub.com', '$2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG', '0900000001', '128 Nguyễn Huệ, Quận 1, TP.HCM', TRUE),
+(2, 'Quản Lý Cửa Hàng', 'manager@pethub.com', '$2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG', '0900000002', 'Bình Thạnh, TP.HCM', TRUE),
+(3, 'Nhân Viên Bán Hàng', 'staff@pethub.com', '$2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG', '0900000003', 'Phú Nhuận, TP.HCM', TRUE),
+(4, 'Trịnh Anh Khoa', 'khoa.trinh@pethub.vn', '$2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG', '0909 123 456', '128 Nguyễn Huệ, Quận 1, TP.HCM', TRUE),
+(4, 'Dreams', 'dreams@gmail.com', '$2b$10$k3Re.Wyug3EIiASaz0h1o.GPpmeRzU6T7kGJRYptqrhKs7bnyLGaG', '0354152753', 'Hà Nội', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
--- 2. Nạp dữ liệu bảng `categories`
-INSERT INTO categories (name, slug, description) VALUES
-('Công Nghệ & Điện Tử', 'cong-nghe-dien-tu', 'Thiết bị công nghệ số, phụ kiện máy tính, điện thoại'),
-('Gia Dụng & Đời Sống', 'gia-dung-doi-song', 'Vật dụng gia đình, tiện ích nhà cửa'),
-('Sách & Văn Phòng Phẩm', 'sach-van-phong-pham', 'Sách giáo trình, tài liệu chuyên ngành, đồ dùng học tập')
-ON CONFLICT (slug) DO NOTHING;
+-- 3. Nạp danh mục
+INSERT INTO categories (category_id, category_name, description) VALUES
+(1, 'Thức ăn', 'Các loại hạt khô, pate tươi nguyên miếng và bánh thưởng dinh dưỡng'),
+(2, 'Phụ kiện', 'Balo phi hành gia, nệm mây, dây dắt và vòng cổ'),
+(3, 'Chăm sóc & Y tế', 'Thuốc đặc trị nấm da, nhỏ gáy ve rận và sữa tắm dưỡng lông'),
+(4, 'Thú cưng', 'Chó cảnh, mèo cảnh thuần chủng tiêm chủng bảo hành sức khỏe')
+ON CONFLICT (category_id) DO NOTHING;
 
--- 3. Nạp dữ liệu bảng `products`
-INSERT INTO products (category_id, name, price, quantity, status, created_by) VALUES
-(1, 'Bàn phím cơ không dây Keychron K2', 1850000.00, 25, 'in_stock', 1),
-(1, 'Chuột công thái học Logitech MX Master 3S', 2250000.00, 15, 'in_stock', 1),
-(1, 'Màn hình Dell UltraSharp 27 inch 4K', 12500000.00, 8, 'in_stock', 2),
-(2, 'Đèn bàn thông minh LED bảo vệ thị lực', 450000.00, 50, 'in_stock', 2),
-(3, 'Sách Clean Code: A Handbook of Agile Software Craftsmanship', 320000.00, 30, 'in_stock', 1);
+-- 4. Nạp dịch vụ Spa
+INSERT INTO services (service_id, service_name, price) VALUES
+(1, 'Gói Tắm Sấy Khử Mùi & Vệ Sinh Tai Móng', 180000.00),
+(2, 'Gói Cắt Tỉa Tạo Kiểu Lông Thẩm Mỹ', 280000.00),
+(3, 'Gói Spa Hoàng Gia Toàn Diện Premium', 450000.00),
+(4, 'Gói Nhuộm Lông Điểm Xuyết Thời Trang', 300000.00)
+ON CONFLICT (service_id) DO NOTHING;

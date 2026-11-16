@@ -1,20 +1,20 @@
 const express = require("express");
 const UserController = require("../controllers/user.controller");
+const { authenticate, requireRole } = require("../middlewares/auth");
 
 const router = express.Router();
 
 /**
- * Định tuyến tài nguyên User
- * [GET]    /api/users      - Lấy danh sách người dùng
- * [GET]    /api/users/:id  - Lấy thông tin một người dùng theo ID
- * [POST]   /api/users      - Tạo người dùng mới
- * [PUT]    /api/users/:id  - Cập nhật thông tin người dùng
- * [DELETE] /api/users/:id  - Xóa người dùng
+ * Định tuyến Quản lý người dùng
  */
-router.get("/", UserController.getUsers);
-router.get("/:id", UserController.getUserById);
-router.post("/", UserController.createUser);
-router.put("/:id", UserController.updateUser);
-router.delete("/:id", UserController.deleteUser);
+// Lấy danh sách quyền (Public hoặc Authenticated)
+router.get("/roles", UserController.getRoles);
+
+// CRUD người dùng (Yêu cầu quyền Admin, Manager hoặc Staff)
+router.get("/", authenticate, requireRole("Admin", "Manager", "Staff"), UserController.getUsers);
+router.get("/:id", authenticate, requireRole("Admin", "Manager", "Staff"), UserController.getUserById);
+router.post("/", authenticate, requireRole("Admin"), UserController.createUser);
+router.put("/:id", authenticate, requireRole("Admin"), UserController.updateUser);
+router.delete("/:id", authenticate, requireRole("Admin"), UserController.deleteUser);
 
 module.exports = router;

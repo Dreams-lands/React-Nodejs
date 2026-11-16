@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const corsOptions = require("./config/cors");
 const routes = require("./routes");
 const notFound = require("./middlewares/notFound");
@@ -11,6 +12,7 @@ const app = express();
 // Global Middlewares
 // ========================
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

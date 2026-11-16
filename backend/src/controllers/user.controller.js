@@ -1,9 +1,9 @@
 const UserService = require("../services/user.service");
-const { sendSuccess, sendError } = require("../utils/response");
+const { sendSuccess } = require("../utils/response");
 
 /**
- * UserController (Tầng Controller trong MVC)
- * Tiếp nhận HTTP Request từ Route, trích xuất dữ liệu, gọi UserService và phản hồi HTTP Response
+ * UserController (Tầng Controller)
+ * Quản trị người dùng cho Admin/Staff
  */
 class UserController {
   /**
@@ -11,8 +11,25 @@ class UserController {
    */
   static async getUsers(req, res, next) {
     try {
-      const users = await UserService.getAllUsers();
+      const { role_id, search, is_active } = req.query;
+      const users = await UserService.getAllUsers({
+        role_id: role_id ? Number(role_id) : undefined,
+        search,
+        is_active: is_active !== undefined ? is_active === "true" : undefined,
+      });
       return sendSuccess(res, users, "Lấy danh sách người dùng thành công");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * [GET] /api/users/roles - Lấy danh sách quyền trong hệ thống
+   */
+  static async getRoles(req, res, next) {
+    try {
+      const roles = await UserService.getRoles();
+      return sendSuccess(res, roles, "Lấy danh sách quyền thành công");
     } catch (error) {
       next(error);
     }
@@ -32,12 +49,20 @@ class UserController {
   }
 
   /**
-   * [POST] /api/users - Tạo người dùng mới
+   * [POST] /api/users - Tạo người dùng mới (Dành cho Admin)
    */
   static async createUser(req, res, next) {
     try {
-      const { name, email, role, status } = req.body;
-      const newUser = await UserService.createUser({ name, email, role, status });
+      const { role_id, full_name, email, password, phone, address, avatar_url } = req.body;
+      const newUser = await UserService.createUser({
+        role_id,
+        full_name,
+        email,
+        password,
+        phone,
+        address,
+        avatar_url,
+      });
       return sendSuccess(res, newUser, "Tạo người dùng mới thành công", 201);
     } catch (error) {
       next(error);
@@ -50,12 +75,15 @@ class UserController {
   static async updateUser(req, res, next) {
     try {
       const { id } = req.params;
-      const { name, email, role, status } = req.body;
+      const { role_id, full_name, email, phone, address, avatar_url, is_active } = req.body;
       const updatedUser = await UserService.updateUser(id, {
-        name,
+        role_id,
+        full_name,
         email,
-        role,
-        status,
+        phone,
+        address,
+        avatar_url,
+        is_active,
       });
       return sendSuccess(res, updatedUser, "Cập nhật người dùng thành công");
     } catch (error) {
@@ -64,13 +92,13 @@ class UserController {
   }
 
   /**
-   * [DELETE] /api/users/:id - Xóa người dùng
+   * [DELETE] /api/users/:id - Khóa người dùng
    */
   static async deleteUser(req, res, next) {
     try {
       const { id } = req.params;
       await UserService.deleteUser(id);
-      return sendSuccess(res, { id: Number(id) }, "Xóa người dùng thành công");
+      return sendSuccess(res, { id: Number(id) }, "Khóa tài khoản người dùng thành công");
     } catch (error) {
       next(error);
     }

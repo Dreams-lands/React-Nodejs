@@ -9,17 +9,29 @@ class HomeController {
     return sendSuccess(
       res,
       {
-        project: "WebQL Fullstack Application",
-        architecture: "MVC Pattern (Model - View - Controller)",
+        project: "PetHub - E-Commerce & Pet Services API",
+        architecture: "MVC Pattern (Model - View - Controller) with Service Layer",
+        database: "PostgreSQL",
         status: "Online",
         timestamp: new Date().toISOString(),
-        version: "1.0.0",
-        docs: {
-          users: "/api/users",
-          health: "/api/health",
+        version: "2.0.0",
+        endpoints: {
+          auth: {
+            register: "POST /api/auth/register",
+            login: "POST /api/auth/login",
+            profile: "GET /api/auth/profile",
+            updateProfile: "PUT /api/auth/profile",
+            changePassword: "PUT /api/auth/change-password",
+          },
+          products: "GET /api/products",
+          categories: "GET /api/categories",
+          orders: "GET, POST /api/orders",
+          orderLookup: "GET /api/orders/lookup?code=...&phone=...",
+          cart: "GET, POST, PUT, DELETE /api/cart",
+          users: "GET, POST, PUT, DELETE /api/users",
         },
       },
-      "Máy chủ Backend WebQL đang hoạt động bình thường!",
+      "Máy chủ PetHub Backend đang hoạt động ổn định!"
     );
   }
 
@@ -30,8 +42,9 @@ class HomeController {
         uptime: process.uptime(),
         memoryUsage: process.memoryUsage(),
         status: "OK",
+        database: "PostgreSQL connected",
       },
-      "Hệ thống hoạt động ổn định",
+      "Hệ thống PetHub hoạt động ổn định"
     );
   }
 }

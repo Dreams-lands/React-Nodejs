@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Dự án Web Quản Lý (WebQL) - Fullstack React 19 + Node.js Express theo mô hình MVC",
   "scripts": {
+    "dev": "node scripts/dev.js",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "db:init": "cd backend && npm run db:init",
@@ -19,5 +20,9 @@
     "vite"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "framer-motion": "^14.14.0",
+    "lucide-react": "^1.73.0"
+  }
 }

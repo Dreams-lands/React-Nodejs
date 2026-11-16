@@ -1,37 +1,39 @@
-# 🚀 WebQL - Dự Án Fullstack React + Node.js (Mô Hình MVC Chuẩn Web)
+# 🐾 PetHub — Dự Án Fullstack E-Commerce & Pet Services (React 19 + Node.js MVC + PostgreSQL)
 
-Dự án mẫu Fullstack hiện đại kết hợp **React 19 (Vite)** ở phía Client và **Node.js (Express 5 & PostgreSQL)** ở phía Server, quản lý cơ sở dữ liệu trực quan bằng **DBeaver**, được tổ chức theo chuẩn kiến trúc **MVC (Model - View - Controller)** kết hợp **Service Layer (3-Layer Pattern)** mới nhất cho lập trình Web.
+Hệ thống Website Bán Hàng & Dịch Vụ Chăm Sóc Thú Cưng Cao Cấp **PetHub**, kết hợp **React 19 (TypeScript, Vite, TailwindCSS)** ở phía Client và **Node.js (Express 5 & PostgreSQL `pg`)** ở phía Server, quản lý cơ sở dữ liệu trực quan bằng **DBeaver**, được tổ chức theo chuẩn kiến trúc **MVC (Model - View - Controller)** kết hợp **Service Layer (3-Layer Pattern)**.
 
 ---
 
 ## 🏛️ 1. Mô Hình Kiến Trúc MVC & Luồng Hoạt Động
 
-Trong kiến trúc Web hiện đại:
-- **Model (M)**: Quản lý cấu trúc dữ liệu, kết nối và thực hiện các câu truy vấn PostgreSQL thông qua connection pool (`backend/src/models/`).
-- **View (V)**: Ứng dụng Single Page App (SPA) bằng React 19 hiển thị dữ liệu và tiếp nhận tương tác từ người dùng (`frontend/src/`).
-- **Controller (C)**: Tiếp nhận HTTP request từ Router, kiểm tra tính hợp lệ cơ bản, gọi tầng Service để xử lý và trả về phản hồi JSON chuẩn hóa cho View (`backend/src/controllers/`).
-- **Service Layer (S)**: Nằm giữa Controller và Model, đóng vai trò chứa toàn bộ logic nghiệp vụ (Business Logic), giúp code không bị phình to (Fat Controller) và dễ dàng bảo trì, viết Unit Test.
+- **Model (M)**: Quản lý cấu trúc dữ liệu, kết nối và thực hiện truy vấn PostgreSQL parameterized (`$1, $2...`) thông qua connection pool (`backend/src/models/`):
+  - `UserModel`, `CategoryModel`, `ProductModel`, `CartModel`, `OrderModel`.
+- **View (V)**: Ứng dụng Single Page App (SPA) hiện đại bằng React 19 + TypeScript + Framer Motion (`frontend/src/`):
+  - Đăng nhập/Đăng ký, Catalog sản phẩm, Giỏ hàng, Đặt hàng (Thành viên & Khách vãng lai), Tra cứu đơn hàng thời gian thực.
+- **Controller (C)**: Tiếp nhận HTTP request từ Router, kiểm tra tính hợp lệ cơ bản, gọi tầng Service để xử lý và trả về phản hồi JSON chuẩn hóa cho View (`backend/src/controllers/`):
+  - `AuthController`, `UserController`, `CategoryController`, `ProductController`, `CartController`, `OrderController`.
+- **Service Layer (S)**: Nằm giữa Controller và Model, chứa toàn bộ logic nghiệp vụ (mã hóa mật khẩu Bcrypt, phát hành JWT token, chốt giá và trừ tồn kho với DB Transaction):
+  - `AuthService`, `UserService`, `CategoryService`, `ProductService`, `CartService`, `OrderService`.
 
 ### 🔄 Sơ đồ luồng dữ liệu (Data Flow):
 ```text
-[ Người Dùng ] ──(Tương tác UI)──> [ React View (Frontend) ]
-                                             │ (Axios HTTP Request)
-                                             ▼
-                                  [ Express Routes ]
-                                             │
-                                             ▼
-                                     [ Controllers ]
-                                             │ (Gọi hàm nghiệp vụ)
-                                             ▼
-                                      [ Services ]
-                                             │ (Yêu cầu dữ liệu)
-                                             ▼
-                                       [ Models ]
-                                             │ (SQL Query Parameterized)
-                                             ▼
-                                 [ PostgreSQL Database ]
-                                             │
-                                  [ Quản lý bằng DBeaver ]
+[ Người Dùng / Khách Hàng ]
+            │ (Tương tác UI: Xem hàng, Thêm giỏ, Đặt hàng, Tra cứu đơn)
+            ▼
+[ React 19 Client (Frontend) ] ──(Axios Interceptor + JWT Bearer)──> [ Express Router ]
+                                                                             │
+                                                                             ▼
+                                                                     [ Controllers ]
+                                                                             │ (Gọi nghiệp vụ)
+                                                                             ▼
+                                                                     [ Service Layer ]
+                                                                             │ (Chốt giá / Validate)
+                                                                             ▼
+                                                                        [ Models ]
+                                                                             │ (SQL Parameterized)
+                                                                             ▼
+                                                                [ PostgreSQL Database ]
+                                                                (Quản lý bằng DBeaver)
 ```
 
 ---
@@ -44,67 +46,80 @@ WebQL/
 ├── .gitignore                     # Bỏ qua node_modules, .env cho toàn bộ dự án
 ├── README.md                      # Hướng dẫn chi tiết
 │
-├── backend/                       # 🟢 BACKEND (Node.js + Express 5 + PostgreSQL pg)
+├── backend/                       # 🟢 BACKEND (Node.js + Express 5 + PostgreSQL pg + Bcrypt + JWT)
 │   ├── .env                       # Biến môi trường thực tế (PORT=5000, DB_PORT=5432, ...)
-│   ├── .env.example               # Biến môi trường mẫu
+│   ├── .env.example               # Mẫu biến môi trường
 │   ├── .gitignore                 # Bỏ qua node_modules, .env backend
-│   ├── package.json               # Dependencies backend (pg, express, cors, dotenv)
-│   ├── database/                  # 🗄️ NƠI QUẢN LÝ DỮ LIỆU & SCHEMA POSTGRESQL
-│   │   ├── schema.sql             # Cấu trúc bảng PostgreSQL (users, categories, products)
-│   │   ├── seed.sql               # Dữ liệu mẫu ban đầu bằng tiếng Việt (ON CONFLICT)
+│   ├── package.json               # Dependencies backend (pg, bcryptjs, jsonwebtoken, express, cors)
+│   ├── database/                  # 🗄️ NƠI QUẢN LÝ DỮ LIỆU & SCHEMA POSTGRESQL (10 BẢNG)
+│   │   ├── schema.sql             # 10 Bảng: roles, users, categories, products, images, orders, items, transactions, carts...
+│   │   ├── seed.sql               # Dữ liệu mẫu ban đầu tiếng Việt (ON CONFLICT)
 │   │   ├── init.js                # Script 1 chạm tự động tạo DB & nạp dữ liệu vào PostgreSQL
 │   │   ├── DATA_DICTIONARY.md     # Từ điển dữ liệu, sơ đồ ERD & hướng dẫn DBeaver
 │   │   └── README.md              # Hướng dẫn chi tiết về Database & DBeaver
 │   └── src/
-│       ├── config/                # Cấu hình Database pool & CORS
+│       ├── config/                # Cấu hình Database pool, CORS & JWT
 │       │   ├── db.js              # Kết nối PostgreSQL (pg.Pool) & auto create database
-│       │   └── cors.js            # Cấu hình CORS Whitelist
-│       ├── models/                # [M] MODEL: Tương tác trực tiếp DB qua pg.Pool
-│       │   └── user.model.js      # Thực thi truy vấn parameterized ($1, $2, RETURNING)
+│       │   ├── cors.js            # Cấu hình CORS Whitelist
+│       │   └── jwt.js             # Cấu hình Secret & Token Expiration
+│       ├── models/                # [M] MODEL: Tương tác DB qua pg.Pool
+│       │   ├── user.model.js      # Users & Roles (hội viên, nhân viên, admin)
+│       │   ├── category.model.js  # Danh mục sản phẩm
+│       │   ├── product.model.js   # Sản phẩm & Gallery ảnh (product_images)
+│       │   ├── cart.model.js      # Carts & Cart_Items
+│       │   └── order.model.js     # Orders, Order_Items & Transactions (DB Transaction)
 │       ├── controllers/           # [C] CONTROLLER: Xử lý Request/Response
-│       │   ├── home.controller.js # Endpoint trạng thái & healthcheck
-│       │   └── user.controller.js # Endpoint CRUD Users
-│       ├── services/              # [S] SERVICE: Xử lý Business Logic
-│       │   └── user.service.js    # Kiểm tra ràng buộc email, role, sanitize
+│       │   ├── auth.controller.js # Đăng ký, đăng nhập, hồ sơ, đổi mật khẩu
+│       │   ├── user.controller.js # CRUD người dùng (Admin)
+│       │   ├── category.controller.js # CRUD danh mục
+│       │   ├── product.controller.js  # Tìm kiếm, lọc, CRUD sản phẩm & ảnh
+│       │   ├── cart.controller.js     # Thêm/sửa/xóa giỏ hàng
+│       │   ├── order.controller.js    # Đặt hàng, tra cứu mã đơn, đổi trạng thái
+│       │   └── home.controller.js     # Trạng thái máy chủ & Healthcheck
+│       ├── services/              # [S] SERVICE: Business Logic & Security
+│       │   ├── auth.service.js    # Mã hóa Bcrypt & phát hành JWT token
+│       │   ├── user.service.js    # Kiểm tra ràng buộc tài khoản
+│       │   ├── category.service.js# Logic danh mục
+│       │   ├── product.service.js # Logic sản phẩm, SKU và ảnh
+│       │   ├── cart.service.js    # Logic giỏ hàng
+│       │   └── order.service.js   # Chốt giá sản phẩm, trừ tồn kho, transaction
 │       ├── routes/                # ROUTER: Định tuyến API
 │       │   ├── index.js           # Router trung tâm (/api)
-│       │   └── user.routes.js     # Route tài nguyên /api/users
-│       ├── middlewares/           # MIDDLEWARES: Xử lý trung gian
-│       │   ├── errorHandler.js    # Xử lý lỗi toàn cục (Global Error)
+│       │   ├── auth.routes.js     # /api/auth
+│       │   ├── user.routes.js     # /api/users
+│       │   ├── category.routes.js # /api/categories
+│       │   ├── product.routes.js  # /api/products
+│       │   ├── cart.routes.js     # /api/cart
+│       │   └── order.routes.js    # /api/orders
+│       ├── middlewares/           # MIDDLEWARES: Bảo mật & Xử lý trung gian
+│       │   ├── auth.js            # JWT authenticate, optionalAuth, requireRole
+│       │   ├── errorHandler.js    # Xử lý lỗi toàn cục
 │       │   └── notFound.js        # Bắt lỗi 404 Not Found
 │       ├── utils/                 # TIỆN ÍCH DÙNG CHUNG
+│       │   ├── jwt.js             # Ký & xác thực JWT
+│       │   ├── password.js        # Bcrypt hash & compare
 │       │   └── response.js        # Chuẩn hóa format JSON (sendSuccess, sendError)
 │       ├── app.js                 # Cấu hình Express app & middlewares
-│       └── server.js              # Entry point: Khởi động server & kiểm tra kết nối DB
+│       └── server.js              # Entry point: Khởi động HTTP server
 │
-└── frontend/                      # 🔵 FRONTEND [V] VIEW (React 19 + Vite)
-    ├── .env                       # Biến môi trường frontend (VITE_API_BASE_URL)
-    ├── .env.example               # Mẫu biến môi trường
-    ├── package.json               # Dependencies frontend (React 19, Axios, React Router)
+└── frontend/                      # 🔵 FRONTEND [V] VIEW (React 19 + TypeScript + Vite + TailwindCSS)
+    ├── .env                       # Biến môi trường (VITE_API_BASE_URL=http://localhost:5000/api)
+    ├── package.json               # Dependencies: React 19, TypeScript, Axios, Lucide, Framer Motion
     ├── vite.config.js             # Cấu hình Vite
-    ├── index.html                 # File HTML gốc
+    ├── index.html                 # Template HTML (PetHub)
     └── src/
-        ├── assets/                # Hình ảnh, icons, logo
-        ├── components/            # UI Components tái sử dụng
-        │   ├── common/            # Header, Footer, LoadingSpinner
-        │   └── users/             # UserCard, UserForm
-        ├── layouts/               # Khung bố cục (MainLayout với Header + Footer)
-        ├── pages/                 # Các màn hình Views (Pages)
-        │   ├── HomePage.jsx       # Trang chủ giới thiệu & kiểm tra kết nối API
-        │   ├── UsersPage.jsx      # Quản lý CRUD người dùng theo thời gian thực
-        │   └── NotFoundPage.jsx   # Trang 404
-        ├── services/              # Tầng gọi API từ Frontend
-        │   ├── api.js             # Cấu hình Axios instance & interceptors
-        │   └── userService.js     # Gọi các endpoint người dùng
-        ├── context/               # Global state (AppContext: thông báo, alert)
-        ├── routes/                # Định tuyến Frontend (React Router DOM)
-        │   └── AppRoutes.jsx
-        ├── utils/                 # Format ngày tháng, badge role, status
-        │   └── formatters.js
-        ├── App.css                # CSS giao diện người dùng
-        ├── index.css              # Design tokens & Global reset
-        ├── App.jsx                # Root Component
-        └── main.jsx               # Entry point
+        ├── App.tsx                # Giao diện chính PetHub (Catalog, Cart, Auth, Checkout, Lookup)
+        ├── main.tsx               # Entry point
+        ├── index.css              # TailwindCSS & Styling
+        ├── components/            # UI Components (AccountPage, Headers, Footers, Dialogs, TiltCard)
+        ├── data/                  # Mock data dự phòng (categories, mockData)
+        ├── services/              # Tầng gọi Backend API
+        │   ├── api.ts             # Axios Client & Bearer JWT Interceptor
+        │   ├── authService.ts     # Đăng ký, đăng nhập, hồ sơ cá nhân
+        │   ├── productService.ts  # Lấy danh sách sản phẩm & danh mục
+        │   ├── orderService.ts    # Đặt hàng & Tra cứu đơn hàng theo mã/SĐT
+        │   └── cartService.ts     # Thao tác giỏ hàng
+        └── lib/                   # Utility functions
 ```
 
 ---
@@ -114,7 +129,9 @@ WebQL/
 ### Yêu cầu tiên quyết:
 - **Node.js** >= 18 (Khuyên dùng v20 hoặc v24)
 - **PostgreSQL Server** (Cổng mặc định `5432`)
-- **DBeaver** (Trình quản trị trực quan)
+- **DBeaver** (Quản trị cơ sở dữ liệu trực quan)
+
+---
 
 ### Bước 1: Cài đặt Dependencies
 Mở terminal tại thư mục gốc `WebQL`:
@@ -136,76 +153,84 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=123456
-DB_NAME=webql_db
+DB_NAME=postgres
+
+# JWT
+JWT_ACCESS_SECRET=pethub_access_super_secret_key_2026
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=pethub_refresh_super_secret_key_2026
+JWT_REFRESH_EXPIRES_IN=7d
 ```
 
 ---
 
-### Bước 3: Khởi tạo Cơ sở dữ liệu PostgreSQL (1 chạm tự động)
+### Bước 3: Khởi tạo & Đồng bộ Cơ sở dữ liệu PostgreSQL (1 chạm tự động)
 Chạy lệnh sau tại thư mục gốc:
 ```bash
 npm run db:init
 ```
 Lệnh này sẽ tự động:
-1. Kết nối tới máy chủ PostgreSQL (Port 5432).
-2. Tự động tạo Database `webql_db` (nếu chưa có).
-3. Tạo toàn bộ bảng (`users`, `categories`, `products`), triggers tự động cập nhật thời gian và chỉ mục.
-4. Nạp dữ liệu mẫu ban đầu từ `seed.sql`.
+1. Kết nối vào PostgreSQL Server qua cổng **5432**.
+2. Đồng bộ trực tiếp vào Database mặc định **`postgres`** (tự động xóa bỏ database thừa `webql_db` nếu có).
+3. Tạo đầy đủ **16 bảng quan hệ**: `roles`, `users`, `categories`, `products`, `product_images`, `inventory_logs`, `orders`, `order_items`, `services`, `appointments`, `transactions`, `carts`, `cart_items`, `banners`, `site_settings`, `audit_logs`.
+4. Nạp sẵn các tài khoản kiểm thử (mật khẩu chung: `123456`):
+   - **Admin:** `admin@pethub.com`
+   - **Manager:** `manager@pethub.com`
+   - **Staff:** `staff@pethub.com`
+   - **Khách hàng:** `khoa.trinh@pethub.vn` hoặc `dreams@gmail.com`
+5. Nạp danh mục, sản phẩm, ảnh bìa, dịch vụ Spa mẫu khớp với giao diện Frontend.
 
 ---
 
-### Bước 4: Kết nối và xem dữ liệu trên DBeaver
-1. Mở phần mềm **DBeaver**.
-2. Nhấn **New Database Connection** -> Chọn **PostgreSQL** -> Nhấn **Next**.
-3. Điền thông tin:
-   * **Host:** `localhost`
-   * **Port:** `5432`
-   * **Database:** `webql_db`
-   * **Username:** `postgres`
-   * **Password:** `123456`
-4. Bấm **Test Connection...** -> Bấm **Finish**.
-5. Bạn có thể xem bảng tại `Databases/webql_db/Schemas/public/Tables` hoặc xem sơ đồ quan hệ tại tab **ER Diagram**.
+### Bước 4: Kết nối bằng DBeaver
+1. Mở phần mềm **DBeaver** -> Nhấn **New Database Connection** -> Chọn **PostgreSQL** -> Bấm **Next**.
+2. Nhập thông số: Host `localhost`, Port `5432`, Database `postgres`, Username `postgres`, Password `123456`.
+3. Bấm **Test Connection...** -> Bấm **Finish**.
+4. Truy cập `Databases/postgres/Schemas/public/Tables` để xem toàn bộ 16 bảng dữ liệu.
 
 ---
 
 ### Bước 5: Khởi chạy dự án
 
-#### Chạy Backend:
+#### Khởi động Backend (Port 5000):
 ```bash
 cd backend
 npm run dev
 ```
-Server sẽ chạy tại: **`http://localhost:5000/api`** *(tự động reload khi sửa code với Node `--watch`)*.
 
-#### Chạy Frontend:
+#### Khởi động Frontend (Port 5173):
 Mở một tab terminal mới:
 ```bash
 cd frontend
 npm run dev
 ```
-Ứng dụng sẽ chạy tại: **`http://localhost:5173`**.
+Truy cập trình duyệt: **`http://localhost:5173`**.
 
 ---
 
 ## 📡 4. Danh Sách API Endpoints (Backend RESTful)
 
-| Phương thức | Endpoint | Mô tả | Controller xử lý |
+| Phương thức | Endpoint | Mô tả | Quyền truy cập |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api` | Thông tin dự án và trạng thái | `HomeController.getStatus` |
-| `GET` | `/api/health` | Kiểm tra tài nguyên và uptime hệ thống | `HomeController.getHealth` |
-| `GET` | `/api/users` | Lấy danh sách toàn bộ người dùng | `UserController.getUsers` |
-| `GET` | `/api/users/:id` | Lấy chi tiết người dùng theo ID | `UserController.getUserById` |
-| `POST` | `/api/users` | Tạo một người dùng mới | `UserController.createUser` |
-| `PUT` | `/api/users/:id` | Cập nhật thông tin người dùng | `UserController.updateUser` |
-| `DELETE` | `/api/users/:id` | Xóa người dùng theo ID | `UserController.deleteUser` |
-
----
-
-## ✨ 5. Các Điểm Nổi Bật Về Kỹ Thuật
-
-1. **Chuẩn hóa MVC kết hợp Service Layer**: Tách biệt rõ ràng trách nhiệm từng tầng.
-2. **PostgreSQL Parameterized Queries**: Chống tấn công SQL Injection tuyệt đối với tham số `$1, $2...` và tận dụng mệnh đề `RETURNING` để lấy dữ liệu bản ghi ngay khi thêm/sửa mà không cần truy vấn lần 2.
-3. **Quản lý dữ liệu trực quan bằng DBeaver**: Cung cấp file từ điển dữ liệu ([`DATA_DICTIONARY.md`](file:///d:/Project/WebQL/backend/database/DATA_DICTIONARY.md)) chi tiết cùng hướng dẫn kết nối 1 bước vào DBeaver.
-4. **Auto Database Creation & Migrations**: Tự động tạo cơ sở dữ liệu `webql_db` nếu chưa có trên PostgreSQL, nạp triggers tự động cập nhật `updated_at`.
-5. **Chuẩn hóa phản hồi API**: Toàn bộ API trả về cấu trúc thống nhất: `{ success: boolean, message: string, data: any, timestamp: string }`.
-6. **Frontend React 19 SPA hoàn chỉnh**: Đầy đủ Routing, Layout, State Context, Axios Interceptors, Modal Form CRUD và thông báo Notification thời gian thực.
+| `POST` | `/api/auth/register` | Đăng ký tài khoản hội viên mới | Public |
+| `POST` | `/api/auth/login` | Đăng nhập tài khoản | Public |
+| `GET` | `/api/auth/profile` | Lấy thông tin cá nhân | Đã đăng nhập |
+| `PUT` | `/api/auth/profile` | Cập nhật hồ sơ cá nhân | Đã đăng nhập |
+| `PUT` | `/api/auth/change-password`| Đổi mật khẩu | Đã đăng nhập |
+| `GET` | `/api/products` | Lấy danh sách sản phẩm (tìm kiếm, lọc giá, danh mục) | Public |
+| `GET` | `/api/products/:id` | Lấy chi tiết sản phẩm kèm gallery ảnh | Public |
+| `POST` | `/api/products` | Tạo sản phẩm mới | Admin, Staff |
+| `PUT` | `/api/products/:id` | Sửa thông tin sản phẩm | Admin, Staff |
+| `DELETE`| `/api/products/:id`| Ẩn sản phẩm | Admin |
+| `GET` | `/api/categories` | Lấy danh sách danh mục sản phẩm | Public |
+| `POST` | `/api/categories` | Tạo danh mục | Admin, Staff |
+| `POST` | `/api/orders` | Đặt hàng mới (Guest & Thành viên) | Public / Optional Auth |
+| `GET` | `/api/orders` | Danh sách đơn hàng (User xem đơn mình, Admin xem tất cả) | Đã đăng nhập |
+| `GET` | `/api/orders/lookup` | Tra cứu đơn hàng theo Mã đơn và Số điện thoại | Public |
+| `GET` | `/api/orders/stats` | Thống kê doanh thu & đơn hàng | Admin, Staff |
+| `PUT` | `/api/orders/:id/status`| Cập nhật trạng thái đơn (Pending, Shipping, Completed...)| Admin, Staff |
+| `GET` | `/api/cart` | Lấy giỏ hàng của thành viên | Đã đăng nhập |
+| `POST` | `/api/cart/items` | Thêm sản phẩm vào giỏ hàng | Đã đăng nhập |
+| `PUT` | `/api/cart/items/:id` | Cập nhật số lượng sản phẩm trong giỏ | Đã đăng nhập |
+| `DELETE`| `/api/cart/items/:id`| Xóa sản phẩm khỏi giỏ hàng | Đã đăng nhập |
+| `GET` | `/api/users` | Quản lý danh sách người dùng | Admin, Staff |

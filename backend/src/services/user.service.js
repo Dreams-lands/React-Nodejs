@@ -1,43 +1,28 @@
 const UserModel = require("../models/user.model");
+const { hashPassword } = require("../utils/password");
 
 /**
- * UserService (Tầng Service trong kiến trúc MVC mở rộng)
- * Chứa logic nghiệp vụ, kiểm tra ràng buộc dữ liệu trước khi gọi Model
+ * UserService (Tầng Service)
+ * Quản lý danh sách người dùng cho Quản trị viên (Admin/Staff)
  */
 class UserService {
-  /**
-   * Lấy danh sách toàn bộ người dùng
-   */
-  static async getAllUsers() {
-    return await UserModel.findAll();
+  static async getAllUsers(filters) {
+    return await UserModel.findAll(filters);
   }
 
-  /**
-   * Lấy chi tiết một người dùng
-   */
-  static async getUserById(id) {
-    if (!id || isNaN(id)) {
-      const error = new Error("ID người dùng không hợp lệ");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const user = await UserModel.findById(id);
+  static async getUserById(userId) {
+    const user = await UserModel.findById(userId);
     if (!user) {
-      const error = new Error(`Không tìm thấy người dùng với ID: ${id}`);
+      const error = new Error(`Không tìm thấy người dùng với ID: ${userId}`);
       error.statusCode = 404;
       throw error;
     }
-
     return user;
   }
 
-  /**
-   * Tạo người dùng mới
-   */
-  static async createUser({ name, email, role, status = "active" }) {
-    if (!name || !name.trim()) {
-      const error = new Error("Tên người dùng không được để trống");
+  static async createUser({ role_id = 3, full_name, email, password = "password123", phone, address, avatar_url }) {
+    if (!full_name || !full_name.trim()) {
+      const error = new Error("Họ và tên không được để trống");
       error.statusCode = 400;
       throw error;
     }
@@ -48,54 +33,48 @@ class UserService {
       throw error;
     }
 
-    // Kiểm tra định dạng email cơ bản
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      const error = new Error("Định dạng email không hợp lệ");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    // Kiểm tra email trùng lặp
-    const existingUser = await UserModel.findByEmail(email);
-    if (existingUser) {
+    const existing = await UserModel.findByEmail(email);
+    if (existing) {
       const error = new Error("Email này đã được sử dụng");
       error.statusCode = 409;
       throw error;
     }
 
+    const password_hash = await hashPassword(password);
+
     return await UserModel.create({
-      name: name.trim(),
+      role_id: Number(role_id) || 3,
+      full_name: full_name.trim(),
       email: email.trim().toLowerCase(),
-      role: role || "user",
-      status: status || "active",
+      password_hash,
+      phone,
+      address,
+      avatar_url,
     });
   }
 
-  /**
-   * Cập nhật người dùng
-   */
-  static async updateUser(id, updateData) {
-    await this.getUserById(id); // Đảm bảo user tồn tại
+  static async updateUser(userId, updateData) {
+    await this.getUserById(userId);
 
     if (updateData.email) {
-      const existingUser = await UserModel.findByEmail(updateData.email);
-      if (existingUser && existingUser.id !== Number(id)) {
+      const existing = await UserModel.findByEmail(updateData.email);
+      if (existing && existing.user_id !== Number(userId)) {
         const error = new Error("Email đã được tài khoản khác sử dụng");
         error.statusCode = 409;
         throw error;
       }
     }
 
-    return await UserModel.update(id, updateData);
+    return await UserModel.update(userId, updateData);
   }
 
-  /**
-   * Xóa người dùng
-   */
-  static async deleteUser(id) {
-    await this.getUserById(id); // Đảm bảo user tồn tại
-    return await UserModel.delete(id);
+  static async deleteUser(userId) {
+    await this.getUserById(userId);
+    return await UserModel.delete(userId);
+  }
+
+  static async getRoles() {
+    return await UserModel.getRoles();
   }
 }
 

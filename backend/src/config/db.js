@@ -1,14 +1,17 @@
-const { Pool, Client } = require("pg");
+const path = require("path");
+const { Pool } = require("pg");
 const dotenv = require("dotenv");
 
+// Load .env from current directory or backend directory
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const dbConfig = {
   host: process.env.DB_HOST || "localhost",
   port: Number(process.env.DB_PORT) || 5432,
   user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "webql_db",
+  database: process.env.DB_NAME || "postgres",
   max: 10, // Giới hạn connection pool
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
@@ -23,51 +26,10 @@ pool.on("error", (err) => {
 });
 
 /**
- * Đảm bảo Database PostgreSQL tồn tại (Tự tạo nếu chưa có)
- */
-const ensureDatabaseExists = async () => {
-  const targetDb = dbConfig.database;
-  let client;
-  try {
-    // Kết nối đến database mặc định 'postgres' để kiểm tra
-    client = new Client({
-      host: dbConfig.host,
-      port: dbConfig.port,
-      user: dbConfig.user,
-      password: dbConfig.password,
-      database: "postgres",
-    });
-    await client.connect();
-
-    const checkRes = await client.query(
-      "SELECT 1 FROM pg_database WHERE datname = $1",
-      [targetDb]
-    );
-
-    if (checkRes.rowCount === 0) {
-      console.log(`📦 [PostgreSQL] Database '${targetDb}' chưa tồn tại. Đang tự động tạo...`);
-      // Cần escape định danh tên database
-      await client.query(`CREATE DATABASE "${targetDb}" WITH ENCODING 'UTF8';`);
-      console.log(`✅ [PostgreSQL] Đã tạo database '${targetDb}' thành công!`);
-    }
-  } catch (error) {
-    // Bỏ qua lỗi nếu không đủ quyền, sẽ thử kết nối trực tiếp pool
-  } finally {
-    if (client) {
-      await client.end().catch(() => {});
-    }
-  }
-};
-
-/**
  * Hàm kiểm tra trạng thái kết nối Cơ sở dữ liệu PostgreSQL
  */
 const testConnection = async () => {
   try {
-    // 1. Kiểm tra/Tạo database nếu chưa tồn tại
-    await ensureDatabaseExists();
-
-    // 2. Thử lấy kết nối từ Pool
     const client = await pool.connect();
     const result = await client.query("SELECT NOW() as current_time, version()");
     console.log(`✅ [Database] Kết nối PostgreSQL thành công tới database: '${dbConfig.database}'!`);

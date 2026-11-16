@@ -1,6 +1,6 @@
-# 📖 Từ Điển Dữ Liệu PostgreSQL (Data Dictionary) - WebQL
+# 📖 Từ Điển Dữ Liệu PostgreSQL (Data Dictionary) - PetHub (16 Bảng)
 
-Tài liệu đặc tả toàn bộ cấu trúc cơ sở dữ liệu `webql_db` trên **PostgreSQL**, quản lý và kết nối thông qua **DBeaver**.
+Tài liệu đặc tả toàn bộ **16 bảng** trong cơ sở dữ liệu `postgres` trên **PostgreSQL**, quản lý và kết nối thông qua **DBeaver** cho dự án PetHub.
 
 ---
 
@@ -8,104 +8,215 @@ Tài liệu đặc tả toàn bộ cấu trúc cơ sở dữ liệu `webql_db` t
 
 ```mermaid
 erDiagram
-    users ||--o{ products : "creates"
+    roles ||--o{ users : "defines"
+    users ||--o{ carts : "owns"
+    users ||--o{ orders : "places"
+    users ||--o{ appointments : "books"
+    users ||--o{ inventory_logs : "records"
+    users ||--o{ audit_logs : "triggers"
     categories ||--o{ products : "categorizes"
+    products ||--o{ product_images : "has"
+    products ||--o{ cart_items : "contained_in"
+    products ||--o{ order_items : "ordered_in"
+    products ||--o{ inventory_logs : "logged_in"
+    services ||--o{ appointments : "offers"
+    carts ||--o{ cart_items : "holds"
+    orders ||--o{ order_items : "includes"
+    orders ||--o{ transactions : "generates"
+    appointments ||--o{ transactions : "generates"
+
+    roles {
+        serial role_id PK "1-Admin, 2-Manager, 3-Staff, 4-Customer"
+        varchar role_name UK "Tên quyền"
+    }
 
     users {
-        serial id PK "Khóa chính tự tăng"
-        varchar name "Họ và tên"
-        varchar email UK "Email duy nhất"
-        varchar role "admin, editor, user (CHECK)"
-        varchar status "active, inactive, banned (CHECK)"
-        timestamptz created_at "Thời gian tạo"
-        timestamptz updated_at "Thời gian cập nhật (Trigger)"
+        serial user_id PK "Khóa chính"
+        int role_id FK "Liên kết roles.role_id"
+        varchar full_name "Họ và tên"
+        varchar email UK "Email đăng nhập"
+        varchar password_hash "Mật khẩu mã hóa (bcrypt)"
+        varchar phone "Số điện thoại"
+        text address "Địa chỉ giao hàng"
+        text avatar_url "Link ảnh đại diện"
+        varchar reset_password_token "Mã đặt lại mật khẩu"
+        timestamp reset_password_expires "Hạn token"
+        timestamp created_at "Thời gian tạo"
+        boolean is_active "Trạng thái hoạt động"
     }
 
     categories {
-        serial id PK "Khóa chính tự tăng"
-        varchar name "Tên danh mục"
-        varchar slug UK "Đường dẫn tĩnh SEO"
-        varchar description "Mô tả ngắn"
-        timestamptz created_at "Thời gian tạo"
+        serial category_id PK "Khóa chính"
+        varchar category_name "Tên danh mục"
+        text description "Mô tả danh mục"
+        boolean is_active "Trạng thái hiển thị"
     }
 
     products {
-        serial id PK "Khóa chính tự tăng"
-        int category_id FK "Khóa ngoại tới categories.id"
-        varchar name "Tên sản phẩm"
-        numeric price "Đơn giá (12, 2)"
-        int quantity "Số lượng tồn kho"
-        varchar status "in_stock, out_of_stock, discontinued"
-        int created_by FK "Khóa ngoại tới users.id"
-        timestamptz created_at "Thời gian tạo"
-        timestamptz updated_at "Thời gian cập nhật (Trigger)"
+        serial product_id PK "Khóa chính"
+        int category_id FK "Liên kết categories.category_id"
+        varchar sku UK "Mã sản phẩm duy nhất"
+        varchar product_name "Tên sản phẩm"
+        text description "Mô tả chi tiết"
+        decimal price "Đơn giá (10, 2)"
+        int stock_quantity "Số lượng tồn kho"
+        timestamp created_at "Ngày tạo"
+        boolean is_active "Trạng thái bán hàng"
+    }
+
+    product_images {
+        serial image_id PK "Khóa chính"
+        int product_id FK "Liên kết products.product_id (CASCADE)"
+        text image_url "Đường dẫn ảnh"
+        boolean is_primary "Ảnh bìa chính"
+    }
+
+    inventory_logs {
+        serial log_id PK "Khóa chính"
+        int product_id FK "Liên kết products.product_id"
+        int user_id FK "Nhân viên thực hiện (users.user_id)"
+        int change_quantity "Số lượng biến động (+/-)"
+        varchar reason "Lý do nhập/xuất kho"
+        timestamp created_at "Thời điểm ghi nhận"
+    }
+
+    orders {
+        serial order_id PK "Khóa chính"
+        int customer_id FK "Khách đăng nhập (NULL: vãng lai)"
+        varchar buyer_name "Tên người nhận"
+        varchar buyer_phone "Số điện thoại người nhận"
+        varchar buyer_email "Email gửi xác nhận"
+        text shipping_address "Địa chỉ nhận hàng"
+        decimal total_amount "Tổng tiền hàng gốc"
+        decimal discount_amount "Tiền giảm giá"
+        decimal final_amount "Tiền khách thực trả"
+        timestamp order_date "Thời điểm đặt hàng"
+        varchar status "Pending, Confirmed, Shipping, Completed, Cancelled"
+        text admin_notes "Ghi chú nội bộ"
+    }
+
+    order_items {
+        serial order_item_id PK "Khóa chính"
+        int order_id FK "Liên kết orders.order_id (CASCADE)"
+        int product_id FK "Liên kết products.product_id"
+        int quantity "Số lượng mua (> 0)"
+        decimal unit_price "Đơn giá chốt tại thời điểm mua"
+    }
+
+    services {
+        serial service_id PK "Khóa chính"
+        varchar service_name "Tên dịch vụ Spa"
+        decimal price "Đơn giá dịch vụ"
+    }
+
+    appointments {
+        serial appointment_id PK "Khóa chính"
+        int customer_id FK "Khách đặt lịch"
+        varchar guest_name "Tên khách hẹn"
+        varchar guest_phone "Số điện thoại khách"
+        int staff_id FK "Nhân viên phụ trách"
+        int service_id FK "Dịch vụ Spa được chọn"
+        timestamp appointment_date "Thời gian hẹn"
+        decimal total_amount "Tổng tiền dịch vụ"
+        varchar payment_status "Unpaid, Paid, Refunded"
+        varchar status "Scheduled, Completed, Cancelled"
+    }
+
+    transactions {
+        serial transaction_id PK "Khóa chính"
+        int order_id FK "Liên kết orders.order_id"
+        int appointment_id FK "Liên kết appointments.appointment_id"
+        varchar payment_method "COD, VNPay, MoMo..."
+        decimal amount "Số tiền thanh toán"
+        timestamp transaction_date "Thời gian giao dịch"
+        varchar status "Success, Pending, Failed"
+    }
+
+    carts {
+        serial cart_id PK "Khóa chính"
+        int user_id UK "Chủ sở hữu giỏ hàng (CASCADE)"
+    }
+
+    cart_items {
+        serial cart_item_id PK "Khóa chính"
+        int cart_id FK "Liên kết carts.cart_id (CASCADE)"
+        int product_id FK "Liên kết products.product_id (CASCADE)"
+        int quantity "Số lượng chọn (> 0)"
+    }
+
+    banners {
+        serial banner_id PK "Khóa chính"
+        text image_url "Đường dẫn ảnh banner"
+        text target_link "Đường link khi click"
+        int sort_order "Thứ tự sắp xếp"
+        boolean is_active "Bật/Tắt hiển thị"
+    }
+
+    site_settings {
+        varchar setting_key PK "Tên cấu hình"
+        text setting_value "Giá trị cấu hình"
+    }
+
+    audit_logs {
+        serial log_id PK "Khóa chính"
+        int user_id FK "Người thực hiện hành động"
+        varchar action "Tên hành động"
+        varchar entity_name "Tên đối tượng bị tác động"
+        text details "Chi tiết nhật ký"
+        timestamp created_at "Thời điểm thực hiện"
     }
 ```
 
 ---
 
-## 📋 2. Chi Tiết Các Bảng Dữ Liệu (PostgreSQL Tables)
+## 📋 2. Chi Tiết Các Bảng Dữ Liệu (16 Bảng)
 
-### 2.1. Bảng `users` (Quản lý tài khoản người dùng)
-- **Mục đích:** Lưu trữ thông tin tài khoản thành viên và phân quyền trong hệ thống.
-- **Ràng buộc:** Kiểm tra `role IN ('admin', 'editor', 'user')`, `status IN ('active', 'inactive', 'banned')`.
+### 2.1. `roles` (Phân Quyền Hệ Thống - 4 Cấp Bậc)
+- `1 - Admin`: Toàn quyền hệ thống.
+- `2 - Manager`: Quản lý kho hàng, doanh thu và xem thống kê.
+- `3 - Staff`: Nhân viên bán hàng, cập nhật trạng thái đơn và lịch hẹn Spa.
+- `4 - Customer`: Khách hàng mua sắm và đặt lịch hẹn.
 
-| Tên Cột (Column) | Kiểu Dữ Liệu (PostgreSQL) | Nullable | Mặc Định (Default) | Khóa / Ràng Buộc | Mô Tả Nghiệp Vụ |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `id` | `SERIAL` (`INT4`) | ❌ | `nextval('users_id_seq')` | `PRIMARY KEY` | Khóa chính tự tăng |
-| `name` | `VARCHAR(100)` | ❌ | Không | Không | Họ và tên đầy đủ |
-| `email` | `VARCHAR(100)` | ❌ | Không | `UNIQUE INDEX` | Địa chỉ email dùng để định danh |
-| `role` | `VARCHAR(20)` | ❌ | `'user'` | `CHECK`, `INDEX` | Phân quyền truy cập |
-| `status` | `VARCHAR(20)` | ❌ | `'active'` | `CHECK` | Trạng thái hoạt động tài khoản |
-| `created_at` | `TIMESTAMPTZ` | ❌ | `CURRENT_TIMESTAMP` | Không | Ngày giờ tạo tài khoản |
-| `updated_at` | `TIMESTAMPTZ` | ❌ | `CURRENT_TIMESTAMP` | `Trigger` | Tự động cập nhật qua Trigger |
+### 2.2. `users` (Tài Khoản & Hội Viên)
+Chứa thông tin đăng nhập, hồ sơ, mật khẩu băm Bcrypt, token đặt lại mật khẩu và trạng thái kích hoạt.
 
----
+### 2.3. `categories` & 2.4. `products` & 2.5. `product_images`
+Quản lý cây danh mục sản phẩm, chi tiết sản phẩm tồn kho và bộ sưu tập ảnh (có cờ `is_primary`).
 
-### 2.2. Bảng `categories` (Danh mục hệ thống)
-- **Mục đích:** Phân loại nhóm các sản phẩm hoặc tài nguyên quản lý.
+### 2.6. `inventory_logs` (Nhật Ký Kho Hàng - Bảng Mới)
+Ghi nhận mọi biến động tồn kho:
+- `change_quantity > 0`: Nhập hàng vào kho.
+- `change_quantity < 0`: Xuất hàng (bán cho đơn hàng hoặc hủy hàng lỗi).
 
-| Tên Cột (Column) | Kiểu Dữ Liệu (PostgreSQL) | Nullable | Mặc Định (Default) | Khóa / Ràng Buộc | Mô Tả Nghiệp Vụ |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `id` | `SERIAL` (`INT4`) | ❌ | `nextval('categories_id_seq')` | `PRIMARY KEY` | Khóa chính danh mục |
-| `name` | `VARCHAR(100)` | ❌ | Không | Không | Tên hiển thị của danh mục |
-| `slug` | `VARCHAR(120)` | ❌ | Không | `UNIQUE INDEX` | Đường dẫn tĩnh SEO (URL friendly) |
-| `description` | `VARCHAR(255)` | ✔️ | `NULL` | Không | Mô tả tóm tắt nội dung danh mục |
-| `created_at` | `TIMESTAMPTZ` | ❌ | `CURRENT_TIMESTAMP` | Không | Thời điểm khởi tạo danh mục |
+### 2.7. `orders` & 2.8. `order_items`
+- Quản lý đơn hàng thương mại điện tử.
+- `total_amount`: Tổng tiền hàng gốc.
+- `discount_amount`: Tiền giảm giá.
+- `final_amount`: Tiền thực thu từ khách hàng.
 
----
+### 2.9. `services` & 2.10. `appointments` (Dịch Vụ Spa & Đặt Lịch Hẹn - Bảng Mới)
+Quản lý các gói Spa (tắm sấy, tỉa lông, nhuộm lông) và lịch hẹn làm đẹp của khách hàng cùng thú cưng.
 
-### 2.3. Bảng `products` (Sản phẩm / Hàng hóa)
-- **Mục đích:** Quản lý danh mục hàng hóa, đơn giá, tồn kho và người tạo.
+### 2.11. `transactions` (Giao Dịch Dòng Tiền)
+Gom chung giao dịch thanh toán từ cả **Đơn hàng (`order_id`)** và **Lịch hẹn Spa (`appointment_id`)** theo ràng buộc `chk_transaction_source`.
 
-| Tên Cột (Column) | Kiểu Dữ Liệu (PostgreSQL) | Nullable | Mặc Định (Default) | Khóa / Ràng Buộc | Mô Tả Nghiệp Vụ |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `id` | `SERIAL` (`INT4`) | ❌ | `nextval('products_id_seq')` | `PRIMARY KEY` | Khóa chính sản phẩm |
-| `category_id` | `INT` | ✔️ | `NULL` | `FOREIGN KEY` | Khóa ngoại liên kết `categories.id` (`ON DELETE SET NULL`) |
-| `name` | `VARCHAR(200)` | ❌ | Không | Không | Tên sản phẩm |
-| `price` | `NUMERIC(12,2)`| ❌ | `0.00` | Không | Giá bán sản phẩm |
-| `quantity` | `INT` | ❌ | `0` | Không | Số lượng tồn kho hiện tại |
-| `status` | `VARCHAR(20)` | ❌ | `'in_stock'` | `CHECK`, `INDEX` | Tình trạng: in_stock, out_of_stock, discontinued |
-| `created_by` | `INT` | ✔️ | `NULL` | `FOREIGN KEY` | Khóa ngoại liên kết `users.id` (`ON DELETE SET NULL`) |
-| `created_at` | `TIMESTAMPTZ` | ❌ | `CURRENT_TIMESTAMP` | Không | Thời điểm thêm sản phẩm |
-| `updated_at` | `TIMESTAMPTZ` | ❌ | `CURRENT_TIMESTAMP` | `Trigger` | Tự động cập nhật qua Trigger |
+### 2.12. `carts` & 2.13. `cart_items` (Giỏ Hàng Trực Tuyến)
+Đồng bộ giỏ hàng cá nhân hóa cho từng hội viên.
+
+### 2.14. `banners`, 2.15. `site_settings` & 2.16. `audit_logs` (Cấu Hình & Nhật Ký - Bảng Mới)
+- `banners`: Banner quảng cáo trang chủ.
+- `site_settings`: Cấu hình website (tên cửa hàng, hotline, địa chỉ).
+- `audit_logs`: Nhật ký kiểm toán thao tác quản trị.
 
 ---
 
-## 🦫 3. Hướng Dẫn Kết Nối Bằng DBeaver
+## 🦫 3. Kết Nối & Quản Lý Bằng DBeaver
 
-1. **Khởi động phần mềm DBeaver**.
-2. Nhấn vào biểu tượng **New Database Connection** (phím tắt `Ctrl + Shift + N` hoặc click icon ổ cứng có dấu cộng).
-3. Chọn Driver: **PostgreSQL** -> Nhấn **Next**.
-4. Điền các thông số kết nối:
-   * **Host:** `localhost`
-   * **Port:** `5432`
-   * **Database:** `webql_db`
-   * **Authentication:** `Database Native`
-   * **Username:** `postgres`
-   * **Password:** `123456` *(hoặc mật khẩu bạn đã cài khi cài đặt PostgreSQL)*
-5. Bấm nút **Test Connection...** để kiểm tra (DBeaver sẽ tự động tải Driver PostgreSQL nếu là lần đầu tiên).
-6. Bấm **Finish** để lưu kết nối.
-7. Khi mở `webql_db` trong DBeaver:
-   * Vào `Databases` -> `webql_db` -> `Schemas` -> `public` -> `Tables` để xem các bảng và dữ liệu.
-   * Để xem sơ đồ ERD trực quan: Click đúp vào schema `public` -> Chọn tab **ER Diagram**.
+1. **Khởi động DBeaver** -> Nhấn **New Database Connection** -> Chọn **PostgreSQL**.
+2. Nhập thông số:
+   - **Host:** `localhost` | **Port:** `5432`
+   - **Database:** `postgres`
+   - **Username:** `postgres` | **Password:** `123456`
+3. Nhấn **Test Connection ...** -> Bấm **Finish**.
+4. Mở: `Databases` ➔ `postgres` ➔ `Schemas` ➔ `public` ➔ `Tables` để xem đầy đủ **16 bảng**.
+5. Click đúp vào `public` ➔ chọn tab **ER Diagram** để xem toàn bộ sơ đồ liên kết khóa ngoại.

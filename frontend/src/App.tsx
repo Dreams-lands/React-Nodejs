@@ -74,6 +74,10 @@ import { AccountPage, type AccountTab } from './components/AccountPage';
 import { TiltCard } from './components/TiltCard';
 import { FloatingContact } from './components/FloatingContact';
 import { ConfirmDialog, type ConfirmDialogState } from './components/ConfirmDialog';
+import authService from './services/authService';
+import orderService from './services/orderService';
+import productService from './services/productService';
+import cartService from './services/cartService';
 
 type PaymentMethodId = 'vnpay' | 'momo' | 'cod';
 type DeliveryMethodId = 'delivery' | 'pickup';
@@ -291,11 +295,85 @@ export function App() {
   const [showPass, setShowPass] = useState(false);
   const [showRegPass, setShowRegPass] = useState(false);
   const [loginEmail, setLoginEmail] = useState('khoa.trinh@pethub.vn');
+  const [loginPassword, setLoginPassword] = useState('123456');
   const [regName, setRegName] = useState('Trịnh Khoa');
   const [regPhone, setRegPhone] = useState('0909 686 868');
   const [regEmail, setRegEmail] = useState('khoa.trinh@pethub.vn');
   const [regPassword, setRegPassword] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
+
+  // Đồng bộ dữ liệu người dùng (Đơn hàng & Giỏ hàng) từ PostgreSQL
+  const syncUserData = async () => {
+    if (!authService.isAuthenticated()) return;
+    try {
+      const [ordersRes, cartRes] = await Promise.allSettled([
+        orderService.getMyOrders(),
+        cartService.getCart(),
+      ]);
+
+      if (ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value)) {
+        if (ordersRes.value.length > 0) {
+          const mappedOrders: OrderRecord[] = ordersRes.value.map((ord: any) => ({
+            id: `#PH${ord.order_id}`,
+            createdAt: new Date(ord.order_date).toLocaleDateString('vi-VN'),
+            status: (ord.status.toLowerCase() === 'completed'
+              ? 'completed'
+              : ord.status.toLowerCase() === 'shipping'
+              ? 'shipping'
+              : 'pending') as OrderRecord['status'],
+            totalAmount: Number(ord.total_amount),
+            shippingAddress: ord.shipping_address,
+            paymentMethod: ord.payment_method || 'COD',
+            items: (ord.items || []).map((it: any) => ({
+              id: String(it.product_id),
+              name: it.product_name,
+              image: it.image || 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
+              price: Number(it.unit_price),
+              quantity: Number(it.quantity),
+              variant: it.sku,
+            })),
+          }));
+          setOrders(mappedOrders);
+        }
+      }
+
+      if (cartRes.status === 'fulfilled' && cartRes.value?.items) {
+        if (cartRes.value.items.length > 0) {
+          const mappedCart: CartItem[] = cartRes.value.items.map((ci: any) => ({
+            id: `cart-item-${ci.cart_item_id}`,
+            productId: String(ci.product_id),
+            name: ci.product_name,
+            desc: ci.sku || '',
+            price: Number(ci.price),
+            priceStr: `${Number(ci.price).toLocaleString('vi-VN')}₫`,
+            quantity: Number(ci.quantity),
+            image: ci.image || 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=900&q=85',
+            category: 'food',
+          }));
+          setCartItems(mappedCart);
+        }
+      }
+    } catch (err) {
+      console.warn('Lỗi đồng bộ dữ liệu người dùng:', err);
+    }
+  };
+
+  // Sync auth state and warm up products on mount
+  useEffect(() => {
+    productService.getAll().catch(() => {});
+    const savedUser = authService.getCurrentUser();
+    if (savedUser && authService.isAuthenticated()) {
+      setIsLoggedIn(true);
+      setUserName(savedUser.full_name);
+      setUserEmail(savedUser.email);
+      if (savedUser.phone) setUserPhone(savedUser.phone);
+      if (savedUser.address) setShippingAddress(savedUser.address);
+      setCheckoutName(savedUser.full_name);
+      setCheckoutPhone(savedUser.phone || '');
+      setCheckoutEmail(savedUser.email);
+      syncUserData();
+    }
+  }, []);
 
   // Contact Page Form State
   const [contactName, setContactName] = useState('');
@@ -377,6 +455,7 @@ export function App() {
       confirmLabel: 'Đăng xuất',
       tone: 'danger',
       onConfirm: () => {
+        authService.logout();
         setIsLoggedIn(false);
         setCartItems([]);
         setCheckoutName('');
@@ -446,6 +525,13 @@ export function App() {
       return [nextItem, ...prev];
     });
 
+    // Đồng bộ lên PostgreSQL nếu đã đăng nhập
+    if (authService.isAuthenticated()) {
+      const prodMatch = CATALOG_PRODUCTS.findIndex((cp) => cp.id === item.id);
+      const resolvedBackendId = prodMatch >= 0 ? (prodMatch % 7) + 1 : 1;
+      cartService.addItem(resolvedBackendId, qty).catch((e) => console.warn('Cart sync add error:', e));
+    }
+
     triggerToast(`Đã thêm "${item.name}" vào giỏ hàng.`);
     return true;
   };
@@ -473,6 +559,10 @@ export function App() {
       tone: 'danger',
       onConfirm: () => {
         setCartItems((prev) => prev.filter((item) => item.id !== id));
+        if (authService.isAuthenticated() && id.startsWith('cart-item-')) {
+          const cartItemId = Number(id.replace('cart-item-', ''));
+          cartService.removeItem(cartItemId).catch((e) => console.warn('Cart sync remove error:', e));
+        }
         triggerToast('Đã xóa sản phẩm khỏi giỏ hàng.');
       },
     });
@@ -530,7 +620,7 @@ export function App() {
     setLookupOpen(true);
   };
 
-  const handleOrderLookupSubmit = (e: React.FormEvent) => {
+  const handleOrderLookupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = lookupPhone.replace(/\D/g, '');
     const cleanCode = lookupCode.trim().replace(/^#/, '').toUpperCase();
@@ -539,6 +629,39 @@ export function App() {
       setLookupResult(null);
       return;
     }
+
+    // Tra cứu qua Backend PostgreSQL API
+    try {
+      const apiOrder = await orderService.lookup(cleanCode, cleanPhone);
+      if (apiOrder) {
+        const mapped: LookupOrderEntry = {
+          id: `#PH${apiOrder.order_id}`,
+          createdAt: new Date(apiOrder.order_date).toLocaleDateString('vi-VN'),
+          status: (apiOrder.status.toLowerCase() as OrderRecord['status']) || 'pending',
+          totalAmount: Number(apiOrder.total_amount),
+          shippingAddress: apiOrder.shipping_address,
+          paymentMethod: apiOrder.payment_method || 'COD',
+          deliveryMethod: 'delivery',
+          customerName: apiOrder.buyer_name,
+          customerPhone: apiOrder.buyer_phone,
+          customerEmail: apiOrder.buyer_email,
+          items: apiOrder.items.map((it) => ({
+            id: String(it.product_id),
+            name: it.product_name,
+            image: it.image,
+            price: Number(it.unit_price),
+            quantity: it.quantity,
+            variant: it.sku,
+          })),
+        };
+        setLookupError(null);
+        setLookupResult(mapped);
+        return;
+      }
+    } catch {
+      // Fallback tra cứu dữ liệu local
+    }
+
     const matched = lookupEntries.find(
       (entry) =>
         entry.customerPhone.replace(/\D/g, '') === cleanPhone &&
@@ -553,7 +676,7 @@ export function App() {
     setLookupResult(matched);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const activeName = checkoutName.trim();
     const activePhone = checkoutPhone.trim();
     const activeEmail = checkoutEmail.trim();
@@ -588,7 +711,7 @@ export function App() {
     }
 
     setCheckoutError(null);
-    const orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
+    let orderNum = `PH${Math.floor(100000 + Math.random() * 899999)}`;
     const nowLabel = new Date().toLocaleDateString('vi-VN');
     const selectedPaymentLabel =
       PAYMENT_OPTIONS.find((opt) => opt.id === paymentMethod)?.label || 'VNPay';
@@ -597,6 +720,34 @@ export function App() {
         ? `Nhận tại cửa hàng: ${STORE_PICKUP_INFO.address}`
         : activeAddress;
     const customerLabel = activeName || (isLoggedIn ? userName : 'Quý khách');
+
+    // Đồng bộ đơn hàng lên Backend PostgreSQL
+    try {
+      const backendItems = cartItems.map((c) => {
+        const prodMatch = CATALOG_PRODUCTS.findIndex((cp) => cp.id === c.productId);
+        const resolvedId = prodMatch >= 0 ? (prodMatch % 7) + 1 : 1;
+        return {
+          product_id: resolvedId,
+          quantity: c.quantity,
+          unit_price: c.price,
+        };
+      });
+
+      const apiOrder = await orderService.create({
+        buyer_name: customerLabel,
+        buyer_phone: activePhone,
+        buyer_email: activeEmail || (isLoggedIn ? userEmail : undefined),
+        shipping_address: resolvedAddress,
+        payment_method: selectedPaymentLabel,
+        items: backendItems,
+      });
+
+      if (apiOrder && apiOrder.order_id) {
+        orderNum = `PH${apiOrder.order_id}`;
+      }
+    } catch (apiErr) {
+      console.warn('Backend order placement sync:', apiErr);
+    }
 
     const snapshot: OrderSnapshot = {
       code: `#${orderNum}`,
@@ -1748,7 +1899,7 @@ export function App() {
                 userGender={userGender}
                 activeTab={accountTab}
                 onTabChange={setAccountTab}
-                onUpdateProfile={({ name, email, phone, gender }) => {
+                onUpdateProfile={async ({ name, email, phone, gender }) => {
                   setUserName(name);
                   setUserEmail(email);
                   setUserPhone(phone);
@@ -1758,6 +1909,14 @@ export function App() {
                   setCheckoutName(name);
                   setCheckoutPhone(phone);
                   setCheckoutEmail(email);
+                  try {
+                    await authService.updateProfile({
+                      full_name: name,
+                      phone: phone,
+                    });
+                  } catch (err) {
+                    console.warn('Backend profile sync:', err);
+                  }
                   triggerToast('Đã cập nhật thông tin tài khoản.');
                 }}
                 addresses={addresses}
@@ -3131,21 +3290,28 @@ export function App() {
 
                 {currentPage === 'login' ? (
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
-                      const nameFromEmail = loginEmail.includes('@')
-                        ? ownerName
-                        : loginEmail.trim() || 'Trịnh Anh Khoa';
-                      setUserName(nameFromEmail);
-                      if (loginEmail.includes('@')) {
-                        setUserEmail(loginEmail.trim());
+                      try {
+                        const res = await authService.login(loginEmail, loginPassword || '123456');
+                        if (res?.user) {
+                          setUserName(res.user.full_name);
+                          setUserEmail(res.user.email);
+                          if (res.user.phone) setUserPhone(res.user.phone);
+                          if (res.user.address) setShippingAddress(res.user.address);
+                          setCheckoutName(res.user.full_name);
+                          setCheckoutPhone(res.user.phone || userPhone);
+                          setCheckoutEmail(res.user.email);
+                          setIsLoggedIn(true);
+                          await syncUserData();
+                          triggerToast(`Đăng nhập thành công. Xin chào ${res.user.full_name}.`);
+                          navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                          return;
+                        }
+                      } catch (err: any) {
+                        triggerToast(err.message || 'Lỗi đăng nhập tài khoản.');
+                        return;
                       }
-                      setCheckoutName(nameFromEmail);
-                      setCheckoutPhone(userPhone);
-                      setCheckoutEmail(loginEmail.includes('@') ? loginEmail.trim() : userEmail);
-                      setIsLoggedIn(true);
-                      triggerToast(`Đăng nhập thành công. Xin chào ${nameFromEmail}.`);
-                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
                     }}
                     className="space-y-4"
                   >
@@ -3191,7 +3357,8 @@ export function App() {
                           <Lock className="w-4 h-4 text-[#52657a]" />
                           <input
                             type={showPass ? 'text' : 'password'}
-                            defaultValue="pethub2026"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
                             className="flex-1 bg-transparent text-[13px] font-bold text-[#17324d] focus:outline-none"
                           />
                         </div>
@@ -3216,7 +3383,7 @@ export function App() {
                   </form>
                 ) : (
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       if (!regName.trim() || !regPhone.trim() || !regEmail.trim()) {
                         setRegError('Vui lòng nhập đầy đủ họ tên, số điện thoại và email.');
@@ -3227,19 +3394,35 @@ export function App() {
                         return;
                       }
                       setRegError('');
-                      const chosenName = regName.trim();
-                      setUserName(chosenName);
-                      setUserEmail(regEmail.trim());
-                      setUserPhone(regPhone.trim());
-                      setOwnerName(chosenName);
-                      setOwnerPhone(regPhone.trim());
-                      setCheckoutName(chosenName);
-                      setCheckoutPhone(regPhone.trim());
-                      setCheckoutEmail(regEmail.trim());
-                      setIsLoggedIn(true);
-                      setRegPassword('');
-                      triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
-                      navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+
+                      try {
+                        const res = await authService.register({
+                          full_name: regName.trim(),
+                          email: regEmail.trim(),
+                          phone: regPhone.trim(),
+                          password: regPassword,
+                        });
+                        if (res?.user) {
+                          const chosenName = res.user.full_name;
+                          setUserName(chosenName);
+                          setUserEmail(res.user.email);
+                          setUserPhone(res.user.phone || regPhone.trim());
+                          setOwnerName(chosenName);
+                          setOwnerPhone(res.user.phone || regPhone.trim());
+                          setCheckoutName(chosenName);
+                          setCheckoutPhone(res.user.phone || regPhone.trim());
+                          setCheckoutEmail(res.user.email);
+                          setIsLoggedIn(true);
+                          setRegPassword('');
+                          await syncUserData();
+                          triggerToast(`Tạo tài khoản thành công. Chào mừng ${chosenName}.`);
+                          navigateTo(returnPage === 'login' || returnPage === 'register' ? 'home' : returnPage);
+                          return;
+                        }
+                      } catch (err: any) {
+                        setRegError(err.message || 'Lỗi khi đăng ký tài khoản.');
+                        return;
+                      }
                     }}
                     className="space-y-4"
                   >
