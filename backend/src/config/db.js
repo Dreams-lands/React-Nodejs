@@ -1,7 +1,8 @@
+const path = require("path");
 const { Pool, Client } = require("pg");
 const dotenv = require("dotenv");
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const dbConfig = {
   host: process.env.DB_HOST || "localhost",

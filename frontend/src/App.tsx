@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import {
   ChevronLeft,
@@ -223,12 +224,28 @@ export function App() {
   const [heroSlide, setHeroSlide] = useState(0);
   const { theme, toggleWithDroplet } = useThemeDroplet();
 
-  // Admin & Shared Storefront State
-  const [products, setProducts] = useState<ProductItem[]>(CATALOG_PRODUCTS);
+  // Admin & Shared Storefront State (Persistent with LocalStorage & Backend sync)
+  const [products, setProducts] = useState<ProductItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_admin_products');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return CATALOG_PRODUCTS;
+  });
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(INITIAL_STORE_SETTINGS);
   const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayConfig>(INITIAL_PAYMENT_GATEWAYS);
-  const [shiftTasks, setShiftTasks] = useState<StaffShiftTask[]>(STAFF_SHIFT_TASKS);
+  const [shiftTasks, setShiftTasks] = useState<StaffShiftTask[]>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_admin_tasks');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return STAFF_SHIFT_TASKS;
+  });
   const [doneTaskIds, setDoneTaskIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_admin_done_tasks');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
     const initial: Record<string, boolean> = {};
     for (const t of STAFF_SHIFT_TASKS) {
       if (t.defaultDone) initial[t.id] = true;
@@ -237,30 +254,70 @@ export function App() {
   });
   const [onShift, setOnShift] = useState(true);
 
-  // Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authRole, setAuthRole] = useState<'guest' | 'customer' | WorkspaceUserRole>('guest');
-  const [userName, setUserName] = useState('Trịnh Anh Khoa');
-  const [userEmail, setUserEmail] = useState('khoa.trinh@pethub.vn');
+  // Auth State (Persistent session on Refresh/F5)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_is_logged_in');
+      if (saved !== null) return saved === 'true';
+    } catch (e) {}
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '').toLowerCase() : '';
+    return hash === 'admin' || hash === 'staff';
+  });
+  const [authRole, setAuthRole] = useState<'guest' | 'customer' | WorkspaceUserRole>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_auth_role');
+      if (saved === 'admin' || saved === 'staff' || saved === 'customer') return saved as any;
+    } catch (e) {}
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '').toLowerCase() : '';
+    if (hash === 'admin') return 'admin';
+    if (hash === 'staff') return 'staff';
+    return 'guest';
+  });
+  const [userName, setUserName] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_user_name');
+      if (saved) return saved;
+    } catch (e) {}
+    return 'Trịnh Anh Khoa';
+  });
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_user_email');
+      if (saved) return saved;
+    } catch (e) {}
+    return 'khoa.trinh@pethub.vn';
+  });
   const [userPhone, setUserPhone] = useState('0909 123 456');
   const [userGender, setUserGender] = useState('Nam');
   const [accountTab, setAccountTab] = useState<AccountTab>('profile');
   const [addresses, setAddresses] = useState<AddressRecord[]>(INITIAL_ADDRESSES);
   const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS);
-  const [lookupEntries, setLookupEntries] = useState<LookupOrderEntry[]>(() => [
-    ...INITIAL_ORDERS.map((o) => ({
-      ...o,
-      deliveryMethod: 'delivery' as DeliveryMethodId,
-      customerName: 'Trịnh Anh Khoa',
-      customerPhone: '0909 123 456',
-      customerEmail: 'khoa.trinh@pethub.vn',
-    })),
-    ...ADMIN_EXTRA_ORDERS,
-  ]);
-  const [bookings, setBookings] = useState<ServiceBookingRecord[]>(() => [
-    ...INITIAL_BOOKINGS,
-    ...ADMIN_EXTRA_BOOKINGS,
-  ]);
+  const [lookupEntries, setLookupEntries] = useState<LookupOrderEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_admin_orders');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      ...INITIAL_ORDERS.map((o) => ({
+        ...o,
+        deliveryMethod: 'delivery' as DeliveryMethodId,
+        customerName: 'Trịnh Anh Khoa',
+        customerPhone: '0909 123 456',
+        customerEmail: 'khoa.trinh@pethub.vn',
+      })),
+      ...ADMIN_EXTRA_ORDERS,
+    ];
+  });
+  const [bookings, setBookings] = useState<ServiceBookingRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('pethub_admin_bookings');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      ...INITIAL_BOOKINGS,
+      ...ADMIN_EXTRA_BOOKINGS,
+    ];
+  });
 
   // Catalog, Promotions & Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -397,35 +454,151 @@ export function App() {
     return () => window.removeEventListener('hashchange', syncHash);
   }, [authRole]);
 
-  // Admin Operations Synced Live to Storefront
-  const handleSaveAdminProduct = (item: ProductItem, isNew: boolean) => {
-    setProducts((prev) =>
-      isNew ? [item, ...prev] : prev.map((p) => (p.id === item.id ? item : p))
-    );
+  // Tự động đồng bộ sản phẩm từ Backend PostgreSQL khi vào trang
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/products?limit=100');
+        if (res.data?.success && Array.isArray(res.data?.data?.data)) {
+          const dbProducts = res.data.data.data;
+          if (dbProducts.length > 0) {
+            setProducts((prev) => {
+              const updated = [...prev];
+              dbProducts.forEach((dbp: any) => {
+                const skuOrId = dbp.sku || String(dbp.product_id);
+                const existingIndex = updated.findIndex(
+                  (p) => p.id === skuOrId || p.id === String(dbp.product_id)
+                );
+                const item: ProductItem = {
+                  id: skuOrId,
+                  brand: 'PetHub Flagship',
+                  name: dbp.product_name,
+                  shortDesc: dbp.description || '',
+                  description: dbp.description || '',
+                  packSize: 'Tiêu chuẩn',
+                  sizes: ['Tiêu chuẩn'],
+                  rating: 5.0,
+                  reviewCount: 16,
+                  priceNum: parseFloat(dbp.price) || 0,
+                  price: `${(parseFloat(dbp.price) || 0).toLocaleString('vi-VN')}₫`,
+                  badge: dbp.stock_quantity <= 15 ? 'Sắp hết hàng' : 'Bán chạy',
+                  category: dbp.category_name?.includes('Pate') || dbp.category_name?.includes('Dinh dưỡng') ? 'food' : 'hygiene',
+                  subType: 'pate',
+                  petType: 'both',
+                  image: '/images/prod-chicken-pate.jpg',
+                  gallery: ['/images/prod-chicken-pate.jpg'],
+                  bgTone: '#eff5ff',
+                  stockCount: parseInt(dbp.stock_quantity, 10) || 0,
+                  highlights: ['Chính hãng 100%', 'Giao nhanh 2h'],
+                  reviews: [],
+                };
+                if (existingIndex !== -1) {
+                  updated[existingIndex] = { ...updated[existingIndex], ...item };
+                } else {
+                  updated.unshift(item);
+                }
+              });
+              localStorage.setItem('pethub_admin_products', JSON.stringify(updated));
+              return updated;
+            });
+          }
+        }
+      } catch (err) {
+        // Backend chưa bật thì dùng dữ liệu LocalStorage/Mock
+      }
+    };
+    fetchBackendData();
+  }, []);
+
+  // Admin Operations Synced Live to Storefront & PostgreSQL Backend
+  const handleSaveAdminProduct = async (item: ProductItem, isNew: boolean) => {
+    setProducts((prev) => {
+      const next = isNew ? [item, ...prev] : prev.map((p) => (p.id === item.id ? item : p));
+      localStorage.setItem('pethub_admin_products', JSON.stringify(next));
+      return next;
+    });
+
     triggerToast(
       isNew
         ? `Đã thêm sản phẩm "${item.name}" vào kho và trang chủ.`
         : `Đã cập nhật thông tin "${item.name}".`
     );
+
+    // Đồng bộ trực tiếp xuống Backend PostgreSQL
+    try {
+      if (isNew) {
+        await axios.post('http://localhost:5000/api/products', {
+          category_id: 1,
+          sku: item.id || `PROD-${Date.now()}`,
+          product_name: item.name,
+          description: item.description || item.shortDesc,
+          price: item.priceNum,
+          stock_quantity: item.stockCount,
+        });
+      } else {
+        await axios.put(`http://localhost:5000/api/products/${item.id}`, {
+          product_name: item.name,
+          description: item.description,
+          price: item.priceNum,
+          stock_quantity: item.stockCount,
+        });
+      }
+    } catch (apiErr) {
+      console.warn('Lỗi đồng bộ Backend PostgreSQL:', apiErr);
+    }
   };
 
-  const handleDeleteAdminProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const handleDeleteAdminProduct = async (id: string) => {
+    setProducts((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      localStorage.setItem('pethub_admin_products', JSON.stringify(next));
+      return next;
+    });
     triggerToast('Đã xóa sản phẩm khỏi danh mục cửa hàng.');
+
+    try {
+      await axios.delete(`http://localhost:5000/api/products/${id}`);
+    } catch (err) {
+      console.warn('Lỗi xóa trên Backend:', err);
+    }
   };
 
-  const handleUpdateOrderStatus = (orderId: string, nextStatus: OrderStatus) => {
-    setLookupEntries((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
-    );
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
-    );
+  const handleUpdateOrderStatus = async (orderId: string, nextStatus: OrderStatus) => {
+    setLookupEntries((prev) => {
+      const next = prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
+      localStorage.setItem('pethub_admin_orders', JSON.stringify(next));
+      return next;
+    });
+    setOrders((prev) => {
+      const next = prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
+      return next;
+    });
     triggerToast(`Đơn #${orderId} đã chuyển sang "${ORDER_STATUS_META[nextStatus].label}".`);
+
+    // Đồng bộ trạng thái đơn hàng xuống Backend PostgreSQL
+    try {
+      // Map frontend status sang backend status (Pending, Shipping, Completed, Cancelled)
+      const statusMap: Record<string, string> = {
+        pending: 'Pending',
+        shipping: 'Shipping',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+      };
+      await axios.patch(`http://localhost:5000/api/orders/${orderId}/status`, {
+        status: statusMap[nextStatus] || 'Confirmed',
+        admin_notes: 'Cập nhật từ Admin Workspace',
+      });
+    } catch (err) {
+      console.warn('Lỗi cập nhật trạng thái đơn hàng trên Backend:', err);
+    }
   };
 
   const handleAddAdminBooking = (booking: ServiceBookingRecord) => {
-    setBookings((prev) => [booking, ...prev]);
+    setBookings((prev) => {
+      const next = [booking, ...prev];
+      localStorage.setItem('pethub_admin_bookings', JSON.stringify(next));
+      return next;
+    });
     triggerToast(`Đã tạo lịch hẹn chăm sóc ${booking.id}.`);
   };
 
@@ -433,14 +606,20 @@ export function App() {
     id: string,
     status: ServiceBookingRecord['status']
   ) => {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    setBookings((prev) => {
+      const next = prev.map((b) => (b.id === id ? { ...b, status } : b));
+      localStorage.setItem('pethub_admin_bookings', JSON.stringify(next));
+      return next;
+    });
     triggerToast(`Đã cập nhật trạng thái lịch hẹn ${id}.`);
   };
 
   const handleAssignBookingStaff = (id: string, staffName: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, staffName } : b))
-    );
+    setBookings((prev) => {
+      const next = prev.map((b) => (b.id === id ? { ...b, staffName } : b));
+      localStorage.setItem('pethub_admin_bookings', JSON.stringify(next));
+      return next;
+    });
     triggerToast(`Đã phân công ${staffName} cho lịch hẹn ${id}.`);
   };
 
@@ -448,13 +627,19 @@ export function App() {
     entry: LookupOrderEntry,
     soldItems: Array<{ id: string; quantity: number }>
   ) => {
-    setLookupEntries((prev) => [entry, ...prev]);
-    setProducts((prev) =>
-      prev.map((p) => {
+    setLookupEntries((prev) => {
+      const next = [entry, ...prev];
+      localStorage.setItem('pethub_admin_orders', JSON.stringify(next));
+      return next;
+    });
+    setProducts((prev) => {
+      const next = prev.map((p) => {
         const sold = soldItems.find((s) => s.id === p.id);
         return sold ? { ...p, stockCount: Math.max(0, p.stockCount - sold.quantity) } : p;
-      })
-    );
+      });
+      localStorage.setItem('pethub_admin_products', JSON.stringify(next));
+      return next;
+    });
   };
 
   const activePaymentOptions = useMemo(() => {
@@ -950,15 +1135,20 @@ export function App() {
             }}
             onToggleTaskDone={(taskId) => {
               setDoneTaskIds((prev) => {
-                const next = !prev[taskId];
+                const next = { ...prev, [taskId]: !prev[taskId] };
+                localStorage.setItem('pethub_admin_done_tasks', JSON.stringify(next));
                 triggerToast(
-                  next ? 'Đã xác nhận hoàn thành nhiệm vụ được giao.' : 'Đã mở lại trạng thái nhiệm vụ.'
+                  next[taskId] ? 'Đã xác nhận hoàn thành nhiệm vụ được giao.' : 'Đã mở lại trạng thái nhiệm vụ.'
                 );
-                return { ...prev, [taskId]: next };
+                return next;
               });
             }}
             onAddTask={(task) => {
-              setShiftTasks((prev) => [task, ...prev]);
+              setShiftTasks((prev) => {
+                const next = [task, ...prev];
+                localStorage.setItem('pethub_admin_tasks', JSON.stringify(next));
+                return next;
+              });
               triggerToast(`Đã giao nhiệm vụ mới cho ${task.assignee || 'nhân viên'}.`);
             }}
             onSaveProduct={handleSaveAdminProduct}

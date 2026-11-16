@@ -107,6 +107,7 @@ interface AdminWorkspaceProps {
   onToggleShift: () => void;
   onToggleTaskDone: (taskId: string) => void;
   onAddTask: (task: StaffShiftTask) => void;
+  onDeleteTask?: (taskId: string) => void;
   onSaveProduct: (item: ProductItem, isNew: boolean) => void;
   onDeleteProduct: (id: string) => void;
   onUpdateOrderStatus: (orderId: string, nextStatus: OrderStatus) => void;
@@ -141,6 +142,7 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
   onToggleShift,
   onToggleTaskDone,
   onAddTask,
+  onDeleteTask,
   onSaveProduct,
   onDeleteProduct,
   onUpdateOrderStatus,
@@ -759,6 +761,7 @@ export const AdminWorkspace: React.FC<AdminWorkspaceProps> = ({
               doneTaskIds={doneTaskIds}
               onToggleTaskDone={onToggleTaskDone}
               onAddTask={onAddTask}
+              onDeleteTask={onDeleteTask}
               orders={orders}
               bookings={bookings}
               onUpdateOrderStatus={onUpdateOrderStatus}
