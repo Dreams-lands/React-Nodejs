@@ -115,14 +115,14 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   return (
     <header className="w-full bg-white dark:bg-[#111827] sticky top-0 z-40 border-b border-[#dfe6f0] dark:border-[#1f2937]">
       {/* 1. Mobile Header (Adapted from User Specification - Image 1) */}
-      <div className="lg:hidden bg-[#241a15] text-white">
+      <div className="lg:hidden bg-[#0667d0] text-white shadow-sm">
         <div className="px-3 pt-2.5 pb-2 flex items-center justify-between gap-2">
           {/* Hamburger Menu Button */}
           <button
             type="button"
             onClick={() => setMobileDrawerOpen(true)}
             aria-label="Mở menu danh mục"
-            className="w-10 h-10 -ml-1 rounded-lg flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+            className="w-10 h-10 -ml-1 rounded-lg flex items-center justify-center text-white hover:bg-white/15 active:scale-95 transition cursor-pointer"
           >
             <Menu className="w-6 h-6 text-white" strokeWidth={2.4} />
           </button>
@@ -135,7 +135,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             aria-label="PetsFriend — Về trang chủ"
             className="flex items-center gap-1.5 text-left cursor-pointer"
           >
-            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-[#38bdf8]">
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white">
               <PawPrint className="w-4 h-4" />
             </div>
             <span className="text-[19px] font-extrabold text-white tracking-tight leading-none">
@@ -149,12 +149,12 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('cart')}
-              className="relative w-10 h-10 rounded-lg flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+              className="relative w-10 h-10 rounded-lg flex items-center justify-center text-white hover:bg-white/15 active:scale-95 transition cursor-pointer"
               aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
             >
               <ShoppingCart className="w-5 h-5 text-white" />
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ef4444] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#c2410c] text-white text-[10px] font-bold flex items-center justify-center leading-none">
                   {cartCount}
                 </span>
               )}
@@ -167,7 +167,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
           <form
             onSubmit={handleSearchSubmit}
             role="search"
-            className="h-10 rounded-lg bg-[#f4f4f5] dark:bg-[#27272a] px-3.5 flex items-center gap-2 border border-transparent focus-within:border-white/50 transition"
+            className="h-10 rounded-xl bg-white dark:bg-[#1e293b] px-3.5 flex items-center gap-2 shadow-xs focus-within:ring-2 focus-within:ring-white/40 transition"
           >
             <input
               type="text"
@@ -178,11 +178,11 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               }}
               aria-label="Tìm kiếm sản phẩm"
               placeholder="Tìm kiếm sản phẩm..."
-              className="flex-1 min-w-0 bg-transparent text-[13px] text-[#18181b] dark:text-white placeholder-[#71717a] dark:placeholder-[#a1a1aa] focus:outline-none"
+              className="flex-1 min-w-0 bg-transparent text-[13px] text-[#17324d] dark:text-white placeholder-[#64748b] dark:placeholder-[#94a3b8] focus:outline-none"
             />
             <button
               type="submit"
-              className="w-7 h-7 rounded flex items-center justify-center text-[#71717a] dark:text-[#a1a1aa] hover:text-[#0667d0] cursor-pointer"
+              className="w-7 h-7 rounded flex items-center justify-center text-[#0667d0] dark:text-[#38bdf8] hover:scale-105 cursor-pointer"
               aria-label="Tìm kiếm"
             >
               <Search className="w-4 h-4" />
@@ -468,20 +468,20 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               className="fixed top-0 left-0 bottom-0 w-[310px] max-w-[85vw] bg-white dark:bg-[#18181b] z-50 flex flex-col shadow-2xl lg:hidden overflow-hidden"
               aria-label="Menu điều hướng di động"
             >
-              {/* Drawer Top Header Banner (Dark chocolate matching Image 2) */}
-              <div className="bg-[#241a15] dark:bg-[#120f0d] text-white pt-7 pb-6 px-4 relative text-center shrink-0 border-b border-[#3b2c24] dark:border-[#27272a]">
+              {/* Drawer Top Header Banner (Brand Blue) */}
+              <div className="bg-[#0667d0] dark:bg-[#0558b5] text-white pt-7 pb-6 px-4 relative text-center shrink-0 border-b border-[#044d9e] dark:border-[#1e3a8a]">
                 {/* Close Button X */}
                 <button
                   type="button"
                   onClick={() => setMobileDrawerOpen(false)}
                   aria-label="Đóng menu"
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 active:scale-95 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" strokeWidth={2} />
                 </button>
 
                 {/* Avatar Icon Circle */}
-                <div className="w-14 h-14 rounded-full border-2 border-white/60 bg-white/10 flex items-center justify-center mx-auto mb-2 text-white shadow-sm">
+                <div className="w-14 h-14 rounded-full border-2 border-white/70 bg-white/15 flex items-center justify-center mx-auto mb-2 text-white shadow-sm">
                   <User className="w-7 h-7" strokeWidth={1.75} />
                 </div>
 
@@ -500,7 +500,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                           setMobileDrawerOpen(false);
                           onNavigate('admin');
                         }}
-                        className="px-4 py-1.5 rounded bg-[#0667d0] hover:bg-[#0558b5] text-white text-[11px] font-bold tracking-wider uppercase transition cursor-pointer"
+                        className="px-4 py-1.5 rounded bg-white text-[#0667d0] hover:bg-[#eff5ff] text-[11px] font-bold tracking-wider uppercase transition cursor-pointer shadow-xs"
                       >
                         {workspaceRole === 'staff' ? 'BẢNG CÔNG VIỆC' : 'QUẢN TRỊ CỬA HÀNG'}
                       </button>
@@ -512,7 +512,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                           setMobileDrawerOpen(false);
                           onNavigate('account');
                         }}
-                        className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                        className="px-4 py-1.5 border border-white/80 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/15"
                       >
                         TÀI KHOẢN
                       </button>
@@ -522,7 +522,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                           setMobileDrawerOpen(false);
                           onLogout();
                         }}
-                        className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                        className="px-4 py-1.5 border border-white/80 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/15"
                       >
                         ĐĂNG XUẤT
                       </button>
@@ -536,7 +536,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                         setMobileDrawerOpen(false);
                         onNavigate('login');
                       }}
-                      className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                      className="px-4 py-1.5 border border-white/80 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/15"
                     >
                       ĐĂNG NHẬP
                     </button>
@@ -546,7 +546,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                         setMobileDrawerOpen(false);
                         onNavigate('register');
                       }}
-                      className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                      className="px-4 py-1.5 border border-white/80 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/15"
                     >
                       ĐĂNG KÝ
                     </button>
@@ -557,7 +557,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               {/* Drawer Scrollable Navigation List */}
               <div className="flex-1 overflow-y-auto divide-y divide-[#f4f4f5] dark:divide-[#27272a] text-[#27272a] dark:text-[#f4f4f5]">
                 {/* SECTION 1: DANH MỤC */}
-                <div className="bg-[#f4f4f5] dark:bg-[#18181b] text-[#71717a] dark:text-[#a1a1aa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-b border-[#e4e4e7] dark:border-[#27272a]">
+                <div className="bg-[#eff5ff] dark:bg-[#1e293b] text-[#0667d0] dark:text-[#60a5fa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-b border-[#dfe6f0] dark:border-[#334155]">
                   DANH MỤC
                 </div>
 
@@ -818,7 +818,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 )}
 
                 {/* SECTION 2: DANH MỤC SẢN PHẨM */}
-                <div className="bg-[#f4f4f5] dark:bg-[#18181b] text-[#71717a] dark:text-[#a1a1aa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-y border-[#e4e4e7] dark:border-[#27272a]">
+                <div className="bg-[#eff5ff] dark:bg-[#1e293b] text-[#0667d0] dark:text-[#60a5fa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-y border-[#dfe6f0] dark:border-[#334155]">
                   DANH MỤC SẢN PHẨM
                 </div>
 
