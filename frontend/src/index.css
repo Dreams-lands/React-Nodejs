@@ -17,11 +17,17 @@
   }
 
   html {
-    scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: var(--ph-ink);
     background-color: #ffffff;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {

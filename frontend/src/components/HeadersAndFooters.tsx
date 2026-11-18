@@ -266,8 +266,8 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
 
       {/* 2. Navigation Bar with Cohesive Category Dropdown Trigger */}
       <nav className="w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
-        <div className="max-w-[1320px] mx-auto h-full px-2 sm:px-8 lg:px-12 flex items-center justify-between gap-1 sm:gap-4">
-          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-[13px] h-full min-w-0">
+        <div className="max-w-[1320px] mx-auto h-full px-1 sm:px-8 lg:px-12 flex items-center justify-between gap-0.5 sm:gap-4">
+          <div className="flex items-center gap-0.5 sm:gap-2 text-[10.5px] xs:text-[11px] sm:text-[13px] h-full min-w-0 overflow-x-auto no-scrollbar py-0.5">
             <div
               ref={menuRef}
               className="sm:relative h-full flex items-center shrink-0"
@@ -279,9 +279,9 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 aria-expanded={productMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setProductMenuOpen((prev) => !prev)}
-                className="h-8 px-2 sm:px-3.5 rounded-lg bg-[#044d9e] hover:bg-[#04428a] border border-white/20 text-white font-bold inline-flex items-center justify-between gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap transition-colors"
+                className="h-8 px-1.5 sm:px-3.5 rounded-lg bg-[#044d9e] hover:bg-[#04428a] border border-white/20 text-white font-bold inline-flex items-center justify-between gap-1 sm:gap-2 cursor-pointer whitespace-nowrap transition-colors"
               >
-                <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center gap-1 sm:gap-2">
                   <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span className="hidden sm:inline">Danh mục sản phẩm</span>
                   <span className="sm:hidden">Danh mục</span>
@@ -296,9 +296,9 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
               {productMenuOpen && (
                 <div
                   role="menu"
-                  className="absolute left-2 right-2 sm:left-0 sm:right-auto top-full pt-1.5 sm:w-[268px] z-50"
+                  className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto top-[110px] sm:top-full pt-1.5 sm:w-[268px] z-50"
                 >
-                  <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden">
+                  <div className="rounded-xl bg-white border border-[#dfe6f0] shadow-[0_16px_36px_rgba(23,50,77,0.14)] overflow-hidden max-h-[75vh] overflow-y-auto">
                     <CategoryMenuList
                       activeCategory={currentPage === 'search' ? activeCatalogCategory : 'all'}
                       activePetAudience={currentPage === 'search' ? activePetAudience : 'all'}
@@ -322,7 +322,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 setProductMenuOpen(false);
                 onNavigate('home');
               }}
-              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
                 currentPage === 'home' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -334,7 +334,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 setProductMenuOpen(false);
                 onNavigate('promotions');
               }}
-              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
                 currentPage === 'promotions' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -346,7 +346,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
                 setProductMenuOpen(false);
                 onNavigate('service');
               }}
-              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
                 currentPage === 'service' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -356,7 +356,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             <button
               type="button"
               onClick={handleContactClick}
-              className={`px-1.5 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap transition ${
+              className={`px-1 sm:px-3 py-1.5 rounded-md font-semibold cursor-pointer whitespace-nowrap shrink-0 transition ${
                 currentPage === 'contact' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white'
               }`}
             >
@@ -568,19 +568,19 @@ export const CompactHeader: React.FC<{
         Chăm sóc đúng cách. An tâm mỗi ngày.
       </div>
 
-      <div className="max-w-[1320px] mx-auto h-20 px-5 sm:px-8 lg:px-12 flex items-center justify-between gap-6">
+      <div className="max-w-[1320px] mx-auto h-16 sm:h-20 px-3 sm:px-8 lg:px-12 flex items-center justify-between gap-2 sm:gap-6">
         <button
           onClick={() => onNavigate('home')}
-          className="flex items-center gap-2.5 text-left cursor-pointer shrink-0 group"
+          className="flex items-center gap-2 sm:gap-2.5 text-left cursor-pointer shrink-0 group min-w-0"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center text-[#0667d0] group-hover:bg-[#0667d0] group-hover:text-white transition-colors">
-            <PawPrint className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#eff5ff] flex items-center justify-center text-[#0667d0] group-hover:bg-[#0667d0] group-hover:text-white transition-colors shrink-0">
+            <PawPrint className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-[22px] sm:text-[24px] font-extrabold text-[#0667d0] tracking-tight leading-none">
+          <div className="min-w-0">
+            <div className="text-[18px] sm:text-[24px] font-extrabold text-[#0667d0] tracking-tight leading-none">
               PetsFriend
             </div>
-            <div className="text-[11px] font-semibold text-[#52657a] tracking-[0.08em] uppercase mt-1">
+            <div className="hidden sm:block text-[11px] font-semibold text-[#52657a] tracking-[0.08em] uppercase mt-1">
               ĐỒ DÙNG &amp; CHĂM SÓC THÚ CƯNG
             </div>
           </div>
@@ -608,14 +608,15 @@ export const CompactHeader: React.FC<{
           </button>
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
           <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
           <button
             onClick={() => onNavigate('cart')}
-            className="flex items-center gap-2 text-[#0667d0] font-bold text-[13px] cursor-pointer hover:underline"
+            aria-label="Giỏ hàng"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#eff5ff] text-[#0667d0] font-bold text-[12px] sm:text-[13px] cursor-pointer hover:bg-[#dfeafb] transition-colors"
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span>Giỏ hàng</span>
+            <ShoppingCart className="w-4 h-4 shrink-0" />
+            <span className="hidden xs:inline sm:inline">Giỏ hàng</span>
           </button>
           <button
             onClick={() => onNavigate('home')}

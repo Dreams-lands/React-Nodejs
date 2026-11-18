@@ -39,7 +39,7 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
 
   return (
     <>
-      <div className="fixed right-5 bottom-6 z-40 flex flex-col items-end gap-3 select-none">
+      <div className="fixed right-3.5 bottom-4 sm:right-5 sm:bottom-6 z-40 flex flex-col items-end gap-2.5 sm:gap-3 select-none">
         {/* 1. ZALO (Direct link to Zalo profile) */}
         <div
           className="relative flex items-center"
@@ -66,10 +66,10 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
             rel="noopener noreferrer"
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(0,104,255,0.3)] cursor-pointer border-2 border-white"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(0,104,255,0.28)] cursor-pointer border-2 border-white"
             aria-label="Mở trang Zalo cá nhân"
           >
-            <span className="font-extrabold text-[13px] tracking-tight leading-none">Zalo</span>
+            <span className="font-extrabold text-[12px] sm:text-[13px] tracking-tight leading-none">Zalo</span>
           </motion.a>
         </div>
 
@@ -99,10 +99,10 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
             rel="noopener noreferrer"
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-[#1877F2] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(24,119,242,0.28)] border-2 border-white cursor-pointer"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#1877F2] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(24,119,242,0.28)] border-2 border-white cursor-pointer"
             aria-label="Mở trang Facebook"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M13.5 22v-8.2h2.75l.41-3.2H13.5V8.55c0-.93.26-1.56 1.59-1.56h1.7V4.13c-.29-.04-1.31-.13-2.49-.13-2.46 0-4.15 1.5-4.15 4.26v2.34H7.4v3.2h2.75V22h3.35Z" />
             </svg>
           </motion.a>
@@ -133,10 +133,10 @@ export const FloatingContact: React.FC<FloatingContactProps> = () => {
             onClick={() => setSupportOpen((prev) => !prev)}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            className="w-12 h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(194,65,12,0.3)] cursor-pointer border-2 border-white"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(194,65,12,0.28)] cursor-pointer border-2 border-white"
             aria-label="Mở hộp thoại Hỗ trợ trực tuyến"
           >
-            <Headphones className="w-5 h-5" />
+            <Headphones className="w-4 h-4 sm:w-5 sm:h-5" />
           </motion.button>
         </div>
       </div>

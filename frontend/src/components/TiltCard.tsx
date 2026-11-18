@@ -36,7 +36,13 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (reducedMotionRef.current || !cardRef.current) return;
+    if (
+      reducedMotionRef.current ||
+      !cardRef.current ||
+      (typeof window !== 'undefined' && window.innerWidth < 768)
+    ) {
+      return;
+    }
     const clientX = e.clientX;
     const clientY = e.clientY;
     if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);

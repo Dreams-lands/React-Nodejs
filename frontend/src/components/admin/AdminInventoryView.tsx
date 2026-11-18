@@ -73,6 +73,7 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
   const [formPetType, setFormPetType] = useState<'dog' | 'cat' | 'both'>('both');
   const [formPrice, setFormPrice] = useState(250000);
   const [formOriginalPrice, setFormOriginalPrice] = useState('');
+  const [formDiscountPercent, setFormDiscountPercent] = useState<number | ''>('');
   const [formStock, setFormStock] = useState(25);
   const [formImage, setFormImage] = useState('/images/prod-ceramic-bowl.jpg');
   const [formPackSize, setFormPackSize] = useState('Chó & Mèo • Tiêu chuẩn');
@@ -119,9 +120,14 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
       setFormSubType(item.subType);
       setFormPetType(item.petType || 'both');
       setFormPrice(item.priceNum);
-      setFormOriginalPrice(
-        item.originalPrice ? item.originalPrice.replace(/\D/g, '') : ''
-      );
+      const origStr = item.originalPrice ? item.originalPrice.replace(/\D/g, '') : '';
+      setFormOriginalPrice(origStr);
+      const origNum = Number(origStr) || 0;
+      if (origNum > item.priceNum && item.priceNum > 0) {
+        setFormDiscountPercent(Math.round(((origNum - item.priceNum) / origNum) * 100));
+      } else {
+        setFormDiscountPercent('');
+      }
       setFormStock(item.stockCount);
       setFormImage(item.image);
       setFormPackSize(item.packSize);
@@ -136,12 +142,48 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
       setFormPetType('both');
       setFormPrice(250000);
       setFormOriginalPrice('');
+      setFormDiscountPercent('');
       setFormStock(25);
       setFormImage('/images/prod-ceramic-bowl.jpg');
       setFormPackSize('Chó & Mèo • Tiêu chuẩn');
       setFormFeatured(false);
     }
   }, [readOnly]);
+
+  const handleApplyDiscountPercent = (pct: number | '') => {
+    setFormDiscountPercent(pct);
+    if (pct === '' || pct <= 0) {
+      setFormOriginalPrice('');
+      return;
+    }
+    let base = Number(formOriginalPrice.replace(/\D/g, '')) || 0;
+    if (base <= formPrice) {
+      base = formPrice;
+      setFormOriginalPrice(base.toString());
+    }
+    const newPrice = Math.max(1000, Math.round((base * (100 - pct)) / 100000) * 1000);
+    setFormPrice(newPrice);
+  };
+
+  const handleChangeOriginalPrice = (val: string) => {
+    setFormOriginalPrice(val);
+    const orig = Number(val.replace(/\D/g, '')) || 0;
+    if (orig > formPrice && formPrice > 0) {
+      setFormDiscountPercent(Math.round(((orig - formPrice) / orig) * 100));
+    } else {
+      setFormDiscountPercent('');
+    }
+  };
+
+  const handleChangePrice = (val: number) => {
+    setFormPrice(val);
+    const orig = Number(formOriginalPrice.replace(/\D/g, '')) || 0;
+    if (orig > val && val > 0) {
+      setFormDiscountPercent(Math.round(((orig - val) / orig) * 100));
+    } else {
+      setFormDiscountPercent('');
+    }
+  };
 
   const handleSaveModal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -642,45 +684,117 @@ export const AdminInventoryView: React.FC<AdminInventoryViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
-                    Giá bán (₫)
-                  </label>
-                  <input
-                    type="number"
-                    min={1000}
-                    step={1000}
-                    required
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] tabular-nums"
-                  />
+              {/* Thiết lập Giá & Khuyến mãi (% tự động) */}
+              <div className="rounded-xl p-3 sm:p-3.5 bg-[#f8faff] border border-[#dfe6f0] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-[#17324d] uppercase tracking-wider">
+                    Thiết lập Giá &amp; Khuyến mãi
+                  </span>
+                  {typeof formDiscountPercent === 'number' && formDiscountPercent > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-[#c2410c] text-white text-[11px] font-bold">
+                      Đang giảm −{formDiscountPercent}%
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
-                    Giá gốc nếu giảm (₫)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Bỏ trống nếu giá thường"
-                    value={formOriginalPrice}
-                    onChange={(e) => setFormOriginalPrice(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] tabular-nums"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                      Giá gốc nếu giảm (₫)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Bỏ trống nếu giá thường"
+                      value={formOriginalPrice}
+                      onChange={(e) => handleChangeOriginalPrice(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-white text-[13px] tabular-nums"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                      Giá bán thực tế (₫)
+                    </label>
+                    <input
+                      type="number"
+                      min={1000}
+                      step={1000}
+                      required
+                      value={formPrice}
+                      onChange={(e) => handleChangePrice(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-white text-[13px] tabular-nums font-bold text-[#0667d0]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#17324d] mb-1">
+                      Tồn kho
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={formStock}
+                      onChange={(e) => setFormStock(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-white text-[13px] tabular-nums"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[12px] font-bold text-[#17324d] mb-1">
-                    Tồn kho
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    required
-                    value={formStock}
-                    onChange={(e) => setFormStock(Number(e.target.value))}
-                    className="w-full h-10 px-3 rounded-xl border border-[#dfe6f0] bg-[#f8faff] text-[13px] tabular-nums"
-                  />
+
+                {/* Option chọn nhanh giảm theo % */}
+                <div className="pt-2 border-t border-[#dfe6f0]/70">
+                  <div className="text-[11.5px] font-semibold text-[#52657a] mb-1.5 flex items-center justify-between">
+                    <span>Chọn nhanh % giảm giá (tự động tính tiền):</span>
+                    {typeof formDiscountPercent === 'number' && formDiscountPercent > 0 && formOriginalPrice && (
+                      <span className="text-emerald-600 font-bold">
+                        Tiết kiệm: {(Number(formOriginalPrice.replace(/\D/g, '')) - formPrice).toLocaleString('vi-VN')}₫
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { label: 'Giá gốc (0%)', val: '' as const },
+                      { label: '−5%', val: 5 },
+                      { label: '−10%', val: 10 },
+                      { label: '−15%', val: 15 },
+                      { label: '−20%', val: 20 },
+                      { label: '−30%', val: 30 },
+                      { label: '−50%', val: 50 },
+                    ].map((opt) => {
+                      const isActive =
+                        opt.val === ''
+                          ? !formDiscountPercent
+                          : formDiscountPercent === opt.val;
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => handleApplyDiscountPercent(opt.val)}
+                          className={`px-2.5 py-1 rounded-lg text-[12px] font-bold cursor-pointer transition-colors ${
+                            isActive
+                              ? 'bg-[#c2410c] text-white shadow-xs'
+                              : 'bg-white border border-[#dfe6f0] text-[#17324d] hover:border-[#c2410c] hover:text-[#c2410c]'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    <div className="inline-flex items-center ml-1 gap-1 text-[12px] font-medium text-[#52657a]">
+                      <span>Hoặc nhập:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        placeholder="%"
+                        value={typeof formDiscountPercent === 'number' ? formDiscountPercent : ''}
+                        onChange={(e) => {
+                          const v = e.target.value === '' ? '' : Number(e.target.value);
+                          handleApplyDiscountPercent(typeof v === 'number' ? Math.min(99, Math.max(1, v)) : '');
+                        }}
+                        className="w-14 h-7 px-1.5 rounded-lg border border-[#dfe6f0] bg-white text-[12px] font-bold text-center"
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -1211,17 +1211,17 @@ export function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                   {STOREFRONT_SUPPLIES.map((sup) => (
                     <motion.button
                       key={sup.id}
                       type="button"
                       whileHover={{ y: -4 }}
                       onClick={() => handleSelectCategory(sup.filterCategory)}
-                      className="group card-elevate text-left rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/50 p-5 cursor-pointer transition-colors duration-300 flex flex-col justify-between press-tactile"
+                      className="group card-elevate text-left rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/50 p-3.5 sm:p-5 cursor-pointer transition-colors duration-300 flex flex-col justify-between press-tactile"
                     >
                       <div className="w-full">
-                        <div className="h-48 w-full rounded-xl overflow-hidden mb-5 bg-[#f8faff]">
+                        <div className="h-28 sm:h-48 w-full rounded-xl overflow-hidden mb-3 sm:mb-5 bg-[#f8faff]">
                           <img
                             src={sup.image}
                             alt={sup.title}
@@ -1230,16 +1230,16 @@ export function App() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
-                        <h3 className="text-[19px] font-bold text-[#17324d] group-hover:text-[#0667d0] transition-colors">
+                        <h3 className="text-[15px] sm:text-[19px] font-bold text-[#17324d] group-hover:text-[#0667d0] transition-colors leading-snug">
                           {sup.title}
                         </h3>
-                        <p className="text-[13px] text-[#52657a] mt-1.5 leading-relaxed">
+                        <p className="text-[12px] sm:text-[13px] text-[#52657a] mt-1 sm:mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-none">
                           {sup.desc}
                         </p>
                       </div>
-                      <div className="w-full pt-4 mt-5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
-                        <span className="text-[13px] text-[#52657a] font-medium">{sup.meta}</span>
-                        <span className="text-[13px] font-bold text-[#0667d0] flex items-center gap-1 shrink-0">
+                      <div className="w-full pt-3 sm:pt-4 mt-3 sm:mt-5 border-t border-[#dfe6f0] flex items-center justify-between gap-1 sm:gap-2">
+                        <span className="text-[11px] sm:text-[13px] text-[#52657a] font-medium truncate">{sup.meta}</span>
+                        <span className="text-[11px] sm:text-[13px] font-bold text-[#0667d0] flex items-center gap-1 shrink-0">
                           <span>Khám phá</span>
                           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                         </span>
@@ -1261,7 +1261,7 @@ export function App() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar">
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#f3f7ff] border border-[#dfe6f0] overflow-x-auto no-scrollbar shrink-0 max-w-full">
                     {[
                       { id: 'all', label: 'Tất cả' },
                       { id: 'food', label: 'Dinh dưỡng & Pate' },
@@ -1272,7 +1272,7 @@ export function App() {
                       <button
                         key={tab.id}
                         onClick={() => setHomeCategoryTab(tab.id as typeof homeCategoryTab)}
-                        className={`px-4 py-2 rounded-lg text-[13px] font-bold transition cursor-pointer whitespace-nowrap ${
+                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[12px] sm:text-[13px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                           homeCategoryTab === tab.id
                             ? 'bg-[#0667d0] text-white shadow-xs'
                             : 'text-[#52657a] hover:text-[#17324d]'
@@ -1284,16 +1284,16 @@ export function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                   {featuredProducts.map((item) => (
                     <div
                       key={item.id}
-                      className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-colors"
+                      className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-3 sm:p-4 flex flex-col justify-between transition-colors"
                     >
                       <div>
-                        <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3.5">
+                        <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-2.5 sm:mb-3.5">
                           {item.discountBadge && (
-                            <span className="pointer-events-none absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
+                            <span className="pointer-events-none absolute top-2 left-2 sm:top-2.5 sm:left-2.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#c2410c] text-white text-[11px] sm:text-[12px] font-bold z-10">
                               {item.discountBadge}
                             </span>
                           )}
@@ -1313,13 +1313,13 @@ export function App() {
                           </button>
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
+                        <div className="flex items-center justify-between gap-1.5 mb-1">
+                          <span className="text-[11px] sm:text-[12px] font-bold text-[#0667d0] uppercase tracking-wider truncate">
                             {item.brand}
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#52657a] tabular-nums">
-                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
-                            {item.rating.toFixed(1)} ({item.reviewCount})
+                          <span className="inline-flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-[12px] font-semibold text-[#52657a] tabular-nums shrink-0">
+                            <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
+                            {item.rating.toFixed(1)}
                           </span>
                         </div>
 
@@ -1328,18 +1328,18 @@ export function App() {
                           onClick={() => openProductDetail(item)}
                           className="w-full text-left cursor-pointer"
                         >
-                          <h3 className="text-[15px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0667d0]">
+                          <h3 className="text-[13px] sm:text-[15px] font-bold text-[#17324d] leading-snug line-clamp-2 hover:text-[#0667d0]">
                             {item.name}
                           </h3>
                         </button>
-                        <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
+                        <div className="text-[11px] sm:text-[13px] text-[#52657a] mt-0.5 sm:mt-1 truncate">{item.packSize}</div>
                       </div>
 
-                      <div className="pt-3.5 mt-3.5 border-t border-[#dfe6f0] flex items-center justify-between gap-2">
+                      <div className="pt-2.5 sm:pt-3.5 mt-2.5 sm:mt-3.5 border-t border-[#dfe6f0] flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2">
                         <div className="tabular-nums">
-                          <div className="text-[16px] font-extrabold text-[#17324d]">{item.price}</div>
+                          <div className="text-[14px] sm:text-[16px] font-extrabold text-[#17324d]">{item.price}</div>
                           {item.originalPrice && (
-                            <div className="text-[12px] text-[#52657a] line-through">
+                            <div className="text-[11px] sm:text-[12px] text-[#52657a] line-through">
                               {item.originalPrice}
                             </div>
                           )}
@@ -1348,10 +1348,11 @@ export function App() {
                         <button
                           type="button"
                           onClick={() => addProductToCart(item)}
-                          className="py-2 px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer transition-colors press-tactile"
+                          className="w-full xs:w-auto py-1.5 sm:py-2 px-2.5 sm:px-3.5 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[12px] sm:text-[13px] flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer transition-colors press-tactile shrink-0"
                         >
                           <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
-                          <span>Thêm vào giỏ</span>
+                          <span className="hidden sm:inline">Thêm vào giỏ</span>
+                          <span className="sm:hidden">Thêm</span>
                         </button>
                       </div>
                     </div>
@@ -1389,16 +1390,16 @@ export function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 pt-6">
                     {flashSaleProducts.map((item) => (
                       <div
                         key={item.id}
-                        className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-4 flex flex-col justify-between transition-colors"
+                        className="group card-elevate rounded-2xl bg-white border border-[#dfe6f0] hover:border-[#0667d0]/40 p-3 sm:p-4 flex flex-col justify-between transition-colors"
                       >
                         <div>
-                          <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-3">
+                          <div className="relative aspect-square w-full rounded-xl bg-[#f8faff] overflow-hidden mb-2.5 sm:mb-3">
                             {item.discountBadge && (
-                              <span className="pointer-events-none absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#c2410c] text-white text-[12px] font-bold z-10">
+                              <span className="pointer-events-none absolute top-2 left-2 sm:top-2.5 sm:left-2.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#c2410c] text-white text-[11px] sm:text-[12px] font-bold z-10">
                                 {item.discountBadge}
                               </span>
                             )}
@@ -1418,7 +1419,7 @@ export function App() {
                             </button>
                           </div>
 
-                          <div className="text-[12px] font-bold text-[#0667d0] uppercase tracking-wider">
+                          <div className="text-[11px] sm:text-[12px] font-bold text-[#0667d0] uppercase tracking-wider truncate">
                             {item.brand}
                           </div>
                           <button
@@ -1426,24 +1427,24 @@ export function App() {
                             onClick={() => openProductDetail(item)}
                             className="w-full text-left cursor-pointer"
                           >
-                            <h3 className="text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0]">
+                            <h3 className="text-[13px] sm:text-[14px] font-bold text-[#17324d] leading-snug line-clamp-2 mt-1 hover:text-[#0667d0]">
                               {item.name}
                             </h3>
                           </button>
-                          <div className="text-[13px] text-[#52657a] mt-1">{item.packSize}</div>
-                          <div className="inline-flex items-center gap-1 text-[12px] text-[#52657a] mt-1 tabular-nums">
-                            <Star className="w-3.5 h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
-                            <span>{item.rating.toFixed(1)} ({item.reviewCount})</span>
+                          <div className="text-[11px] sm:text-[13px] text-[#52657a] mt-0.5 sm:mt-1 truncate">{item.packSize}</div>
+                          <div className="inline-flex items-center gap-1 text-[11px] sm:text-[12px] text-[#52657a] mt-1 tabular-nums">
+                            <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#ffb547] text-[#ffb547]" aria-hidden="true" />
+                            <span>{item.rating.toFixed(1)}</span>
                           </div>
                         </div>
 
-                        <div className="pt-3 mt-3 border-t border-[#dfe6f0] space-y-2.5">
-                          <div className="flex items-baseline gap-2 tabular-nums">
-                            <span className="text-[17px] font-extrabold text-[#c2410c]">
+                        <div className="pt-2.5 sm:pt-3 mt-2.5 sm:mt-3 border-t border-[#dfe6f0] space-y-2">
+                          <div className="flex items-baseline gap-1.5 tabular-nums">
+                            <span className="text-[15px] sm:text-[17px] font-extrabold text-[#c2410c]">
                               {item.price}
                             </span>
                             {item.originalPrice && (
-                              <span className="text-[12px] text-[#52657a] line-through">
+                              <span className="text-[11px] sm:text-[12px] text-[#52657a] line-through">
                                 {item.originalPrice}
                               </span>
                             )}
@@ -1451,7 +1452,7 @@ export function App() {
 
                           <button
                             onClick={() => addProductToCart(item)}
-                            className="w-full py-2.5 px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[13px] cursor-pointer transition-colors"
+                            className="w-full py-1.5 sm:py-2.5 px-3 sm:px-4 rounded-lg bg-[#0667d0] hover:bg-[#0558b5] text-white font-semibold text-[12px] sm:text-[13px] cursor-pointer transition-colors press-tactile"
                           >
                             Thêm vào giỏ
                           </button>
@@ -1876,7 +1877,7 @@ export function App() {
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                       {filteredSearchList.map((item, idx) => (
                         <TiltCard
                           key={item.id}
