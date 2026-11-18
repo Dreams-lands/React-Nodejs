@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   User,
@@ -13,6 +13,10 @@ import {
   ChevronDown,
   LayoutGrid,
   PackageSearch,
+  Menu,
+  X,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import type { PageId, ProductCategory } from '../data/mockData';
 import type { ThemeMode } from '../lib/useThemeDroplet';
@@ -59,7 +63,24 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   onToggleTheme,
 }) => {
   const [productMenuOpen, setProductMenuOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = (id: string) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  useEffect(() => {
+    if (mobileDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileDrawerOpen]);
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
@@ -68,7 +89,10 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
       }
     };
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setProductMenuOpen(false);
+      if (event.key === 'Escape') {
+        setProductMenuOpen(false);
+        setMobileDrawerOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleOutside);
     document.addEventListener('keydown', handleEsc);
@@ -89,9 +113,86 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-white sticky top-0 z-40 border-b border-[#dfe6f0]">
-      {/* 1. Main Header */}
-      <div className="max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12">
+    <header className="w-full bg-white dark:bg-[#111827] sticky top-0 z-40 border-b border-[#dfe6f0] dark:border-[#1f2937]">
+      {/* 1. Mobile Header (Adapted from User Specification - Image 1) */}
+      <div className="lg:hidden bg-[#241a15] text-white">
+        <div className="px-3 pt-2.5 pb-2 flex items-center justify-between gap-2">
+          {/* Hamburger Menu Button */}
+          <button
+            type="button"
+            onClick={() => setMobileDrawerOpen(true)}
+            aria-label="Mở menu danh mục"
+            className="w-10 h-10 -ml-1 rounded-lg flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+          >
+            <Menu className="w-6 h-6 text-white" strokeWidth={2.4} />
+          </button>
+
+          {/* Brand Logo */}
+          <motion.button
+            type="button"
+            onClick={() => onNavigate('home')}
+            whileTap={{ scale: 0.96 }}
+            aria-label="PetsFriend — Về trang chủ"
+            className="flex items-center gap-1.5 text-left cursor-pointer"
+          >
+            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-[#38bdf8]">
+              <PawPrint className="w-4 h-4" />
+            </div>
+            <span className="text-[19px] font-extrabold text-white tracking-tight leading-none">
+              PetsFriend
+            </span>
+          </motion.button>
+
+          {/* Right: Theme Toggle & Cart */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
+            <button
+              type="button"
+              onClick={() => onNavigate('cart')}
+              className="relative w-10 h-10 rounded-lg flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+              aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
+            >
+              <ShoppingCart className="w-5 h-5 text-white" />
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ef4444] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search Box Row (Image 1) */}
+        <div className="px-3 pb-3">
+          <form
+            onSubmit={handleSearchSubmit}
+            role="search"
+            className="h-10 rounded-lg bg-[#f4f4f5] dark:bg-[#27272a] px-3.5 flex items-center gap-2 border border-transparent focus-within:border-white/50 transition"
+          >
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+                if (currentPage !== 'search') onNavigate('search');
+              }}
+              aria-label="Tìm kiếm sản phẩm"
+              placeholder="Tìm kiếm sản phẩm..."
+              className="flex-1 min-w-0 bg-transparent text-[13px] text-[#18181b] dark:text-white placeholder-[#71717a] dark:placeholder-[#a1a1aa] focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="w-7 h-7 rounded flex items-center justify-center text-[#71717a] dark:text-[#a1a1aa] hover:text-[#0667d0] cursor-pointer"
+              aria-label="Tìm kiếm"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* 2. Desktop Main Header */}
+      <div className="hidden lg:block max-w-[1320px] mx-auto px-3 sm:px-8 lg:px-12">
         <div className="h-16 md:h-20 flex items-center justify-between gap-2 md:gap-6">
           {/* Brand Logo */}
           <motion.button
@@ -119,7 +220,7 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
           <form
             onSubmit={handleSearchSubmit}
             role="search"
-            className="hidden lg:flex flex-1 min-w-[210px] max-w-[520px] h-11 rounded-xl border border-[#dfe6f0] bg-[#f8faff] items-center overflow-hidden focus-within:bg-white focus-within:border-[#0667d0] transition-colors"
+            className="flex-1 min-w-[210px] max-w-[520px] h-11 rounded-xl border border-[#dfe6f0] bg-[#f8faff] flex items-center overflow-hidden focus-within:bg-white focus-within:border-[#0667d0] transition-colors"
           >
             <input
               type="text"
@@ -234,38 +335,10 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
             )}
           </div>
         </div>
-
-        {/* Tablet & Mobile Search Box */}
-        <form
-          onSubmit={handleSearchSubmit}
-          role="search"
-          className="lg:hidden pb-3"
-        >
-          <div className="h-10 rounded-xl border border-[#dfe6f0] bg-[#f8faff] flex items-center overflow-hidden focus-within:bg-white focus-within:border-[#0667d0]">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                onSearchChange(e.target.value);
-                if (currentPage !== 'search') onNavigate('search');
-              }}
-              aria-label="Tìm kiếm sản phẩm và dịch vụ"
-              placeholder="Tìm thức ăn, nệm ngủ, balo, dịch vụ chăm sóc..."
-              className="flex-1 min-w-0 px-3.5 bg-transparent text-[13px] text-[#17324d] placeholder-[#52657a] focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="w-9 h-8 mr-1 rounded-lg bg-[#0667d0] text-white flex items-center justify-center cursor-pointer shrink-0"
-              aria-label="Tìm kiếm"
-            >
-              <Search className="w-4 h-4" aria-hidden="true" />
-            </button>
-          </div>
-        </form>
       </div>
 
-      {/* 2. Navigation Bar with Cohesive Category Dropdown Trigger */}
-      <nav className="w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
+      {/* 3. Navigation Bar with Cohesive Category Dropdown Trigger (Desktop only) */}
+      <nav className="hidden lg:block w-full h-11 bg-[#0667d0] text-white relative z-30" aria-label="Điều hướng chính">
         <div className="max-w-[1320px] mx-auto h-full px-1 sm:px-8 lg:px-12 flex items-center justify-between gap-0.5 sm:gap-4">
           <div className="flex items-center gap-0.5 sm:gap-2 text-[10.5px] xs:text-[11px] sm:text-[13px] h-full min-w-0 overflow-x-auto no-scrollbar py-0.5">
             <div
@@ -370,6 +443,783 @@ export const PetHubHeader: React.FC<FullHeaderProps> = ({
           </div>
         </div>
       </nav>
+
+      {/* 4. Mobile Slide-out Drawer Navigation (Adapted from User Spec - Image 2) */}
+      <AnimatePresence>
+        {mobileDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 lg:hidden"
+              aria-hidden="true"
+            />
+
+            {/* Slide-out Drawer Panel */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 260 }}
+              className="fixed top-0 left-0 bottom-0 w-[310px] max-w-[85vw] bg-white dark:bg-[#18181b] z-50 flex flex-col shadow-2xl lg:hidden overflow-hidden"
+              aria-label="Menu điều hướng di động"
+            >
+              {/* Drawer Top Header Banner (Dark chocolate matching Image 2) */}
+              <div className="bg-[#241a15] dark:bg-[#120f0d] text-white pt-7 pb-6 px-4 relative text-center shrink-0 border-b border-[#3b2c24] dark:border-[#27272a]">
+                {/* Close Button X */}
+                <button
+                  type="button"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  aria-label="Đóng menu"
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" strokeWidth={2} />
+                </button>
+
+                {/* Avatar Icon Circle */}
+                <div className="w-14 h-14 rounded-full border-2 border-white/60 bg-white/10 flex items-center justify-center mx-auto mb-2 text-white shadow-sm">
+                  <User className="w-7 h-7" strokeWidth={1.75} />
+                </div>
+
+                {/* Greeting Text */}
+                <div className="text-white text-[15px] font-medium tracking-wide mb-3">
+                  {isLoggedIn ? `Xin chào, ${userName}` : 'Xin chào'}
+                </div>
+
+                {/* Action Buttons (Bordered Rectangles) */}
+                {isLoggedIn ? (
+                  <div className="flex flex-col items-center gap-2">
+                    {workspaceRole && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('admin');
+                        }}
+                        className="px-4 py-1.5 rounded bg-[#0667d0] hover:bg-[#0558b5] text-white text-[11px] font-bold tracking-wider uppercase transition cursor-pointer"
+                      >
+                        {workspaceRole === 'staff' ? 'BẢNG CÔNG VIỆC' : 'QUẢN TRỊ CỬA HÀNG'}
+                      </button>
+                    )}
+                    <div className="flex items-center justify-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('account');
+                        }}
+                        className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                      >
+                        TÀI KHOẢN
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onLogout();
+                        }}
+                        className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                      >
+                        ĐĂNG XUẤT
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onNavigate('login');
+                      }}
+                      className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                    >
+                      ĐĂNG NHẬP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onNavigate('register');
+                      }}
+                      className="px-4 py-1.5 border border-white/70 hover:border-white text-white text-[12px] font-bold tracking-wider uppercase rounded-xs transition cursor-pointer hover:bg-white/10"
+                    >
+                      ĐĂNG KÝ
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Drawer Scrollable Navigation List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-[#f4f4f5] dark:divide-[#27272a] text-[#27272a] dark:text-[#f4f4f5]">
+                {/* SECTION 1: DANH MỤC */}
+                <div className="bg-[#f4f4f5] dark:bg-[#18181b] text-[#71717a] dark:text-[#a1a1aa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-b border-[#e4e4e7] dark:border-[#27272a]">
+                  DANH MỤC
+                </div>
+
+                {/* Hệ thống cửa hàng */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('contact');
+                  }}
+                  className="w-full px-4 py-3 text-left text-[14px] font-medium hover:text-[#0667d0] hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>Hệ thống cửa hàng</span>
+                </button>
+
+                {/* Trang chủ */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('home');
+                  }}
+                  className="w-full px-4 py-3 text-left text-[14px] font-medium hover:text-[#0667d0] hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>Trang chủ</span>
+                </button>
+
+                {/* Khuyến mãi (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onNavigate('promotions');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Khuyến mãi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('promotions')}
+                      aria-label="Mở rộng mục Khuyến mãi"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['promotions'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['promotions'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('promotions');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả khuyến mãi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('promotions');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Flash Sale giảm sốc đến 50%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('promotions');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Combo dinh dưỡng tiết kiệm
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dịch vụ chăm sóc (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onNavigate('service');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Dịch vụ chăm sóc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('service')}
+                      aria-label="Mở rộng mục Dịch vụ chăm sóc"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['service'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['service'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('service');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả dịch vụ thú cưng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('service');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tắm &amp; Spa toàn diện
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('service');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Cắt tỉa &amp; Tạo kiểu lông
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('service');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Khách sạn thú cưng cao cấp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('service');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Bác sĩ thú y &amp; Tiêm phòng
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tin tức (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onNavigate('home');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Tin tức
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('news')}
+                      aria-label="Mở rộng mục Tin tức"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['news'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['news'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('home');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Cẩm nang chăm sóc thú cưng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('home');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Dinh dưỡng khoa học cho chó mèo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onNavigate('home');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Sự kiện &amp; Cộng đồng PetsFriend
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Liên hệ */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('contact');
+                  }}
+                  className="w-full px-4 py-3 text-left text-[14px] font-medium hover:text-[#0667d0] hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>Liên hệ</span>
+                </button>
+
+                {/* Tra cứu đơn hàng */}
+                {onOpenOrderLookup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      onOpenOrderLookup();
+                    }}
+                    className="w-full px-4 py-3 text-left text-[14px] font-medium text-[#0667d0] hover:bg-[#eff5ff] dark:hover:bg-[#1e293b] transition flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Tra cứu đơn hàng</span>
+                  </button>
+                )}
+
+                {/* SECTION 2: DANH MỤC SẢN PHẨM */}
+                <div className="bg-[#f4f4f5] dark:bg-[#18181b] text-[#71717a] dark:text-[#a1a1aa] text-[11px] font-bold uppercase tracking-wider px-4 py-2 border-y border-[#e4e4e7] dark:border-[#27272a]">
+                  DANH MỤC SẢN PHẨM
+                </div>
+
+                {/* Chó cưng (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onSelectPetAudience?.('dog');
+                        onNavigate('search');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Chó cưng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('dog')}
+                      aria-label="Mở rộng mục Chó cưng"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['dog'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['dog'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('dog');
+                          onSelectCategory('all');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả sản phẩm cho Chó
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('dog');
+                          onSelectCategory('food');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Dinh dưỡng &amp; Pate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('dog');
+                          onSelectCategory('bed');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Chuồng nệm &amp; Giường ngủ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('dog');
+                          onSelectCategory('backpack');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Balo, Dây dắt &amp; Phụ kiện
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('dog');
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Sữa tắm &amp; Vệ sinh
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mèo cưng (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onSelectPetAudience?.('cat');
+                        onNavigate('search');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Mèo cưng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('cat')}
+                      aria-label="Mở rộng mục Mèo cưng"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['cat'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['cat'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('cat');
+                          onSelectCategory('all');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả sản phẩm cho Mèo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('cat');
+                          onSelectCategory('food');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Dinh dưỡng &amp; Pate mèo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('cat');
+                          onSelectCategory('backpack');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Cát vệ sinh &amp; Nhà vệ sinh
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectPetAudience?.('cat');
+                          onSelectCategory('bed');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Ổ nệm &amp; Cào móng
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Nhà xinh (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onSelectCategory('bed');
+                        onNavigate('search');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Nhà xinh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('house')}
+                      aria-label="Mở rộng mục Nhà xinh"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['house'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['house'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('bed');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả Nhà xinh &amp; Nệm ngủ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('bed');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Nệm ngủ &amp; Giường êm ái
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('bed');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Chuồng &amp; Lồng vận chuyển
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('backpack');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Bát ăn &amp; Bình nước tự động
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Làm đẹp (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onSelectCategory('hygiene');
+                        onNavigate('search');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Làm đẹp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('beauty')}
+                      aria-label="Mở rộng mục Làm đẹp"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['beauty'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['beauty'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả sản phẩm Làm đẹp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Sữa tắm &amp; Xịt dưỡng lông
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Lược chải &amp; Kéo tỉa lông
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tủ thuốc (+) */}
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-[#fafafa] dark:hover:bg-[#27272a] transition">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileDrawerOpen(false);
+                        onSelectCategory('hygiene');
+                        onNavigate('search');
+                      }}
+                      className="flex-1 text-left text-[14px] font-medium hover:text-[#0667d0] cursor-pointer"
+                    >
+                      Tủ thuốc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('meds')}
+                      aria-label="Mở rộng mục Tủ thuốc"
+                      className="p-1 text-[#71717a] dark:text-[#a1a1aa] hover:text-[#18181b] dark:hover:text-white cursor-pointer"
+                    >
+                      {expandedSections['meds'] ? (
+                        <Minus className="w-4 h-4 font-bold" />
+                      ) : (
+                        <Plus className="w-4 h-4 font-bold" />
+                      )}
+                    </button>
+                  </div>
+                  {expandedSections['meds'] && (
+                    <div className="bg-[#fcfcfd] dark:bg-[#1e1e24] pl-7 pr-4 py-1.5 space-y-2 border-t border-[#f4f4f5] dark:border-[#27272a] text-[13px] text-[#52525b] dark:text-[#d4d4d8]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Tất cả Tủ thuốc thú y
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Trị ve rận &amp; Bọ chét
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Men tiêu hóa &amp; Bổ sung Canxi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          onSelectCategory('hygiene');
+                          onNavigate('search');
+                        }}
+                        className="w-full text-left py-1 hover:text-[#0667d0] cursor-pointer block"
+                      >
+                        • Thuốc nhỏ mắt, tai &amp; Kháng khuẩn
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
